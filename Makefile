@@ -1,6 +1,9 @@
-.PHONY: default build test clean
+.PHONY: default build example test clean
 
 default: build
+
+example: build
+	@go run example/main.go
 
 ASSETS := $(shell find assets -type f | grep -v ".go$$")
 assets/assets.go: $(ASSETS)
