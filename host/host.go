@@ -9,9 +9,11 @@ import (
 	"net"
 )
 
+type HostType int
+
 const (
-	HOST_TYPE_DOCKER = iota
-	HOST_TYPE_SSH
+	HOST_TYPE_DOCKER HostType = iota // Host is a docker image.
+	HOST_TYPE_SSH    HostType = iota // Host is a machine accessible using SSH.
 )
 
 type Host struct {
@@ -22,7 +24,7 @@ type Host struct {
 }
 
 // Create a new host of the given type.
-func NewHost(hostType int) (host *Host, e error) {
+func NewHost(hostType HostType) (host *Host, e error) {
 	if hostType != HOST_TYPE_SSH && hostType != HOST_TYPE_DOCKER {
 		return nil, fmt.Errorf("host type must be of the HOST_TYPE_{DOCKER,SSH} const")
 	}
