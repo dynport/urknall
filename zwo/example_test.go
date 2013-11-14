@@ -58,3 +58,26 @@ func ExampleIfNot() {
 			Execute(extract),
 			Execute("rm -f /tmp/godeb-amd64.tar.gz")))
 }
+
+// Simple example to add two commands to a runlist. Please note that usually you don't need to create the runlist, as
+// it is given to the Compile method of the Package interface you should implement for your packages.
+func ExampleRunlist_AddCommands() {
+	rl := &Runlist{} // Create the runlist.
+	rl.AddCommands(
+		// Install some packages.
+		InstallPackages("curl", "vim"),
+		// Create a file /tmp/bar containing "foo".
+		Execute("echo 'foo' > /tmp/bar"))
+}
+
+// Simple example to add two action to a runlist that will create files. Please note that usually you don't need to
+// create the runlist, as it is given to the Compile method of the Package interface you should implement for your
+// packages.
+func ExampleRunlist_AddFiles() {
+	rl := &Runlist{} // Create the runlist.
+	rl.AddFiles(
+		// Add a file /tmp/bar with content "foo" with owner set to "root" and mode set to 0600.
+		WriteFile("/tmp/bar", "foo", "root", 0600),
+		// Add a file /tmp/foo with content "bar" with owner set to "nobody" and mode set to 0666.
+		WriteFile("/tmp/foo", "bar", "nobody", 0200))
+}
