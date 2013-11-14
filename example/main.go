@@ -1,3 +1,7 @@
+// An example demonstrating usage of zwo.
+//
+// The ExamplePackage struct is use to configure a custom package. This package is provisioned together with the
+// BasePackage on a target host with the public IP '134.119.1.181'.
 package main
 
 import (

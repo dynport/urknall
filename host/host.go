@@ -1,3 +1,7 @@
+// struct to provide basic information on the host to provision.
+//
+// Depending on the type of host different mechanisms and information are required. This knowledge is encapsulated in
+// the Host struct.
 package host
 
 import (
@@ -17,6 +21,7 @@ type Host struct {
 	user     string // User used to log in.
 }
 
+// Create a new host of the given type.
 func NewHost(hostType int) (host *Host, e error) {
 	if hostType != HOST_TYPE_SSH && hostType != HOST_TYPE_DOCKER {
 		return nil, fmt.Errorf("host type must be of the HOST_TYPE_{DOCKER,SSH} const")
@@ -24,14 +29,19 @@ func NewHost(hostType int) (host *Host, e error) {
 	return &Host{hostType: hostType}, nil
 }
 
+// Returns true if this host is a docker image.
 func (h *Host) IsDockerHost() bool {
 	return h.hostType == HOST_TYPE_DOCKER
 }
 
+// Returns true if this host is accessible using SSH.
 func (h *Host) IsSshHost() bool {
 	return h.hostType == HOST_TYPE_SSH
 }
 
+// Set the public IP of the host.
+//
+// TODO This only makes sense for SSH hosts.
 func (h *Host) SetPublicIPAddress(ip string) (e error) {
 	parsedIP := net.ParseIP(ip)
 	if parsedIP == nil {
@@ -41,6 +51,7 @@ func (h *Host) SetPublicIPAddress(ip string) (e error) {
 	return nil
 }
 
+// Get the public IP address of the host.
 func (h *Host) GetPublicIPAddress() string {
 	if h.publicIP == nil {
 		return ""
@@ -48,6 +59,9 @@ func (h *Host) GetPublicIPAddress() string {
 	return h.publicIP.String()
 }
 
+// Set the IP of the host inside a VPN.
+//
+// TODO This only makes sense for SSH hosts.
 func (h *Host) SetVpnIPAddress(ip string) (e error) {
 	parsedIP := net.ParseIP(ip)
 	if parsedIP == nil {
@@ -57,6 +71,7 @@ func (h *Host) SetVpnIPAddress(ip string) (e error) {
 	return nil
 }
 
+// Get the VPN IP address of the host.
 func (h *Host) GetVpnIPAddress() string {
 	if h.vpnIP == nil {
 		return ""
@@ -64,10 +79,14 @@ func (h *Host) GetVpnIPAddress() string {
 	return h.vpnIP.String()
 }
 
+// Set the user used to access the host. If none is given the 'root' account is as default.
+//
+// TODO This only makes sense for SSH hosts.
 func (h *Host) SetUser(user string) {
 	h.user = user
 }
 
+// Get the user used to access the host. If none is given the 'root' account is as default.
 func (h *Host) GetUser() string {
 	if h.user == "" {
 		return "root"
@@ -75,6 +94,9 @@ func (h *Host) GetUser() string {
 	return h.user
 }
 
+// Predicate to test whether sudo is required (user for the host is not 'root').
+//
+// TODO This only makes sense for SSH hosts.
 func (h *Host) IsSudoRequired() bool {
 	if h.user != "" && h.user != "root" {
 		return true

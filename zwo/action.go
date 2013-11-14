@@ -1,5 +1,3 @@
-// Actions are the basic building blocks of zwo. They come in different flavours as actions have different requirements
-// on how they are applied, how they are logged, and how they work.
 package zwo
 
 import (
@@ -25,6 +23,9 @@ type actionFunc func(h *host.Host, iface interface{}) (c action, e error)
 
 // The CommandActionFunc is the basic type (actually a function value) that is used to create command actions, that can
 // be added to a runlist using the Runlist_AddCommands method.
+//
+// The command strings are rendered using text/template and the package to be compiled in order to make these strings
+// easier to read.
 type CommandActionFunc func(h *host.Host, iface interface{}) (c *commandAction, e error)
 
 // The FileActionFunc is the basic type (actually a function value) that is used to create actions that will write
@@ -46,7 +47,8 @@ func Execute(cmd string) CommandActionFunc {
 }
 
 // Install the given packages using apt.
-//  TODO: This limits usage of the package to debian based systems, but this should be sufficient in most cases.
+//
+// TODO: This limits usage of the package to debian based systems, but this should be sufficient in most cases.
 func InstallPackages(pkgs ...string) CommandActionFunc {
 	return func(h *host.Host, iface interface{}) (c *commandAction, e error) {
 		if len(pkgs) == 0 {
@@ -150,7 +152,8 @@ func WriteFile(path, content, owner string, mode os.FileMode) FileActionFunc {
 	}
 }
 
-// Run the given commands as given user.
+// Run the given commands as a given user.
+//
 // TODO: Make sure we don't end in hell because of wrongly nested quotes (encoding?).
 func AsUser(user string, cmds ...CommandActionFunc) CommandActionFunc {
 	return func(h *host.Host, iface interface{}) (c *commandAction, e error) {

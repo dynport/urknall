@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// Provisioners are responsible for compiling the given packages into runlists and execute those.
 type Provisioner interface {
 	Provision(packages ...Compiler) (e error)
 }
@@ -17,6 +18,7 @@ type sshClient struct {
 	host   *host.Host
 }
 
+// Create a new provisioner for the given host.
 func NewProvisioner(h *host.Host) (p Provisioner) {
 	switch {
 	case h.IsSshHost():

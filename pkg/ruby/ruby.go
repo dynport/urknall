@@ -1,3 +1,5 @@
+// The RubyPackage is used to provision ruby on a host.
+//
 // TODO: add prefix support
 package ruby
 

@@ -1,4 +1,4 @@
-// The BasePackage allows to do the basic host setup.
+// The BasePackage allows to do the basic host setup during provisioning.
 package base
 
 import (

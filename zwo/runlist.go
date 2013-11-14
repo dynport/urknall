@@ -1,7 +1,3 @@
-// The Runlist is a collection of associated commands used to provision a service.
-//
-// This is an internal representation of the commands. It is designed to make usage of the interface as easy as
-// possible. It is in effect the result of the compilation call.
 package zwo
 
 import (
@@ -18,10 +14,7 @@ type Runlist struct {
 	name    string // Name of the compilable.
 }
 
-// Add the given commands to the runlist.
-//
-// This function does all the error handling, i.e. calls the CommandF functions, thus retrieving the actual command or
-// an error. If an error is seen that is propagated upwards.
+// Add the given command actions to the runlist.
 func (rl *Runlist) AddCommands(cmds ...CommandActionFunc) (e error) {
 	if len(cmds) == 0 {
 		return fmt.Errorf("empty list of commands given")
@@ -36,6 +29,7 @@ func (rl *Runlist) AddCommands(cmds ...CommandActionFunc) (e error) {
 	return nil
 }
 
+// Add the given files actions to the runlist.
 func (rl *Runlist) AddFiles(cmds ...FileActionFunc) (e error) {
 	if len(cmds) == 0 {
 		return fmt.Errorf("empty list of files given")
@@ -57,6 +51,8 @@ func (rl *Runlist) setConfig(cfg interface{}) {
 	rl.config = cfg
 }
 
+// For the caching mechanism a unique identifier for each runlist is required. This identifier is set internally by the
+// provisioner.
 func (rl *Runlist) setName(name string) {
 	rl.name = name
 }
