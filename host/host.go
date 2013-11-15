@@ -17,10 +17,10 @@ const (
 )
 
 type Host struct {
-	hostType int    // What executor should be used (SSH or Docker)?
-	publicIP net.IP // Host's IP address used to provision the system.
-	vpnIP    net.IP // Host's private IP address.
-	user     string // User used to log in.
+	hostType HostType // What executor should be used (SSH or Docker)?
+	publicIP net.IP   // Host's IP address used to provision the system.
+	vpnIP    net.IP   // Host's private IP address.
+	user     string   // User used to log in.
 }
 
 // Create a new host of the given type.
