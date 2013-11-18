@@ -2,7 +2,10 @@ package zwo
 
 import (
 	"fmt"
+	"github.com/dynport/zwo/assets"
 	"github.com/dynport/zwo/host"
+	"github.com/dynport/zwo/utils"
+	"os"
 )
 
 // A runlist is a container for commands. While those can have arbitrary intent, they should be closely related, for the
@@ -14,34 +17,41 @@ type Runlist struct {
 	name    string // Name of the compilable.
 }
 
-// Add the given command actions to the runlist.
-func (rl *Runlist) AddCommands(cmds ...CommandActionFunc) (e error) {
-	if len(cmds) == 0 {
-		return fmt.Errorf("empty list of commands given")
+func (rl *Runlist) ExecuteAsUser(user, command string) {
+	if user == "" || user == "root" {
+		panic(fmt.Errorf("user must be given and not be root (was '%s')", user))
 	}
-	for i := range cmds {
-		c, e := cmds[i](rl.host, rl.config)
-		if e != nil {
-			return nil
-		}
-		rl.actions = append(rl.actions, c)
-	}
-	return nil
+	cmd := rl.createCommandForExecute(command)
+	cmd.user = user
+	rl.actions = append(rl.actions, cmd)
 }
 
-// Add the given files actions to the runlist.
-func (rl *Runlist) AddFiles(cmds ...FileActionFunc) (e error) {
-	if len(cmds) == 0 {
-		return fmt.Errorf("empty list of files given")
+func (rl *Runlist) Execute(command string) {
+	cmd := rl.createCommandForExecute(command)
+	rl.actions = append(rl.actions, cmd)
+}
+
+func (rl *Runlist) createCommandForExecute(command string) (c *commandAction) {
+	if command == "" {
+		panic("empty command given")
 	}
-	for i := range cmds {
-		c, e := cmds[i](rl.host, rl.config)
-		if e != nil {
-			return nil
-		}
-		rl.actions = append(rl.actions, c)
+
+	renderedCommand := utils.MustRenderTemplate(command, rl.config)
+	return &commandAction{cmd: renderedCommand, host: rl.host}
+}
+
+func (rl *Runlist) AddFile(path, assetName, owner string, mode os.FileMode) {
+	if path == "" {
+		panic("no path given")
 	}
-	return nil
+
+	asset, e := assets.Get(assetName)
+	if e != nil {
+		panic(fmt.Errorf("error retrieving asset: %s", e.Error()))
+	}
+
+	content := utils.MustRenderTemplate(string(asset), rl.config)
+	rl.actions = append(rl.actions, &fileAction{path: path, content: content, owner: owner, mode: mode, host: rl.host})
 }
 
 // The configuration is used to expand the templates used for the commands, i.e. all fields and methods of the given

@@ -2,8 +2,7 @@
 package base
 
 import (
-	"github.com/dynport/zwo/assets"
-	"github.com/dynport/zwo/templates"
+	. "github.com/dynport/zwo/cmd"
 	"github.com/dynport/zwo/zwo"
 )
 
@@ -21,131 +20,76 @@ type BasePackage struct {
 }
 
 // Stops on all errors in the process of creating the runlist (like insufficient configuration for example).
-func (base *BasePackage) Compile(r *zwo.Runlist) (e error) {
-	if e = base.updateAndInstallPackages(r); e != nil {
-		return e
-	}
+func (base *BasePackage) Compile(r *zwo.Runlist) {
+	base.updateAndInstallPackages(r)
 
 	if base.Hostname != "" {
-		if e = base.setHostname(r); e != nil {
-			return e
-		}
+		base.setHostname(r)
 	}
 
 	if base.TimezoneUTC {
-		if e = base.setTimezone(r); e != nil {
-			return e
-		}
+		base.setTimezone(r)
 	}
 
 	if base.SyslogHost != "" {
-		if e = base.setSyslogHost(r); e != nil {
-			return e
-		}
+		base.setSyslogHost(r)
 	}
 
 	if base.SwapSize != "" {
-		if e = base.setSwapFile(r); e != nil {
-			return e
-		}
+		base.setSwapFile(r)
 	}
 
 	if base.Limits {
-		if e = base.setSysLimits(r); e != nil {
-			return e
-		}
+		base.setSysLimits(r)
 	}
 
 	if base.PublicIp != "" {
-		if e = base.setNetwork(r); e != nil {
-			return e
-		}
+		base.setNetwork(r)
 	}
-	return nil
 }
 
-func (base *BasePackage) updateAndInstallPackages(r *zwo.Runlist) (e error) {
-	e = r.AddCommands(
-		zwo.And(
-			zwo.Execute("apt-get update"),
-			zwo.Execute("DEBIAN_FRONTEND=noninteractive apt-get upgrade -y")))
-	if e != nil {
-		return e
-	}
+func (base *BasePackage) updateAndInstallPackages(r *zwo.Runlist) {
+	r.Execute(
+		And("apt-get update",
+			"DEBIAN_FRONTEND=noninteractive apt-get upgrade -y"))
 	if len(base.Packages) > 0 {
-		return r.AddCommands(zwo.InstallPackages(base.Packages...))
+		r.Execute(InstallPackages(base.Packages...))
 	}
-	return nil
 }
 
-func (base *BasePackage) setHostname(r *zwo.Runlist) (e error) {
-	e = r.AddFiles(
-		zwo.WriteFile("/etc/hostname", base.Hostname, "root", 0755),
-		zwo.WriteFile("/etc/hosts", "127.0.0.1 {{ .Hostname }} localhost", "root", 0755))
-	if e != nil {
-		return e
-	}
-	return r.AddCommands(zwo.Execute("hostname -F /etc/hostname"))
+func (base *BasePackage) setHostname(r *zwo.Runlist) {
+	r.AddFile("/etc/hostname", base.Hostname, "root", 0755)
+	r.AddFile("/etc/hosts", "127.0.0.1 {{ .Hostname }} localhost", "root", 0755)
+	r.Execute("hostname -F /etc/hostname")
 }
 
-func (base *BasePackage) setTimezone(r *zwo.Runlist) (e error) {
-	return r.AddCommands(
-		zwo.Execute(`echo "Etc/UTC" | tee /etc/timezone && sudo dpkg-reconfigure --frontend noninteractive tzdata`))
+func (base *BasePackage) setTimezone(r *zwo.Runlist) {
+	r.Execute(
+		And("echo 'Etc/UTC' | tee /etc/timezone",
+			"sudo dpkg-reconfigure --frontend noninteractive tzdata"))
 }
 
-func (base *BasePackage) setSyslogHost(r *zwo.Runlist) (e error) {
-	cfgContent, e := templates.RenderAssetFromString("syslog.conf", base)
-	if e != nil {
-		return e
-	}
-	e = r.AddCommands(zwo.InstallPackages("rsyslog"))
-	if e != nil {
-		return e
-	}
-	e = r.AddFiles(zwo.WriteFile("/etc/rsyslog.d/50-default.conf", cfgContent, "root", 0600))
-	if e != nil {
-		return e
-	}
-	return r.AddCommands(zwo.Execute("/etc/init.d/rsyslog restart"))
+func (base *BasePackage) setSyslogHost(r *zwo.Runlist) {
+	r.Execute(InstallPackages("rsyslog"))
+	r.AddFile("/etc/rsyslog.d/50-default.conf", "syslog.conf", "root", 0600)
+	r.Execute("/etc/init.d/rsyslog restart")
 }
 
-func (base *BasePackage) setSwapFile(r *zwo.Runlist) (e error) {
-	return r.AddCommands(
-		zwo.And(
-			zwo.Execute("dd if=/dev/zero of=/swapfile bs=1024 count={{ .SwapSize }}k"),
-			zwo.Execute("mkswap /swapfile"),
-			zwo.Execute("swapon /swapfile")))
+func (base *BasePackage) setSwapFile(r *zwo.Runlist) {
+	r.Execute(
+		And("dd if=/dev/zero of=/swapfile bs=1024 count={{ .SwapSize }}k",
+			"mkswap /swapfile",
+			"swapon /swapfile"))
 }
 
-func (base *BasePackage) setSysLimits(r *zwo.Runlist) (e error) {
-	limitCfgBytes, e := assets.Get("limits.conf")
-	if e != nil {
-		return e
-	}
-	limitCfg := string(limitCfgBytes)
-
-	sysctlCfg, e := templates.RenderAssetFromString("sysctl.conf", base)
-	if e != nil {
-		return e
-	}
-
-	e = r.AddFiles(
-		zwo.WriteFile("/etc/security/limits.conf", limitCfg, "root", 0600),
-		zwo.WriteFile("/etc/sysctl.conf", sysctlCfg, "root", 0600))
-	if e != nil {
-		return e
-	}
-
-	return r.AddCommands(
-		zwo.And(
-			zwo.Execute("ulimit -a"),
-			zwo.Execute("sysctl -p")))
+func (base *BasePackage) setSysLimits(r *zwo.Runlist) {
+	r.AddFile("/etc/security/limits.conf", "limits.conf", "root", 0600)
+	r.AddFile("/etc/sysctl.conf", "sysctl.conf", "root", 0600)
+	r.Execute(
+		And("ulimit -a",
+			"sysctl -p"))
 }
 
-func (base *BasePackage) setNetwork(r *zwo.Runlist) (e error) {
-	networkCfg, e := templates.RenderAssetFromString("network.cfg", base)
-	if e != nil {
-		return e
-	}
-	return r.AddFiles(zwo.WriteFile("/etc/network/interfaces", networkCfg, "root", 0600))
+func (base *BasePackage) setNetwork(r *zwo.Runlist) {
+	r.AddFile("/etc/network/interfaces", "network.cfg", "root", 0600)
 }

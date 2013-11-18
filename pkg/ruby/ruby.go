@@ -5,6 +5,7 @@ package ruby
 
 import (
 	"fmt"
+	. "github.com/dynport/zwo/cmd"
 	"github.com/dynport/zwo/zwo"
 	"strings"
 )
@@ -13,64 +14,33 @@ type RubyPackage struct {
 	Version string `json:"version" default:"2.0.0-p247" desc:"package version"`
 }
 
-func (ruby *RubyPackage) Compile(r *zwo.Runlist) (e error) {
-	if e = ruby.installPackages(r); e != nil {
-		return e
-	}
+func (ruby *RubyPackage) Compile(r *zwo.Runlist) {
+	r.Execute(
+		InstallPackages("curl", "build-essential", "git-core",
+			"libyaml-dev", "libxml2-dev", "libxslt1-dev",
+			"libreadline-dev", "libssl-dev", "zlib1g-dev"))
+	r.Execute(
+		And("mkdir -p /opt/downloads",
+			"cd /opt/downloads",
+			"curl -SsfLO \"{{ .getDownloadURL }}\""))
 
-	if e = ruby.downloadAndExtractRubySource(r); e != nil {
-		return e
-	}
+	r.Execute(
+		And("mkdir -p /opt/src",
+			"cd /opt/src",
+			"tar xvfz {{ .getSourceFilename }}"))
 
-	if e = ruby.buildRubyFromSource(r); e != nil {
-		return e
-	}
+	r.Execute(
+		And("cd {{ .getSoucePath }}",
+			"./configure --disable-install-doc",
+			"make"))
 
-	if e = ruby.installRuby(r); e != nil {
-		return e
-	}
-	return nil
-}
+	r.Execute(
+		And(
+			"cd {{ .getSoucePath }}",
+			"make install",
+			"ln -nfs /opt/{{ .getPathSegment }} /opt/ruby"))
 
-func (ruby *RubyPackage) installPackages(r *zwo.Runlist) (e error) {
-	packages := []string{
-		"curl", "build-essential", "git-core",
-		"libyaml-dev", "libxml2-dev", "libxslt1-dev",
-		"libreadline-dev", "libssl-dev", "zlib1g-dev",
-	}
-	return r.AddCommands(zwo.InstallPackages(packages...))
-}
-
-func (ruby *RubyPackage) downloadAndExtractRubySource(r *zwo.Runlist) (e error) {
-	return r.AddCommands(
-		zwo.And(
-			zwo.Execute("mkdir -p /opt/downloads"),
-			zwo.Execute("cd /opt/downloads"),
-			zwo.Execute("curl -SsfLO \"{{ .getDownloadURL }}\"")),
-		zwo.And(
-			zwo.Execute("mkdir -p /opt/src"),
-			zwo.Execute("cd /opt/src"),
-			zwo.Execute("tar xvfz {{ .getSourceFilename }}")))
-}
-
-func (ruby *RubyPackage) buildRubyFromSource(r *zwo.Runlist) (e error) {
-	return r.AddCommands(
-		zwo.And(
-			zwo.Execute("cd {{ .getSoucePath }}"),
-			zwo.Execute("./configure --disable-install-doc"),
-			zwo.Execute("make")))
-}
-
-func (ruby *RubyPackage) installRuby(r *zwo.Runlist) (e error) {
-	e = r.AddCommands(
-		zwo.And(
-			zwo.Execute("cd {{ .getSoucePath }}"),
-			zwo.Execute("make install"),
-			zwo.Execute("ln -nfs /opt/{{ .getPathSegment }} /opt/ruby")))
-	if e != nil {
-		return e
-	}
-	return r.AddFiles(zwo.WriteFile("/root/.profile.d/ruby", "export PATH=/opt/ruby/bin:$PATH", "", 0))
+	r.AddFile("/root/.profile.d/ruby", "export PATH=/opt/ruby/bin:$PATH", "", 0)
 }
 
 func (ruby *RubyPackage) getSourceFilename() string {

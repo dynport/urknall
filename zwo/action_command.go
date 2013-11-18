@@ -13,7 +13,7 @@ type commandAction struct {
 }
 
 func (rCmd *commandAction) Docker() string {
-	return fmt.Sprintf("RUN %s", rCmd.Plain())
+	return fmt.Sprintf("RUN %s", rCmd.cmd)
 }
 
 func (rCmd *commandAction) Shell() string {
@@ -38,10 +38,6 @@ func (rCmd *commandAction) Shell() string {
 		return fmt.Sprintf("sudo -- su -l %s <<EOF\n%s\nEOF\n", rCmd.user, rCmd.cmd)
 	}
 	panic("should never be reached")
-}
-
-func (rCmd *commandAction) Plain() string {
-	return rCmd.cmd
 }
 
 func (rCmd *commandAction) Logging() string {

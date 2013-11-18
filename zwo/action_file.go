@@ -26,11 +26,15 @@ func (wCmd *fileAction) Docker() string {
 var b64 = base64.StdEncoding
 
 func (wCmd *fileAction) Shell() string {
-	return wCmd.Plain()
-}
-
-func (wCmd *fileAction) Plain() string {
 	buf := &bytes.Buffer{}
+
+	if wCmd.path == "" {
+		panic("no path given")
+	}
+
+	if wCmd.content == "" {
+		panic("no content given")
+	}
 
 	// Zip the content.
 	zipper := gzip.NewWriter(buf)
@@ -70,15 +74,26 @@ func (wCmd *fileAction) Plain() string {
 }
 
 func (wCmd *fileAction) Logging() string {
-	content := ""
-	if idx := strings.Index(strings.TrimSpace(wCmd.content), "\n"); idx == -1 {
-		content = wCmd.content
-	} else {
-		content = wCmd.content[:idx-1]
-	}
-	prefix := "[WRITE FILE]"
+	sList := []string{"[FILE   ]"}
+
 	if wCmd.host.IsSudoRequired() {
-		prefix += " [SUDO]"
+		sList = append(sList, "[SUDO]")
 	}
-	return fmt.Sprintf("%s %s %s %o << %.50s", prefix, wCmd.path, wCmd.owner, wCmd.mode, content)
+
+	if wCmd.owner != "" && wCmd.owner != "root" {
+		sList = append(sList, fmt.Sprintf("[CHOWN:%s]", wCmd.owner))
+	}
+
+	if wCmd.mode != 0 {
+		sList = append(sList, fmt.Sprintf("[CHMOD:%.4o]", wCmd.mode))
+	}
+
+	sList = append(sList, wCmd.path)
+
+	cLen := len(wCmd.content)
+	if cLen > 50 {
+		cLen = 50
+	}
+	sList = append(sList, fmt.Sprintf("<< %s", strings.Replace(wCmd.content[0:cLen], "\n", "⁋", -1)))
+	return strings.Join(sList, " ")
 }

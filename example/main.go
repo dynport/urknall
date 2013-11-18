@@ -5,6 +5,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/dynport/zwo/host"
 	"github.com/dynport/zwo/pkg/base"
 	"github.com/dynport/zwo/zwo"
@@ -14,9 +15,8 @@ type ExamplePackage struct {
 	Version string `json:"version" default:"0.0.1" required:"true"`
 }
 
-func (ex *ExamplePackage) Compile(r *zwo.Runlist) (e error) {
-	e = r.AddCommands(zwo.Execute("echo {{ .Version }} >> /tmp/version"))
-	return e
+func (ex *ExamplePackage) Compile(r *zwo.Runlist) {
+	r.Execute("echo {{ .Version }} >> /tmp/version")
 }
 
 func main() {
@@ -41,6 +41,6 @@ func main() {
 
 	provisioner := zwo.NewProvisioner(h)
 	if e := provisioner.Provision(pkgs...); e != nil {
-		panic(e)
+		fmt.Printf("error: %s\n", e.Error())
 	}
 }
