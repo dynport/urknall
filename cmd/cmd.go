@@ -49,3 +49,27 @@ func Mkdir(path, owner string, mode os.FileMode) string {
 
 	return And(cmds...)
 }
+
+func If(test, command string) string {
+	if test == "" {
+		panic("empty test given")
+	}
+
+	if command == "" {
+		panic("empty command given")
+	}
+
+	return fmt.Sprintf("{ [[ %s ]] && %s; }", test, command)
+}
+
+func IfNot(test, command string) string {
+	if test == "" {
+		panic("empty test given")
+	}
+
+	if command == "" {
+		panic("empty command given")
+	}
+
+	return fmt.Sprintf("{ [[ %s ]] || %s; }", test, command)
+}
