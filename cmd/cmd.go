@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+func UpdatePackages() string {
+	return And("apt-get update", "DEBIAN_FRONTEND=noninteractive apt-get upgrade -y")
+}
+
 func InstallPackages(pkgs ...string) string {
 	if len(pkgs) == 0 {
 		panic("empty package list given")

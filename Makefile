@@ -1,4 +1,4 @@
-.PHONY: build check clean coverage default deps help test
+.PHONY: build check clean coverage default deps example help test
 
 ASSETS      := $(shell find assets -type f | grep -v ".go$$")
 EXTRA_DEPS  := github.com/dynport/dgtk/goassets github.com/smartystreets/goconvey
@@ -34,6 +34,9 @@ deps:
 	@for package in $(EXTRA_DEPS) $(DEPS); do \
 		go get -t -u $$package; \
 	done
+
+example: build
+	@go run example/main.go
 
 help:
 	@echo "make [target] ..."

@@ -49,9 +49,7 @@ func (base *BasePackage) Compile(r *zwo.Runlist) {
 }
 
 func (base *BasePackage) updateAndInstallPackages(r *zwo.Runlist) {
-	r.Execute(
-		And("apt-get update",
-			"DEBIAN_FRONTEND=noninteractive apt-get upgrade -y"))
+	r.Execute(UpdatePackages())
 	if len(base.Packages) > 0 {
 		r.Execute(InstallPackages(base.Packages...))
 	}
