@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -72,4 +73,43 @@ func IfNot(test, command string) string {
 	}
 
 	return fmt.Sprintf("{ [[ %s ]] || %s; }", test, command)
+}
+
+func download(url string) string {
+	cmd := And(
+		"mkdir -p /tmp/downloads",
+		"cd /tmp/downloads",
+		fmt.Sprintf("curl -SsfLO %s", url))
+	return cmd
+}
+
+func DownloadToFile(url, destination, owner string, mode os.FileMode) string {
+	cmds := []string{}
+	cmds = append(cmds, download(url))
+	cmds = append(cmds, fmt.Sprintf("mv /tmp/downloads/%s %s", filenameFromUrl(url), destination))
+	if owner != "" || owner != "root" {
+		cmds = append(cmds, Or(
+			If(fmt.Sprintf("-f %s", destination), fmt.Sprintf("chown %s %s", owner, destination)),
+			If(fmt.Sprintf("-d %s", destination), fmt.Sprintf("chown %s %s/%s", owner, destination, filenameFromUrl(url))),
+			And("echo \"Couldn't determine target\"", "exit 1")))
+	}
+	if mode != 0 {
+		cmds = append(cmds, Or(
+			If(fmt.Sprintf("-f %s", destination), fmt.Sprintf("chmod %o %s", mode, destination)),
+			If(fmt.Sprintf("-d %s", destination), fmt.Sprintf("chmod %o %s/%s", mode, destination, filenameFromUrl(url))),
+			And("echo \"Couldn't determine target\"", "exit 1")))
+	}
+	return And(cmds...)
+}
+
+func DownloadAndExtract(url, targetDir string) string {
+	return And(
+		download(url),
+		If(fmt.Sprintf("! -d %s", targetDir), Mkdir(targetDir, "", 0)),
+		fmt.Sprintf("cd %s", targetDir),
+		fmt.Sprintf("tar xvfz /tmp/downloads/%s", filenameFromUrl(url)))
+}
+
+func filenameFromUrl(url string) string {
+	return path.Base(url)
 }
