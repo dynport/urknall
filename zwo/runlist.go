@@ -2,6 +2,7 @@ package zwo
 
 import (
 	"fmt"
+	"github.com/dynport/dgtk/goup"
 	"github.com/dynport/zwo/assets"
 	"github.com/dynport/zwo/host"
 	"github.com/dynport/zwo/utils"
@@ -52,6 +53,14 @@ func (rl *Runlist) AddFile(path, assetName, owner string, mode os.FileMode) {
 
 	content := utils.MustRenderTemplate(string(asset), rl.config)
 	rl.actions = append(rl.actions, &fileAction{path: path, content: content, owner: owner, mode: mode, host: rl.host})
+}
+
+func (rl *Runlist) Init(us *goup.Upstart, ds string) {
+	if us == nil && ds == "" {
+		panic("neither upstart nor docker run command given")
+	}
+
+	rl.actions = append(rl.actions, &upstartAction{upstart: us, docker: ds, host: rl.host})
 }
 
 // The configuration is used to expand the templates used for the commands, i.e. all fields and methods of the given
