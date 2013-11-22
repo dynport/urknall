@@ -6,6 +6,7 @@ import (
 	"github.com/dynport/gologger"
 	"github.com/dynport/gossh"
 	"github.com/dynport/zwo/host"
+	"path"
 	"runtime/debug"
 	"strings"
 )
@@ -81,11 +82,7 @@ func (sc *sshClient) provision(rl *Runlist) (e error) {
 		}
 
 		logger.Infof("[%s  ] [%.8s] %s", gologger.Colorize(34, "EXEC"), task.checksum, logMsg)
-		rsp, e := sc.client.Execute(task.action.Shell())
-		if e != nil {
-			return fmt.Errorf("failed to execute cmd: '%s'\nStdErr:\n%sStdOut:\n%s", e.Error(), rsp.Stderr(), rsp.Stdout())
-		}
-		if _, e = sc.executeCommand(fmt.Sprintf("touch %s/%s", checksumDir, task.checksum)); e != nil {
+		if e = sc.runTask(task, checksumDir); e != nil {
 			return e
 		}
 	}
@@ -93,30 +90,40 @@ func (sc *sshClient) provision(rl *Runlist) (e error) {
 	return nil
 }
 
-func (sc *sshClient) executeCommand(cmdRaw string) (result *gossh.Result, e error) {
+func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
+	checksumFile := fmt.Sprintf("%s/%s", checksumDir, task.checksum)
+
+	rsp, e := sc.client.Execute(task.action.Shell())
+
+	// Write the checksum file (containing information on the command run).
+	sc.writeChecksumFile(checksumFile, e != nil, task.action.Logging(), rsp)
+
+	return e
+}
+
+func (sc *sshClient) executeCommand(cmdRaw string) *gossh.Result {
 	c := &commandAction{cmd: cmdRaw, host: sc.host}
-	result, e = sc.client.Execute(c.Shell())
+	result, e := sc.client.Execute(c.Shell())
 	if e != nil {
 		stderr := ""
 		if result != nil {
-			stderr = "\n" + result.Stderr()
+			stderr = strings.TrimSpace(result.Stderr())
 		}
-		return result, fmt.Errorf("%s%s", e.Error(), stderr)
+		panic(fmt.Errorf("internal error: %s (%s)", e.Error(), stderr))
 	}
-	return result, nil
+	return result
 }
 
 func (sc *sshClient) buildChecksumHash(checksumDir string) (checksumMap map[string]struct{}, e error) {
 	// Make sure the directory exists.
-	if _, e = sc.executeCommand(fmt.Sprintf("mkdir -p %s", checksumDir)); e != nil {
-		return nil, fmt.Errorf("failed to create checksum directory: %s", e.Error())
-	}
+	sc.executeCommand(fmt.Sprintf("mkdir -p %s", checksumDir))
 
-	rsp, e := sc.executeCommand(fmt.Sprintf("ls %s | xargs", checksumDir))
-	if e != nil {
-		return nil, e
+	checksums := []string{}
+	rsp := sc.executeCommand(fmt.Sprintf("ls %s/*.done | xargs", checksumDir))
+	for _, checksumFile := range strings.Fields(rsp.Stdout()) {
+		checksum := strings.TrimSuffix(path.Base(checksumFile), ".done")
+		checksums = append(checksums, checksum)
 	}
-	checksums := strings.Fields(strings.TrimSpace(rsp.Stdout()))
 
 	checksumMap = make(map[string]struct{})
 	for i := range checksums {
@@ -131,13 +138,36 @@ func (sc *sshClient) buildChecksumHash(checksumDir string) (checksumMap map[stri
 func (sc *sshClient) cleanUpRemainingCachedEntries(checksumDir string, checksumHash map[string]struct{}) (e error) {
 	invalidCacheEntries := make([]string, 0, len(checksumHash))
 	for k, _ := range checksumHash {
-		invalidCacheEntries = append(invalidCacheEntries, k)
+		invalidCacheEntries = append(invalidCacheEntries, fmt.Sprintf("%s.done", k))
 	}
-	cmd := fmt.Sprintf("cd %s && rm -f %s", checksumDir, strings.Join(invalidCacheEntries, " "))
-	if _, e = sc.executeCommand(cmd); e != nil {
-		return e
-	}
+	cmd := fmt.Sprintf("cd %s && rm -f *.failed %s", checksumDir, strings.Join(invalidCacheEntries, " "))
+	logger.Debug(cmd)
+	sc.executeCommand(cmd)
 	return nil
+}
+
+func (sc *sshClient) writeChecksumFile(checksumFile string, failed bool, logMsg string, response *gossh.Result) {
+	content := []string{}
+	content = append(content, fmt.Sprintf("Command: %s", logMsg))
+	content = append(content, "Wrote to STDOUT: #################")
+	content = append(content, response.Stdout())
+	content = append(content, "Wrote to STDERR: #################")
+	content = append(content, response.Stderr())
+
+	if failed {
+		checksumFile += ".failed"
+	} else {
+		checksumFile += ".done"
+	}
+
+	c := &fileAction{
+		path:    checksumFile,
+		content: strings.Join(content, "\n"),
+		host:    sc.host}
+
+	if _, e := sc.client.Execute(c.Shell()); e != nil {
+		panic(fmt.Sprintf("failed to write checksum file: ", e.Error()))
+	}
 }
 
 type taskData struct {
