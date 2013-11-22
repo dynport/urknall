@@ -53,6 +53,29 @@ func TestAndCommand(t *testing.T) {
 	})
 }
 
+func TestOrCommand(t *testing.T) {
+	Convey("When the Or command is called without any subcommands given", t, func() {
+		Convey("Then the function panics", func() {
+			f := func() { Or() }
+			So(f, ShouldPanicWith, "empty list of commands given")
+		})
+	})
+
+	Convey("When the Or command is called for a command foo", t, func() {
+		c := Or("foo")
+		Convey("Then the result should only contain the foo command", func() {
+			So(c, ShouldEqual, "foo")
+		})
+	})
+
+	Convey("When the Or command is called for commands foo and bar", t, func() {
+		c := Or("foo", "bar")
+		Convey("Then the result should contain the combined commands", func() {
+			So(c, ShouldEqual, "{ foo || bar; }")
+		})
+	})
+}
+
 func TestMkdirCommand(t *testing.T) {
 	Convey("When the Mkdir command is called without a path", t, func() {
 		Convey("Then the function panics", func() {

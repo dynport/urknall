@@ -23,6 +23,16 @@ func And(cmds ...string) string {
 	return fmt.Sprintf("{ %s; }", strings.Join(cmds, " && "))
 }
 
+func Or(cmds ...string) string {
+	if len(cmds) == 0 {
+		panic("empty list of commands given")
+	}
+	if len(cmds) == 1 {
+		return cmds[0]
+	}
+	return fmt.Sprintf("{ %s; }", strings.Join(cmds, " || "))
+}
+
 func Mkdir(path, owner string, mode os.FileMode) string {
 	if path == "" {
 		panic("empty path given to mkdir")
