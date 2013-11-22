@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/dynport/dpgtk/docker_client"
 	"github.com/dynport/zwo/host"
+	"runtime/debug"
 	"strings"
 )
 
@@ -28,7 +29,13 @@ func (dc *dockerClient) Provision(packages ...Compiler) (e error) {
 	pkg.Compile(rl)
 	defer func() {
 		if r := recover(); r != nil {
-			e = fmt.Errorf("Error: %s", r)
+			var ok bool
+			e, ok = r.(error)
+			if !ok {
+				e = fmt.Errorf("failed to compile: %v", r)
+			}
+			logger.Info(e.Error())
+			logger.Debug(string(debug.Stack()))
 		}
 	}()
 
