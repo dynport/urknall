@@ -31,7 +31,8 @@ func (d *Host) Compile(r *zwo.Runlist) {
 	r.Execute("start docker")
 
 	if d.WithRegistry {
-		r.Execute("docker run -d -p 0.0.0.0:5000:5000 stackbrew/registry")
+		r.RunDockerImage("stackbrew/registry", "", 5000)
+		// r.Execute("docker run -d -p 0.0.0.0:5000:5000 stackbrew/registry")
 	}
 }
 
