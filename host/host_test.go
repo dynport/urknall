@@ -6,37 +6,37 @@ import (
 )
 
 func TestHostCreation(t *testing.T) {
-	h, e := NewHost(HOST_TYPE_SSH)
+	h, e := New(HOST_TYPE_SSH)
 	assert.NotNil(t, h)
 	assert.Nil(t, e)
 
-	h, e = NewHost(HOST_TYPE_DOCKER)
+	h, e = New(HOST_TYPE_DOCKER)
 	assert.NotNil(t, h)
 	assert.Nil(t, e)
 
-	h, e = NewHost(-1)
+	h, e = New(-1)
 	assert.Nil(t, h)
 	assert.Contains(t, e.Error(), "host type must be of the HOST_TYPE_{DOCKER,SSH} const")
 
-	h, e = NewHost(24)
+	h, e = New(24)
 	assert.Nil(t, h)
 	assert.Contains(t, e.Error(), "host type must be of the HOST_TYPE_{DOCKER,SSH} const")
 }
 
 func TestHostTypePredicates(t *testing.T) {
-	h, _ := NewHost(HOST_TYPE_SSH)
+	h, _ := New(HOST_TYPE_SSH)
 
 	assert.True(t, h.IsSshHost())
 	assert.False(t, h.IsDockerHost())
 
-	h, _ = NewHost(HOST_TYPE_DOCKER)
+	h, _ = New(HOST_TYPE_DOCKER)
 
 	assert.True(t, h.IsDockerHost())
 	assert.False(t, h.IsSshHost())
 }
 
 func TestIPAddressHandling(t *testing.T) {
-	h, e := NewHost(HOST_TYPE_SSH)
+	h, e := New(HOST_TYPE_SSH)
 
 	assert.Equal(t, h.GetPublicIPAddress(), "")
 
@@ -52,7 +52,7 @@ func TestIPAddressHandling(t *testing.T) {
 }
 
 func TestUserHandling(t *testing.T) {
-	h, _ := NewHost(HOST_TYPE_SSH)
+	h, _ := New(HOST_TYPE_SSH)
 
 	assert.Equal(t, h.GetUser(), "root")
 	assert.Equal(t, h.IsSudoRequired(), false)

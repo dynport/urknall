@@ -23,7 +23,7 @@ type Host struct {
 }
 
 // Create a new host of the given type.
-func NewHost(hostType HostType) (host *Host, e error) {
+func New(hostType HostType) (host *Host, e error) {
 	if hostType != HOST_TYPE_SSH && hostType != HOST_TYPE_DOCKER {
 		return nil, fmt.Errorf("host type must be of the HOST_TYPE_{DOCKER,SSH} const")
 	}
