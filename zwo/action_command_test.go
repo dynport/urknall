@@ -10,7 +10,7 @@ func TestCommandActionDocker(t *testing.T) {
 	Convey("Given a command", t, func() {
 		rawCmd := "do something"
 		Convey("When the command is converted for docker", func() {
-			h, _ := host.New(host.HOST_TYPE_SSH)
+			h, _ := host.New("127.0.0.1")
 			c := &commandAction{cmd: rawCmd, host: h}
 			v := c.Docker()
 			Convey("The value should be a valid dockerfile line", func() {
@@ -24,7 +24,7 @@ func TestCommandActionLogging(t *testing.T) {
 	Convey("Given a command", t, func() {
 		rawCmd := "do something"
 		Convey("When the command is converted for logging", func() {
-			h, _ := host.New(host.HOST_TYPE_SSH)
+			h, _ := host.New("127.0.0.1")
 			c := &commandAction{cmd: rawCmd, host: h}
 			Convey("When the command has no further settings", func() {
 				Convey("The line should have the COMMAND hint and contain the command", func() {
@@ -56,7 +56,7 @@ func TestCommandActionShell(t *testing.T) {
 	Convey("Given a command", t, func() {
 		rawCmd := "do something"
 		Convey("When the command is converted for shell", func() {
-			h, _ := host.New(host.HOST_TYPE_SSH)
+			h, _ := host.New("127.0.0.1")
 			c := &commandAction{cmd: rawCmd, host: h}
 			Convey("Then without further settings the value should be equal to the source", func() {
 				v := c.Shell()
@@ -65,7 +65,7 @@ func TestCommandActionShell(t *testing.T) {
 
 			Convey("When the command should be run as root (aka no user given)", func() {
 				Convey("When the user for the host is not given", func() {
-					c.host, _ = host.New(host.HOST_TYPE_SSH)
+					c.host, _ = host.New("127.0.0.1")
 					v := c.Shell()
 					Convey("The value should be a valid simple bash command", func() {
 						So(v, ShouldEqual, rawCmd)
@@ -73,7 +73,7 @@ func TestCommandActionShell(t *testing.T) {
 				})
 
 				Convey("When the user for the host is explicitly set to 'root'", func() {
-					c.host, _ = host.New(host.HOST_TYPE_SSH)
+					c.host, _ = host.New("127.0.0.1")
 					c.host.SetUser("root")
 					v := c.Shell()
 					Convey("The value should be valid simple bash command", func() {
@@ -82,7 +82,7 @@ func TestCommandActionShell(t *testing.T) {
 				})
 
 				Convey("When the user for the host is set to something different then 'root'", func() {
-					c.host, _ = host.New(host.HOST_TYPE_SSH)
+					c.host, _ = host.New("127.0.0.1")
 					c.host.SetUser("gfrey")
 					v := c.Shell()
 					Convey("The value should be valid sudo command", func() {
@@ -96,7 +96,7 @@ func TestCommandActionShell(t *testing.T) {
 				c.user = "gfrey"
 
 				Convey("When the user for the host is not given", func() {
-					c.host, _ = host.New(host.HOST_TYPE_SSH)
+					c.host, _ = host.New("127.0.0.1")
 					v := c.Shell()
 					Convey("The value should be a valid bash command run as user 'gfrey'", func() {
 						So(v, ShouldStartWith, "su -l gfrey <<EOF\n")
@@ -105,7 +105,7 @@ func TestCommandActionShell(t *testing.T) {
 				})
 
 				Convey("When the user for the host is explicitly set to 'root'", func() {
-					c.host, _ = host.New(host.HOST_TYPE_SSH)
+					c.host, _ = host.New("127.0.0.1")
 					c.host.SetUser("root")
 					v := c.Shell()
 					Convey("The value should be a valid bash command run as user 'gfrey'", func() {
@@ -115,7 +115,7 @@ func TestCommandActionShell(t *testing.T) {
 				})
 
 				Convey("When the user for the host is set to something different then 'root'", func() {
-					c.host, _ = host.New(host.HOST_TYPE_SSH)
+					c.host, _ = host.New("127.0.0.1")
 					c.host.SetUser("gfrey")
 					v := c.Shell()
 					Convey("The value should be a valid bash command run with sudo and as user 'gfrey'", func() {

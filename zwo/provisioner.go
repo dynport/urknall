@@ -14,16 +14,14 @@ type Provisioner interface {
 }
 
 // Create a new provisioner for the given host.
-func NewProvisioner(h *host.Host) (p Provisioner) {
-	switch {
-	case h.IsSshHost():
-		sc := gossh.New(h.GetPublicIPAddress(), h.GetUser())
-		return &sshClient{client: sc, host: h}
-	case h.IsDockerHost():
-		c := docker_client.New(h.GetPublicIPAddress())
-		return &dockerClient{host: h, client: c}
-	}
-	return nil
+func NewSSHProvisioner(h *host.Host) (p Provisioner) {
+	sc := gossh.New(h.GetIPAddress(), h.GetUser())
+	return &sshClient{client: sc, host: h}
+}
+
+func NewDockerProvisioner(h *host.Host) (p Provisioner) {
+	c := docker_client.New(h.GetIPAddress())
+	return &dockerClient{host: h, client: c}
 }
 
 func getPackageName(pkg Compiler) (name string) {

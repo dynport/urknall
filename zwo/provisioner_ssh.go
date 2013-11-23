@@ -17,7 +17,7 @@ type sshClient struct {
 }
 
 func (sc *sshClient) Provision(packages ...Compiler) (e error) {
-	logger.PushPrefix(sc.host.GetPublicIPAddress())
+	logger.PushPrefix(sc.host.GetIPAddress())
 	defer logger.PopPrefix()
 	defer func() {
 		if r := recover(); r != nil {

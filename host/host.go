@@ -9,55 +9,38 @@ import (
 	"net"
 )
 
-type HostType int
-
-const (
-	HOST_TYPE_DOCKER HostType = iota // Host is a docker image.
-	HOST_TYPE_SSH    HostType = iota // Host is a machine accessible using SSH.
-)
-
 type Host struct {
-	hostType HostType // What executor should be used (SSH or Docker)?
-	publicIP net.IP   // Host's IP address used to provision the system.
-	user     string   // User used to log in.
+	ip   net.IP // Host's IP address used to provision the system.
+	user string // User used to log in.
 }
 
-// Create a new host of the given type.
-func New(hostType HostType) (host *Host, e error) {
-	if hostType != HOST_TYPE_SSH && hostType != HOST_TYPE_DOCKER {
-		return nil, fmt.Errorf("host type must be of the HOST_TYPE_{DOCKER,SSH} const")
+func New(ip string) (host *Host, e error) {
+	if ip == "" {
+		return nil, fmt.Errorf("no IP address given")
 	}
-	return &Host{hostType: hostType}, nil
+
+	h := &Host{}
+	e = h.setIPAddress(ip)
+	if e != nil {
+		return nil, e
+	}
+
+	return h, nil
 }
 
-// Returns true if this host is a docker image.
-func (h *Host) IsDockerHost() bool {
-	return h.hostType == HOST_TYPE_DOCKER
-}
-
-// Returns true if this host is accessible using SSH.
-func (h *Host) IsSshHost() bool {
-	return h.hostType == HOST_TYPE_SSH
-}
-
-// Set the public IP of the host.
-//
-// TODO This only makes sense for SSH hosts.
-func (h *Host) SetPublicIPAddress(ip string) (e error) {
+// Set the host's IP address.
+func (h *Host) setIPAddress(ip string) (e error) {
 	parsedIP := net.ParseIP(ip)
 	if parsedIP == nil {
 		return fmt.Errorf("not a valid IP address (either IPv4 or IPv6): %s", ip)
 	}
-	h.publicIP = parsedIP
+	h.ip = parsedIP
 	return nil
 }
 
-// Get the public IP address of the host.
-func (h *Host) GetPublicIPAddress() string {
-	if h.publicIP == nil {
-		return ""
-	}
-	return h.publicIP.String()
+// Get the host's IP address.
+func (h *Host) GetIPAddress() string {
+	return h.ip.String()
 }
 
 // Set the user used to access the host. If none is given the 'root' account is as default.
