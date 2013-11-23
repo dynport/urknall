@@ -19,39 +19,60 @@ type sshClient struct {
 func (sc *sshClient) Provision(packages ...Compiler) (e error) {
 	logger.PushPrefix(sc.host.GetIPAddress())
 	defer logger.PopPrefix()
-	defer func() {
-		if r := recover(); r != nil {
-			var ok bool
-			e, ok = r.(error)
-			if !ok {
-				e = fmt.Errorf("failed to compile: %v", r)
-			}
-			logger.Info(e.Error())
-			logger.Debug(string(debug.Stack()))
-		}
-	}()
+
 	if packages == nil || len(packages) == 0 {
 		e := fmt.Errorf("compilables must be given")
 		logger.Errorf(e.Error())
 		return e
 	}
 
-	for _, pkg := range packages {
+	runLists, e := sc.precompileRunlists(packages...)
+	if e != nil {
+		return e
+	}
+
+	return sc.provisionRunlists(runLists)
+}
+
+func (sc *sshClient) precompileRunlists(packages ...Compiler) (runLists []*Runlist, e error) {
+	defer func() {
+		if r := recover(); r != nil {
+			var ok bool
+			e, ok = r.(error)
+			if !ok {
+				e = fmt.Errorf("failed to precompile package: %v", r)
+			}
+			logger.Info(e.Error())
+			logger.Debug(string(debug.Stack()))
+		}
+	}()
+
+	runLists = make([]*Runlist, 0, len(packages))
+
+	for _, pkg := range packages { // Precompile runlists.
 		pkgName := getPackageName(pkg)
-		logger.PushPrefix(padToFixedLength(pkgName, 15))
 
 		rl := &Runlist{host: sc.host}
 		rl.setConfig(pkg)
 		rl.setName(pkgName)
 		pkg.Compile(rl)
 
-		if e = sc.provision(rl); e != nil {
+		runLists = append(runLists, rl)
+	}
+
+	return runLists, nil
+}
+
+func (sc *sshClient) provisionRunlists(runLists []*Runlist) (e error) {
+	for i := range runLists {
+		rl := runLists[i]
+		logger.PushPrefix(padToFixedLength(rl.getName(), 15))
+		if e = sc.provision(runLists[i]); e != nil {
 			logger.Errorf("failed to provision: %s", e.Error())
 			return e
 		}
 		logger.PopPrefix()
 	}
-
 	return nil
 }
 
@@ -166,7 +187,7 @@ func (sc *sshClient) writeChecksumFile(checksumFile string, failed bool, logMsg 
 		host:    sc.host}
 
 	if _, e := sc.client.Execute(c.Shell()); e != nil {
-		panic(fmt.Sprintf("failed to write checksum file: ", e.Error()))
+		panic(fmt.Sprintf("failed to write checksum file: %s", e.Error()))
 	}
 }
 
