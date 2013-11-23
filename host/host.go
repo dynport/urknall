@@ -19,7 +19,6 @@ const (
 type Host struct {
 	hostType HostType // What executor should be used (SSH or Docker)?
 	publicIP net.IP   // Host's IP address used to provision the system.
-	vpnIP    net.IP   // Host's private IP address.
 	user     string   // User used to log in.
 }
 
@@ -59,26 +58,6 @@ func (h *Host) GetPublicIPAddress() string {
 		return ""
 	}
 	return h.publicIP.String()
-}
-
-// Set the IP of the host inside a VPN.
-//
-// TODO This only makes sense for SSH hosts.
-func (h *Host) SetVpnIPAddress(ip string) (e error) {
-	parsedIP := net.ParseIP(ip)
-	if parsedIP == nil {
-		return fmt.Errorf("not a valid IP address (either IPv4 or IPv6): %s", ip)
-	}
-	h.vpnIP = parsedIP
-	return nil
-}
-
-// Get the VPN IP address of the host.
-func (h *Host) GetVpnIPAddress() string {
-	if h.vpnIP == nil {
-		return ""
-	}
-	return h.vpnIP.String()
 }
 
 // Set the user used to access the host. If none is given the 'root' account is as default.
