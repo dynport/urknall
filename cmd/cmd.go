@@ -7,10 +7,12 @@ import (
 	"strings"
 )
 
+// Upgrade the package cache and update the installed packages.
 func UpdatePackages() string {
 	return And("apt-get update", "DEBIAN_FRONTEND=noninteractive apt-get upgrade -y")
 }
 
+// Install the given packages.
 func InstallPackages(pkgs ...string) string {
 	if len(pkgs) == 0 {
 		panic("empty package list given")
@@ -18,6 +20,7 @@ func InstallPackages(pkgs ...string) string {
 	return fmt.Sprintf("DEBIAN_FRONTEND=noninteractive apt-get install -y %s", strings.Join(pkgs, " "))
 }
 
+// Combine the given commands with "and" (all must succeed).
 func And(cmds ...string) string {
 	if len(cmds) == 0 {
 		panic("empty list of commands given")
@@ -28,6 +31,7 @@ func And(cmds ...string) string {
 	return fmt.Sprintf("{ %s; }", strings.Join(cmds, " && "))
 }
 
+// Combine the given commands with "or" (try one after one, till the first works).
 func Or(cmds ...string) string {
 	if len(cmds) == 0 {
 		panic("empty list of commands given")
@@ -38,6 +42,7 @@ func Or(cmds ...string) string {
 	return fmt.Sprintf("{ %s; }", strings.Join(cmds, " || "))
 }
 
+// Create the given directory with the owner and file permissions set accordingly.
 func Mkdir(path, owner string, mode os.FileMode) string {
 	if path == "" {
 		panic("empty path given to mkdir")
@@ -55,6 +60,7 @@ func Mkdir(path, owner string, mode os.FileMode) string {
 	return And(cmds...)
 }
 
+// If the tests succeeds run the given command (see "man test" for test syntax).
 func If(test, command string) string {
 	if test == "" {
 		panic("empty test given")
@@ -67,6 +73,7 @@ func If(test, command string) string {
 	return fmt.Sprintf("{ [[ %s ]] && %s; }", test, command)
 }
 
+// If the tests does not succeed run the given command (see "man test" for test syntax).
 func IfNot(test, command string) string {
 	if test == "" {
 		panic("empty test given")
@@ -87,6 +94,7 @@ func download(url string) string {
 	return cmd
 }
 
+// Downlowad the URL to the destination with owner and permissions set accordingly.
 func DownloadToFile(url, destination, owner string, mode os.FileMode) string {
 	cmds := []string{}
 	cmds = append(cmds, download(url))
@@ -106,6 +114,7 @@ func DownloadToFile(url, destination, owner string, mode os.FileMode) string {
 	return And(cmds...)
 }
 
+// Download the URL and extract in the given directory.
 func DownloadAndExtract(url, targetDir string) string {
 	return And(
 		download(url),
