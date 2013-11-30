@@ -33,7 +33,9 @@ func (sc *sshClient) Provision(packages ...Compiler) (e error) {
 	}
 
 	runLists := make([]*Runlist, 0, len(pkgRunLists)+2)
+	runLists = append(runLists, createHostPreRunlist(sc.host))
 	runLists = append(runLists, pkgRunLists...)
+	runLists = append(runLists, createHostPostRunlist(sc.host))
 
 	return provisionRunlists(runLists, sc.provision)
 }
