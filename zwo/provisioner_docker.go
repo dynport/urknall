@@ -2,94 +2,92 @@ package zwo
 
 import (
 	"fmt"
-	"github.com/dynport/dpgtk/docker_client"
+	"github.com/dynport/dgtk/godocker"
+	"github.com/dynport/gologger"
 	"github.com/dynport/zwo/host"
-	"runtime/debug"
 	"strings"
 )
 
 type dockerClient struct {
-	baseImage string
-	tag       string
-	host      *host.Host
-	client    *docker_client.Client
-	image     *docker_client.Image
+	baseImage  string
+	tag        string
+	host       *host.Host
+	dockerHost *godocker.DockerHost
+
+	dockerfile string
 }
 
-func (dc *dockerClient) Provision(packages ...Compiler) (e error) {
-	if packages == nil || len(packages) != 1 {
-		return fmt.Errorf("the zwo docker client only supports a single package")
-	}
-
-	pkg := packages[0]
-	rl := &Runlist{host: dc.host}
-	rl.setConfig(pkg)
-	rl.setName(getPackageName(pkg))
-
-	pkg.Compile(rl)
-	defer func() {
-		if r := recover(); r != nil {
-			var ok bool
-			e, ok = r.(error)
-			if !ok {
-				e = fmt.Errorf("failed to compile: %v", r)
-			}
-			logger.Info(e.Error())
-			logger.Debug(string(debug.Stack()))
-		}
-	}()
-
-	if len(rl.actions) >= 42 {
-		return fmt.Errorf("docker only supports runlists with up to 42 commands (found %d)", len(rl.actions))
-	}
-
-	if e = dc.provision(rl); e != nil {
-		return fmt.Errorf("failed to provision: %s", e.Error())
-	}
-
-	return nil
-}
-
-func (dc *dockerClient) provision(rl *Runlist) (e error) {
-	dockerFile := dc.buildDockerFile(rl)
-
-	imageId, e := dc.client.Build(dc.tag, dockerFile, func(s string) { logger.Info(s) })
+func newDockerClient(host *host.Host) (client *dockerClient, e error) {
+	dh, e := godocker.NewDockerHostViaTunnel(host.IPAddress(), host.User())
 	if e != nil {
-		return e
+		return nil, e
 	}
-
-	dc.image = &docker_client.Image{Client: dc.client, Id: imageId}
-
-	return dc.tagImage()
+	if host.Docker.WithRegistry {
+		dh.Registry = host.IPAddress() + ":5000"
+	}
+	return &dockerClient{host: host, dockerHost: dh}, nil
 }
 
-func (dc *dockerClient) buildDockerFile(rl *Runlist) string {
+func (dc *dockerClient) CreateImage(tag string, packages ...Compiler) (imageId string, e error) {
+	logger.PushPrefix(dc.host.IPAddress())
+	defer logger.PopPrefix()
+
+	if packages == nil || len(packages) == 0 {
+		e := fmt.Errorf("compilables must be given")
+		logger.Errorf(e.Error())
+		return "", e
+	}
+
+	if tag != "" {
+		if !strings.Contains(tag, "/") && dc.dockerHost.Registry != "" {
+			tag = dc.dockerHost.Registry + "/" + tag
+		}
+		dc.tag = tag
+	}
+
+	runLists, e := precompileRunlists(dc.host, packages...)
+	if e != nil {
+		return "", e
+	}
+
+	aLen := countActions(runLists)
+	if aLen >= 42 {
+		return "", fmt.Errorf("docker only supports runlists with up to 42 commands (found %d)", aLen)
+	}
+
 	if dc.baseImage == "" {
 		dc.baseImage = "ubuntu"
 	}
-	lines := []string{"FROM " + dc.baseImage}
-	for i := range rl.actions {
-		lines = append(lines, rl.actions[i].Docker())
+	dc.dockerfile = fmt.Sprintf("FROM %s\n", dc.baseImage)
+
+	// Provisioning the runlist actually means building a dockerfile.
+	if e = provisionRunlists(runLists, dc.buildDockerFile); e != nil {
+		return "", e
 	}
-	return strings.Join(lines, "\n")
+
+	// Use the generated dockerfile to build the image.
+	imageId, e = dc.dockerHost.BuildImage(dc.dockerfile, dc.tag, logger.Writer(gologger.DEBUG))
+	if e != nil {
+		return "", e
+	}
+
+	if dc.tag != "" {
+		e = dc.dockerHost.PushImage(dc.tag, nil)
+	}
+
+	return imageId, e
 }
 
-func (dc *dockerClient) tagImage() (e error) {
-	if dc.tag != "" {
-		dc.image.Repository = dc.tag
-		e = dc.image.FetchDetails()
-		if e != nil {
-			return e
-		}
-		created, e := dc.image.ImageDetails.CreatedAt()
-		if e != nil {
-			return e
-		}
-		e = dc.client.Tag(dc.image.Id, dc.tag, created.UTC().Format("2006-01-02T150405"))
-		if e != nil {
-			return e
-		}
-		return dc.client.Tag(dc.image.Id, dc.tag, "latest")
+func countActions(runLists []*Runlist) (i int) {
+	for idx := range runLists {
+		i += len(runLists[idx].actions)
+	}
+	return i
+}
+
+func (dc *dockerClient) buildDockerFile(rl *Runlist) (e error) {
+	for i := range rl.actions {
+		dc.dockerfile += rl.actions[i].Docker() + "\n"
 	}
 	return nil
 }

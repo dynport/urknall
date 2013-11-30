@@ -2,29 +2,70 @@ package zwo
 
 import (
 	"fmt"
-	"github.com/dynport/dpgtk/docker_client"
-	"github.com/dynport/gossh"
 	"github.com/dynport/zwo/host"
-	"strings"
+	"runtime/debug"
 )
 
-// Provisioners are responsible for compiling the given packages into runlists and execute those.
-type Provisioner interface {
-	Provision(packages ...Compiler) (e error)
-}
-
 // Create a new provisioner for the given host.
-func NewSSHProvisioner(h *host.Host) (p Provisioner) {
-	sc := gossh.New(h.GetIPAddress(), h.GetUser())
-	return &sshClient{client: sc, host: h}
+func ProvisionHost(host *host.Host, packages ...Compiler) (e error) {
+	return newSSHClient(host).Provision(packages...)
 }
 
-func NewDockerProvisioner(h *host.Host) (p Provisioner) {
-	c := docker_client.New(h.GetIPAddress())
-	return &dockerClient{host: h, client: c}
+func ProvisionImage(host *host.Host, tag string, packages ...Compiler) (imageId string, e error) {
+	if !host.IsDockerHost() {
+		return "", fmt.Errorf("host %s is not a docker host", host.Hostname())
+	}
+	dc, e := newDockerClient(host)
+	if e != nil {
+		return "", e
+	}
+	return dc.CreateImage(tag, packages...)
 }
 
-func getPackageName(pkg Compiler) (name string) {
-	pkgName := fmt.Sprintf("%T", pkg)
-	return strings.ToLower(pkgName[1:])
+// Precompile the given packages for the given host.
+func precompileRunlists(host *host.Host, packages ...Compiler) (runLists []*Runlist, e error) {
+	defer func() {
+		if r := recover(); r != nil {
+			var ok bool
+			e, ok = r.(error)
+			if !ok {
+				e = fmt.Errorf("failed to precompile package: %v", r)
+			}
+			logger.Info(e.Error())
+			logger.Debug(string(debug.Stack()))
+		}
+	}()
+
+	runLists = make([]*Runlist, 0, len(packages))
+
+	for _, pkg := range packages { // Precompile runlists.
+		pkgName := getPackageName(pkg)
+
+		rl := &Runlist{host: host}
+		rl.setConfig(pkg)
+		rl.setName(pkgName)
+		pkg.Compile(rl)
+
+		runLists = append(runLists, rl)
+		logger.Debugf("Precompiled package %s", pkgName)
+	}
+
+	return runLists, nil
+}
+
+// Provision the given list of runlists.
+func provisionRunlists(runLists []*Runlist, provisionFunc func(*Runlist) error) (e error) {
+	for i := range runLists {
+		rl := runLists[i]
+
+		logger.PushPrefix(padToFixedLength(rl.getName(), 15))
+
+		if e = provisionFunc(runLists[i]); e != nil {
+			logger.Errorf("failed to provision: %s", e.Error())
+			return e
+		}
+
+		logger.PopPrefix()
+	}
+	return nil
 }

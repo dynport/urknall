@@ -7,7 +7,6 @@ import (
 	"github.com/dynport/gossh"
 	"github.com/dynport/zwo/host"
 	"path"
-	"runtime/debug"
 	"strings"
 )
 
@@ -16,64 +15,27 @@ type sshClient struct {
 	host   *host.Host
 }
 
+func newSSHClient(host *host.Host) (client *sshClient) {
+	return &sshClient{host: host, client: gossh.New(host.IPAddress(), host.User())}
+}
+
 func (sc *sshClient) Provision(packages ...Compiler) (e error) {
-	logger.PushPrefix(sc.host.GetIPAddress())
+	logger.PushPrefix(sc.host.IPAddress())
 	defer logger.PopPrefix()
 
 	if packages == nil || len(packages) == 0 {
-		e := fmt.Errorf("compilables must be given")
-		logger.Errorf(e.Error())
-		return e
+		logger.Debug("no packages given; will only provision basic host settings")
 	}
 
-	runLists, e := sc.precompileRunlists(packages...)
+	pkgRunLists, e := precompileRunlists(sc.host, packages...)
 	if e != nil {
 		return e
 	}
 
-	return sc.provisionRunlists(runLists)
-}
+	runLists := make([]*Runlist, 0, len(pkgRunLists)+2)
+	runLists = append(runLists, pkgRunLists...)
 
-func (sc *sshClient) precompileRunlists(packages ...Compiler) (runLists []*Runlist, e error) {
-	defer func() {
-		if r := recover(); r != nil {
-			var ok bool
-			e, ok = r.(error)
-			if !ok {
-				e = fmt.Errorf("failed to precompile package: %v", r)
-			}
-			logger.Info(e.Error())
-			logger.Debug(string(debug.Stack()))
-		}
-	}()
-
-	runLists = make([]*Runlist, 0, len(packages))
-
-	for _, pkg := range packages { // Precompile runlists.
-		pkgName := getPackageName(pkg)
-
-		rl := &Runlist{host: sc.host}
-		rl.setConfig(pkg)
-		rl.setName(pkgName)
-		pkg.Compile(rl)
-
-		runLists = append(runLists, rl)
-	}
-
-	return runLists, nil
-}
-
-func (sc *sshClient) provisionRunlists(runLists []*Runlist) (e error) {
-	for i := range runLists {
-		rl := runLists[i]
-		logger.PushPrefix(padToFixedLength(rl.getName(), 15))
-		if e = sc.provision(runLists[i]); e != nil {
-			logger.Errorf("failed to provision: %s", e.Error())
-			return e
-		}
-		logger.PopPrefix()
-	}
-	return nil
+	return provisionRunlists(runLists, sc.provision)
 }
 
 func (sc *sshClient) provision(rl *Runlist) (e error) {
@@ -90,7 +52,7 @@ func (sc *sshClient) provision(rl *Runlist) (e error) {
 		task := tasks[i]
 		logMsg := task.action.Logging()
 		if _, found := checksumHash[task.checksum]; found { // Task is cached.
-			logger.Infof("[%s] [%.8s] %s", gologger.Colorize(33, "CACHED"), task.checksum, logMsg)
+			logger.Infof("[%s][%.8s]%s", gologger.Colorize(33, "CACHED"), task.checksum, logMsg)
 			delete(checksumHash, task.checksum) // Delete checksums of cached tasks from hash.
 			continue
 		}
@@ -102,7 +64,7 @@ func (sc *sshClient) provision(rl *Runlist) (e error) {
 			checksumHash = make(map[string]struct{})
 		}
 
-		logger.Infof("[%s  ] [%.8s] %s", gologger.Colorize(34, "EXEC"), task.checksum, logMsg)
+		logger.Infof("[%s  ][%.8s] %s", gologger.Colorize(34, "EXEC"), task.checksum, logMsg)
 		if e = sc.runTask(task, checksumDir); e != nil {
 			return e
 		}
@@ -119,7 +81,11 @@ func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
 	// Write the checksum file (containing information on the command run).
 	sc.writeChecksumFile(checksumFile, e != nil, task.action.Logging(), rsp)
 
-	return e
+	if e != nil {
+		return fmt.Errorf("Reason: %s", strings.TrimSpace(rsp.Stderr()))
+	}
+
+	return nil
 }
 
 func (sc *sshClient) executeCommand(cmdRaw string) *gossh.Result {

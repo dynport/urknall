@@ -16,7 +16,17 @@ type Host struct {
 	Paranoid bool // Make the firewall as restrictive as possible.
 	WithVPN  bool // Connect host to a VPN. Assumes 'tun0' as interface.
 
+	Docker *DockerSettings // Make the host a docker container carrier.
+
 	rules []*firewall.Rule // List of rules used for the firewall.
+}
+
+type DockerSettings struct {
+	Version          string
+	WithRegistry     bool
+	WithBuildSupport bool
+	Paranoid         bool
+	Registry         string
 }
 
 // Create a new hosts structure.
@@ -77,6 +87,27 @@ func (h *Host) Interface() string {
 		return "eth0"
 	}
 	return h.iface
+}
+
+// Get docker version.
+func (h *Host) DockerVersion() string {
+	if h.Docker == nil {
+		panic("not a docker host")
+	}
+	if h.Docker.Version == "" {
+		return "0.7.0"
+	}
+	return h.Docker.Version
+}
+
+// Predicate to test whether docker must be installed.
+func (h *Host) IsDockerHost() bool {
+	return h.Docker != nil
+}
+
+// Predicate to test whether host should be used to build docker images.
+func (h *Host) IsDockerBuildHost() bool {
+	return h.Docker != nil && h.Docker.WithBuildSupport
 }
 
 // Predicate to test whether sudo is required (user for the host is not 'root').
