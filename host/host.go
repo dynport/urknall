@@ -3,6 +3,7 @@ package host
 
 import (
 	"fmt"
+	"github.com/dynport/zwo/firewall"
 	"net"
 )
 
@@ -14,6 +15,8 @@ type Host struct {
 
 	Paranoid bool // Make the firewall as restrictive as possible.
 	WithVPN  bool // Connect host to a VPN. Assumes 'tun0' as interface.
+
+	rules []*firewall.Rule // List of rules used for the firewall.
 }
 
 // Create a new hosts structure.
@@ -82,4 +85,18 @@ func (h *Host) IsSudoRequired() bool {
 		return true
 	}
 	return false
+}
+
+// Add a firewall rule.
+func (h *Host) AddFirewallRule(r *firewall.Rule) {
+	h.rules = append(h.rules, r)
+}
+
+// Compile rules into something iptables can digest.
+func (h *Host) FirewallRules() (rules []string) {
+	rules = []string{}
+	for _, rule := range h.rules {
+		rules = append(rules, rule.Convert())
+	}
+	return rules
 }
