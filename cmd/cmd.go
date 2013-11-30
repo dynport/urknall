@@ -43,7 +43,7 @@ func Or(cmds ...string) string {
 }
 
 // Create the given directory with the owner and file permissions set accordingly.
-func Mkdir(path, owner string, mode os.FileMode) string {
+func Mkdir(path, owner string, permissions os.FileMode) string {
 	if path == "" {
 		panic("empty path given to mkdir")
 	}
@@ -53,8 +53,8 @@ func Mkdir(path, owner string, mode os.FileMode) string {
 		cmds = append(cmds, fmt.Sprintf("chown %s %s", owner, path))
 	}
 
-	if mode != 0 {
-		cmds = append(cmds, fmt.Sprintf("chmod %o %s", mode, path))
+	if permissions != 0 {
+		cmds = append(cmds, fmt.Sprintf("chmod %o %s", permissions, path))
 	}
 
 	return And(cmds...)
@@ -95,7 +95,7 @@ func download(url string) string {
 }
 
 // Downlowad the URL to the destination with owner and permissions set accordingly.
-func DownloadToFile(url, destination, owner string, mode os.FileMode) string {
+func DownloadToFile(url, destination, owner string, permissions os.FileMode) string {
 	cmds := []string{}
 	cmds = append(cmds, download(url))
 	cmds = append(cmds, fmt.Sprintf("mv /tmp/downloads/%s %s", filenameFromUrl(url), destination))
@@ -105,10 +105,10 @@ func DownloadToFile(url, destination, owner string, mode os.FileMode) string {
 			If(fmt.Sprintf("-d %s", destination), fmt.Sprintf("chown %s %s/%s", owner, destination, filenameFromUrl(url))),
 			And("echo \"Couldn't determine target\"", "exit 1")))
 	}
-	if mode != 0 {
+	if permissions != 0 {
 		cmds = append(cmds, Or(
-			If(fmt.Sprintf("-f %s", destination), fmt.Sprintf("chmod %o %s", mode, destination)),
-			If(fmt.Sprintf("-d %s", destination), fmt.Sprintf("chmod %o %s/%s", mode, destination, filenameFromUrl(url))),
+			If(fmt.Sprintf("-f %s", destination), fmt.Sprintf("chmod %o %s", permissions, destination)),
+			If(fmt.Sprintf("-d %s", destination), fmt.Sprintf("chmod %o %s/%s", permissions, destination, filenameFromUrl(url))),
 			And("echo \"Couldn't determine target\"", "exit 1")))
 	}
 	return And(cmds...)
