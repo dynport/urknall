@@ -57,18 +57,21 @@ func (rl *Runlist) createCommandForExecute(command string) (c *commandAction) {
 	return &commandAction{cmd: renderedCommand, host: rl.host}
 }
 
-func (rl *Runlist) AddFile(path, assetName, owner string, mode os.FileMode) {
-	if path == "" {
-		panic("no path given")
-	}
-
+func (rl *Runlist) AddAsset(path, assetName, owner string, mode os.FileMode) {
 	asset, e := assets.Get(assetName)
 	if e != nil {
 		panic(fmt.Errorf("error retrieving asset: %s", e.Error()))
 	}
+	rl.AddFile(path, string(asset), owner, mode)
+}
 
-	content := utils.MustRenderTemplate(string(asset), rl.config)
-	rl.actions = append(rl.actions, &fileAction{path: path, content: content, owner: owner, mode: mode, host: rl.host})
+func (rl *Runlist) AddFile(path, content, owner string, mode os.FileMode) {
+	if path == "" {
+		panic("no path given")
+	}
+
+	c := utils.MustRenderTemplate(content, rl.config)
+	rl.actions = append(rl.actions, &fileAction{path: path, content: c, owner: owner, mode: mode, host: rl.host})
 }
 
 func (rl *Runlist) Init(us *goup.Upstart, ds string) {
