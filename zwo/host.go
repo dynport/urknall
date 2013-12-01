@@ -21,6 +21,7 @@ func createHostPreRunlist(h *host.Host) (rl *Runlist) {
 	rl.Execute(InstallPackages("iptables", "ipset"))
 
 	// Write initial set of iptables rules to make sure system is not open during installation.
+	rl.AddAsset("/etc/network/if-pre-up.d/iptables", "fw_upstart.sh", "root", 0744)
 	setupIPTables(rl)
 	installDocker(h, rl)
 
@@ -39,7 +40,7 @@ func createHostPostRunlist(h *host.Host) (rl *Runlist) {
 func setupIPTables(rl *Runlist) {
 	rl.AddAsset("/etc/iptables/rules_ipv4", "fw_rules_ipv4.conf", "root", 0644)
 	rl.AddAsset("/etc/iptables/rules_ipv6", "fw_rules_ipv6.conf", "root", 0644)
-	rl.AddAsset("/etc/network/if-pre-up.d/iptables", "fw_upstart.sh", "root", 0744)
+	rl.Execute("modprobe iptable_filter && modprobe iptable_nat") // here to make sure next command succeeds.
 	rl.Execute("IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables")
 }
 
