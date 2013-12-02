@@ -10,8 +10,7 @@ import (
 	"os"
 )
 
-// A runlist is a container for commands. While those can have arbitrary intent, they should be closely related, for the
-// sake of clarity and reusability.
+// A runlist is a container for commands. Use the following methods to add new commands.
 type Runlist struct {
 	actions []action
 	host    *host.Host
@@ -19,6 +18,7 @@ type Runlist struct {
 	name    string // Name of the compilable.
 }
 
+// Execute the given command as the given user (aka su).
 func (rl *Runlist) ExecuteAsUser(user, command string) {
 	if user == "" || user == "root" {
 		panic(fmt.Errorf("user must be given and not be root (was '%s')", user))
@@ -28,11 +28,13 @@ func (rl *Runlist) ExecuteAsUser(user, command string) {
 	rl.actions = append(rl.actions, cmd)
 }
 
+// Execute the given shell command.
 func (rl *Runlist) Execute(command string) {
 	cmd := rl.createCommandForExecute(command)
 	rl.actions = append(rl.actions, cmd)
 }
 
+// Wait for the given path to appear, with the given timeout.
 func (rl *Runlist) WaitForFile(path string, timeoutInSeconds int) {
 	t := 10 * timeoutInSeconds
 	cmd := fmt.Sprintf(
@@ -41,6 +43,7 @@ func (rl *Runlist) WaitForFile(path string, timeoutInSeconds int) {
 	rl.actions = append(rl.actions, &commandAction{cmd: cmd, host: rl.host})
 }
 
+// Wait for the given unix file socket to appear, with the given timeout.
 func (rl *Runlist) WaitForSocket(path string, timeoutInSeconds int) {
 	t := 10 * timeoutInSeconds
 	cmd := fmt.Sprintf(
@@ -58,6 +61,7 @@ func (rl *Runlist) createCommandForExecute(command string) (c *commandAction) {
 	return &commandAction{cmd: renderedCommand, host: rl.host}
 }
 
+// Add the asset with the given name at the path with owner and permission set accordingly.
 func (rl *Runlist) AddAsset(path, assetName, owner string, mode os.FileMode) {
 	asset, e := assets.Get(assetName)
 	if e != nil {
@@ -66,6 +70,7 @@ func (rl *Runlist) AddAsset(path, assetName, owner string, mode os.FileMode) {
 	rl.AddFile(path, string(asset), owner, mode)
 }
 
+// Add the file wth the given content at the path with owner and permission set accordingly.
 func (rl *Runlist) AddFile(path, content, owner string, mode os.FileMode) {
 	if path == "" {
 		panic("no path given")
@@ -75,6 +80,7 @@ func (rl *Runlist) AddFile(path, content, owner string, mode os.FileMode) {
 	rl.actions = append(rl.actions, &fileAction{path: path, content: c, owner: owner, mode: mode, host: rl.host})
 }
 
+// Create upstart script (or docker start command respectively).
 func (rl *Runlist) Init(us *goup.Upstart, ds string) {
 	if us == nil && ds == "" {
 		panic("neither upstart nor docker run command given")

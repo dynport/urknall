@@ -1,6 +1,6 @@
 // zwo basic package with all the bells and whistles.
 //
-// This package contains the zwo core, i.e. the most essential stuff. Primary goals were an easy to user interface with
+// This package contains the zwo core, i.e. the most essential stuff. Primary goals were an easy to use interface with
 // good support for type errors. There are provisioners that execute actions from a runlist in order to provision the
 // target system.
 //
@@ -17,7 +17,7 @@
 // structure commands. The compile method will be given the runlist to fill with commands (see the base package for
 // example).
 //
-// The provisioner will be given a list packages (entities implementing the 'Compiler' interface), compiles a runlist
+// The provisioner will be given a list of packages (entities implementing the 'Compiler' interface), compiles a runlist
 // for each and will run those on the host to provision, using the required mechanisms depending on the targeted host.
 package zwo
 

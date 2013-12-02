@@ -6,11 +6,13 @@ import (
 	"runtime/debug"
 )
 
-// Create a new provisioner for the given host.
+// Provision the given host with the given packages. This is where zwo's secret leprechauns sit and do their work!
 func ProvisionHost(host *host.Host, packages ...Compiler) (e error) {
 	return newSSHClient(host).Provision(packages...)
 }
 
+// Provision the given packages into a docker container image tagged with the given tag (the according registry will be
+// added automatically). The build will happen on the given host, that must be a docker host with build capability.
 func ProvisionImage(host *host.Host, tag string, packages ...Compiler) (imageId string, e error) {
 	if !host.IsDockerHost() {
 		return "", fmt.Errorf("host %s is not a docker host", host.Hostname())
