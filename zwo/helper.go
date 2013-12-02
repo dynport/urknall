@@ -13,7 +13,7 @@ func padToFixedLength(s string, l int) string {
 	}
 }
 
-func getPackageName(pkg Compiler) (name string) {
+func packageName(pkg Compiler) (name string) {
 	pkgName := fmt.Sprintf("%T", pkg)
 	return strings.ToLower(pkgName[1:])
 }

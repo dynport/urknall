@@ -8,7 +8,7 @@ import (
 
 // Provision the given host with the given packages. This is where zwo's secret leprechauns sit and do their work!
 func ProvisionHost(host *host.Host, packages ...Compiler) (e error) {
-	return newSSHClient(host).Provision(packages...)
+	return newSSHClient(host).provisionHost(packages...)
 }
 
 // Provision the given packages into a docker container image tagged with the given tag (the according registry will be
@@ -21,7 +21,7 @@ func ProvisionImage(host *host.Host, tag string, packages ...Compiler) (imageId 
 	if e != nil {
 		return "", e
 	}
-	return dc.CreateImage(tag, packages...)
+	return dc.provisionImage(tag, packages...)
 }
 
 // Precompile the given packages for the given host.
@@ -41,7 +41,7 @@ func precompileRunlists(host *host.Host, packages ...Compiler) (runLists []*Runl
 	runLists = make([]*Runlist, 0, len(packages))
 
 	for _, pkg := range packages { // Precompile runlists.
-		pkgName := getPackageName(pkg)
+		pkgName := packageName(pkg)
 
 		rl := &Runlist{host: host}
 		rl.setConfig(pkg)

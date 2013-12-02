@@ -44,7 +44,7 @@ func (rl *Runlist) WaitForFile(path string, timeoutInSeconds int) {
 }
 
 // Wait for the given unix file socket to appear, with the given timeout.
-func (rl *Runlist) WaitForSocket(path string, timeoutInSeconds int) {
+func (rl *Runlist) WaitForUnixSocket(path string, timeoutInSeconds int) {
 	t := 10 * timeoutInSeconds
 	cmd := fmt.Sprintf(
 		"x=0; while ((x<%d)) && ! { netstat -lx | grep \"%s$\"; }; do x=\\$((x+1)); sleep .1; done && { ((x<%d)) || { echo \"socket %s did not appear\" 1>&2 && exit 1; }; }",
