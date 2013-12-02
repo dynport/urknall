@@ -2,7 +2,7 @@ package zwo
 
 import (
 	"fmt"
-	"github.com/dynport/dgtk/godocker"
+	"github.com/dynport/dgtk/dockerclient"
 	"github.com/dynport/gologger"
 	"github.com/dynport/zwo/host"
 	"strings"
@@ -12,13 +12,13 @@ type dockerClient struct {
 	baseImage  string
 	tag        string
 	host       *host.Host
-	dockerHost *godocker.DockerHost
+	dockerHost *dockerclient.DockerHost
 
 	dockerfile string
 }
 
 func newDockerClient(host *host.Host) (client *dockerClient, e error) {
-	dh, e := godocker.NewDockerHostViaTunnel(host.IPAddress(), host.User())
+	dh, e := dockerclient.NewViaTunnel(host.IPAddress(), host.User())
 	if e != nil {
 		return nil, e
 	}
