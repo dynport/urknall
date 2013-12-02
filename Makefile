@@ -20,8 +20,8 @@ clean:
 	@rm -f assets/assets.go example/main
 
 coverage: 
-	$(eval $@_TMP := $(shell mktemp -t coverage))
-	$(eval $@_COLLECT_TMP := $(shell mktemp -t coverage))
+	$(eval $@_TMP := $(shell mktemp -t coverage.XXX))
+	$(eval $@_COLLECT_TMP := $(shell mktemp -t coverage.XXX))
 	@echo "mode: set" > $($@_COLLECT_TMP)
 	@for package in $(PACKAGES); do \
 		go test -coverprofile=$($@_TMP) $$package && awk 'NR > 1' $($@_TMP) >> $($@_COLLECT_TMP); \
@@ -29,6 +29,19 @@ coverage:
 	done
 	@[ -s $($@_COLLECT_TMP) ] && go tool cover -func=$($@_COLLECT_TMP)
 	@rm -f $($@_TMP) $($@_COLLECT_TMP)
+
+coverage-web:
+	$(eval $@_TMP := $(shell mktemp -t coverage.XXX))
+	$(eval $@_COLLECT_TMP := $(shell mktemp -t coverage.XXX))
+	@echo "mode: set" > $($@_COLLECT_TMP)
+	@for package in $(PACKAGES); do \
+		go test -coverprofile=$($@_TMP) $$package && awk 'NR > 1' $($@_TMP) >> $($@_COLLECT_TMP); \
+		echo "\c" > $($@_TMP); \
+	done
+	@[ -s $($@_COLLECT_TMP) ] && go tool cover -html=$($@_COLLECT_TMP)
+	@rm -f $($@_TMP) $($@_COLLECT_TMP)
+
+
 
 deps:
 	@for package in $(EXTRA_DEPS) $(DEPS); do \
@@ -54,7 +67,7 @@ help:
 
 test: build
 	@go vet $(PACKAGES)
-	@go test -v $(PACKAGES)
+	@go test $(PACKAGES)
 
 assets/assets.go: $(ASSETS)
 	@goassets ./assets > /dev/null 2>&1
