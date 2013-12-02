@@ -3,7 +3,6 @@ package zwo
 import (
 	"fmt"
 	"github.com/dynport/dgtk/dockerclient"
-	"github.com/dynport/gologger"
 	"github.com/dynport/zwo/host"
 	"strings"
 )
@@ -66,13 +65,13 @@ func (dc *dockerClient) provisionImage(tag string, packages ...Compiler) (imageI
 	}
 
 	// Use the generated dockerfile to build the image.
-	imageId, e = dc.dockerHost.BuildImage(dc.dockerfile, dc.tag, logger.Writer(gologger.DEBUG))
+	imageId, e = dc.dockerHost.BuildImage(dc.dockerfile, dc.tag)
 	if e != nil {
 		return "", e
 	}
 
 	if dc.tag != "" {
-		e = dc.dockerHost.PushImage(dc.tag, nil)
+		e = dc.dockerHost.PushImage(dc.tag)
 	}
 
 	return imageId, e
