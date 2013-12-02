@@ -52,7 +52,7 @@ func New(ip, user, hostname string) (host *Host, e error) {
 func (h *Host) setIPAddress(ip string) (e error) {
 	parsedIP := net.ParseIP(ip)
 	if parsedIP == nil {
-		return fmt.Errorf("not a valid IP address (either IPv4 or IPv6): %s", ip)
+		return fmt.Errorf("not a valid IP address (must be either IPv4 or IPv6): %s", ip)
 	}
 	h.ip = parsedIP
 	return nil

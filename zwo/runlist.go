@@ -65,7 +65,7 @@ func (rl *Runlist) createCommandForExecute(command string) (c *commandAction) {
 func (rl *Runlist) AddAsset(path, assetName, owner string, mode os.FileMode) {
 	asset, e := assets.Get(assetName)
 	if e != nil {
-		panic(fmt.Errorf("error retrieving asset: %s", e.Error()))
+		panic(fmt.Errorf("error retrieving asset '%s': %s", assetName, e.Error()))
 	}
 	rl.AddFile(path, string(asset), owner, mode)
 }

@@ -6,6 +6,18 @@ import (
 	"testing"
 )
 
+func TestUpdatePackagesCommand(t *testing.T) {
+	Convey("When the UpdatePackages command is called", t, func() {
+		cmd := UpdatePackages()
+		Convey("Then the command must contain apt-get update", func() {
+			So(cmd, ShouldContainSubstring, "apt-get update")
+		})
+		Convey("Then the command must contain apt-get upgrade", func() {
+			So(cmd, ShouldContainSubstring, "apt-get upgrade")
+		})
+	})
+}
+
 func TestInstallPackagesCommand(t *testing.T) {
 	Convey("When the InstallPackages command is called without any packages given", t, func() {
 		Convey("Then the function panics", func() {
@@ -120,6 +132,164 @@ func TestMkdirCommand(t *testing.T) {
 				c := Mkdir(path, owner, mode)
 				So(c, ShouldContainSubstring, "chown gfrey /tmp/foo")
 				So(c, ShouldContainSubstring, "chmod 755 /tmp/foo")
+			})
+		})
+	})
+}
+
+func TestIfCommand(t *testing.T) {
+	Convey("When the If command is called without a test", t, func() {
+		f := func() { If("", "") }
+		Convey("Then the function panics", func() {
+			So(f, ShouldPanicWith, "empty test given")
+		})
+	})
+
+	Convey("When the If command is called with a test", t, func() {
+		test := "-d /tmp"
+		Convey("When the If command is called without a command", func() {
+			f := func() { If(test, "") }
+			Convey("Then the function panics", func() {
+				So(f, ShouldPanicWith, "empty command given")
+			})
+		})
+	})
+
+	Convey("Given the test '-d /tmp'", t, func() {
+		test := "-d /tmp"
+		Convey("Given the command 'echo \"true\"'", func() {
+			cmd := "echo \"true\""
+			Convey("Then the resulting command will contain both", func() {
+				c := If(test, cmd)
+				So(c, ShouldContainSubstring, test)
+				So(c, ShouldContainSubstring, cmd)
+			})
+		})
+	})
+}
+
+func TestIfNotCommand(t *testing.T) {
+	Convey("When the IfNot command is called without a test", t, func() {
+		f := func() { IfNot("", "") }
+		Convey("Then the function panics", func() {
+			So(f, ShouldPanicWith, "empty test given")
+		})
+	})
+
+	Convey("When the IfNot command is called with a test", t, func() {
+		test := "-d /tmp"
+		Convey("When the IfNot command is called without a command", func() {
+			f := func() { IfNot(test, "") }
+			Convey("Then the function panics", func() {
+				So(f, ShouldPanicWith, "empty command given")
+			})
+		})
+	})
+
+	Convey("Given the test '-d /tmp'", t, func() {
+		test := "-d /tmp"
+		Convey("Given the command 'echo \"true\"'", func() {
+			cmd := "echo \"true\""
+			Convey("When the IfNot command is called with those", func() {
+				c := IfNot(test, cmd)
+				Convey("Then the result must contain both", func() {
+					So(c, ShouldContainSubstring, test)
+					So(c, ShouldContainSubstring, cmd)
+				})
+			})
+		})
+	})
+}
+
+func TestDownloadToFileCommand(t *testing.T) {
+	Convey("Given an empty URL", t, func() {
+		url := ""
+		destination := ""
+		Convey("When the DownloadToFile method is called", func() {
+			f := func() { DownloadToFile(url, destination, "", 0) }
+			Convey("Then the DownloadToFile method should panic", func() {
+				So(f, ShouldPanicWith, "empty url given")
+			})
+		})
+	})
+
+	Convey("Given an url, but an empty destination", t, func() {
+		url := "http://example.com/foobar.gz"
+		destination := ""
+		Convey("When the DownloadToFile method is called", func() {
+			f := func() { DownloadToFile(url, destination, "", 0) }
+			Convey("Then the DownloadToFile method should panic", func() {
+				So(f, ShouldPanicWith, "empty destination given")
+			})
+		})
+	})
+
+	Convey("Given an url and an destination", t, func() {
+		url := "http://example.com/foobar.gz"
+		destination := "/tmp"
+		Convey("When the DownloadToFile method is called", func() {
+			c := DownloadToFile(url, destination, "", 0)
+			Convey("Then the result must contain a download command", func() {
+				So(c, ShouldContainSubstring, "curl -SsfLO "+url)
+			})
+			Convey("Then the result must contain a move command", func() {
+				So(c, ShouldContainSubstring, "mv /tmp/downloads/foobar.gz "+destination)
+			})
+		})
+		Convey("Given an owner different from root", func() {
+			owner := "gfrey"
+			Convey("When the DownloadToFile method is called", func() {
+				c := DownloadToFile(url, destination, owner, 0)
+				Convey("Then the result must contain a chown command", func() {
+					So(c, ShouldContainSubstring, "chown gfrey /tmp/foobar.gz")
+				})
+			})
+		})
+		Convey("Given an file permission different from 0", func() {
+			permissions := os.FileMode(0644)
+			Convey("When the DownloadToFile method is called", func() {
+				c := DownloadToFile(url, destination, "", permissions)
+				Convey("Then the result must contain a chmod command", func() {
+					So(c, ShouldContainSubstring, "chmod 644 /tmp/foobar.gz")
+				})
+			})
+		})
+	})
+}
+
+func TestDownloadAndExtractComamnd(t *testing.T) {
+	Convey("Given an empty URL", t, func() {
+		url := ""
+		targetDir := ""
+		Convey("When the DownloadAndExtract method is called", func() {
+			f := func() { DownloadAndExtract(url, targetDir) }
+			Convey("Then the DownloadAndExtract method should panic", func() {
+				So(f, ShouldPanicWith, "empty url given")
+			})
+		})
+	})
+
+	Convey("Given an URL but an empty target directory", t, func() {
+		url := "http://example.com/foobar.tgz"
+		targetDir := ""
+		Convey("When the DownloadAndExtract method is called", func() {
+			f := func() { DownloadAndExtract(url, targetDir) }
+			Convey("Then the DownloadAndExtract method should panic", func() {
+				So(f, ShouldPanicWith, "empty target directory given")
+			})
+		})
+	})
+
+	Convey("Given an URL but an empty target directory", t, func() {
+		url := "http://example.com/foobar.tgz"
+		targetDir := "/tmp/foobar"
+		Convey("When the DownloadAndExtract method is called", func() {
+			c := DownloadAndExtract(url, targetDir)
+			Convey("Then the result must contain a download command", func() {
+				So(c, ShouldContainSubstring, "curl -SsfLO "+url)
+			})
+			Convey("Then the result must contain an extract command", func() {
+				So(c, ShouldContainSubstring, "tar xvfz /tmp/downloads/foobar.tgz")
 			})
 		})
 	})

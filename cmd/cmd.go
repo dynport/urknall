@@ -89,6 +89,9 @@ func IfNot(test, command string) string {
 }
 
 func download(url string) string {
+	if url == "" {
+		panic("empty url given")
+	}
 	cmd := And(
 		"mkdir -p /tmp/downloads",
 		"cd /tmp/downloads",
@@ -100,8 +103,13 @@ func download(url string) string {
 func DownloadToFile(url, destination, owner string, permissions os.FileMode) string {
 	cmds := []string{}
 	cmds = append(cmds, download(url))
+
+	if destination == "" {
+		panic("empty destination given")
+	}
 	cmds = append(cmds, fmt.Sprintf("mv /tmp/downloads/%s %s", filenameFromUrl(url), destination))
-	if owner != "" || owner != "root" {
+
+	if owner != "" && owner != "root" {
 		cmds = append(cmds, Or(
 			If(fmt.Sprintf("-f %s", destination), fmt.Sprintf("chown %s %s", owner, destination)),
 			If(fmt.Sprintf("-d %s", destination), fmt.Sprintf("chown %s %s/%s", owner, destination, filenameFromUrl(url))),
@@ -118,8 +126,14 @@ func DownloadToFile(url, destination, owner string, permissions os.FileMode) str
 
 // Download the URL and extract in the given directory.
 func DownloadAndExtract(url, targetDir string) string {
+	downloadCmd := download(url)
+
+	if targetDir == "" {
+		panic("empty target directory given")
+	}
+
 	return And(
-		download(url),
+		downloadCmd,
 		If(fmt.Sprintf("! -d %s", targetDir), Mkdir(targetDir, "", 0)),
 		fmt.Sprintf("cd %s", targetDir),
 		fmt.Sprintf("tar xvfz /tmp/downloads/%s", filenameFromUrl(url)))

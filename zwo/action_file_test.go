@@ -10,7 +10,7 @@ import (
 func TestAddFileForLogging(t *testing.T) {
 
 	Convey("Given a basic file action with content being a single line", t, func() {
-		h, _ := host.New("127.0.0.1")
+		h, _ := host.New("127.0.0.1", "", "")
 		fAct := fileAction{
 			host:    h,
 			content: "something",
@@ -24,8 +24,7 @@ func TestAddFileForLogging(t *testing.T) {
 	})
 
 	Convey("Given a file action with sudo required", t, func() {
-		h, _ := host.New("127.0.0.1")
-		h.SetUser("gfrey")
+		h, _ := host.New("127.0.0.1", "gfrey", "")
 		fAct := fileAction{
 			host:    h,
 			content: "something",
@@ -39,7 +38,7 @@ func TestAddFileForLogging(t *testing.T) {
 	})
 
 	Convey("Given a file action with different owner", t, func() {
-		h, _ := host.New("127.0.0.1")
+		h, _ := host.New("127.0.0.1", "", "")
 		fAct := fileAction{
 			host:    h,
 			content: "something",
@@ -54,7 +53,7 @@ func TestAddFileForLogging(t *testing.T) {
 	})
 
 	Convey("Given a file action with permissions", t, func() {
-		h, _ := host.New("127.0.0.1")
+		h, _ := host.New("127.0.0.1", "", "")
 		fAct := fileAction{
 			host:    h,
 			content: "something",
@@ -69,7 +68,7 @@ func TestAddFileForLogging(t *testing.T) {
 	})
 
 	Convey("Given a file action with long content", t, func() {
-		h, _ := host.New("127.0.0.1")
+		h, _ := host.New("127.0.0.1", "", "")
 		fAct := fileAction{
 			host:    h,
 			content: "123456789.123456789.123456789.123456789.123456789.123456789.",
@@ -85,7 +84,7 @@ func TestAddFileForLogging(t *testing.T) {
 }
 
 func TestAddFileForDocker(t *testing.T) {
-	h, _ := host.New("127.0.0.1")
+	h, _ := host.New("127.0.0.1", "", "")
 
 	Convey("Given a basic file action with content being a single line", t, func() {
 		fAct := fileAction{
@@ -102,7 +101,7 @@ func TestAddFileForDocker(t *testing.T) {
 }
 
 func TestAddFileForShell(t *testing.T) {
-	h, _ := host.New("127.0.0.1")
+	h, _ := host.New("127.0.0.1", "", "")
 
 	rawContent := "something"
 	zippedContent := `H4sIAAAJbogA/yrOz00tycjMSwcAAAD//wEAAP//+zHaCQkAAAA=`
