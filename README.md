@@ -1,10 +1,35 @@
-zwo
-===
+# zwo
 Version 2
 
+
 ## Provisioner
-There are different provisioners depending on what kind of system should be provisioned. Currently supported are SSH and
-Docker. The following subsections will discuss certain requirements and constraints.
+The main provisioner is using SSH to connect to the host in question and run the required actions. There is one other
+provisioner though, that reuses the packages (collections of commands) and provisions docker container images.
+
+
+## Hosts
+Hosts are the basic structure zwo works with. A host is a target if provisioned itself, but could also be the build
+environment for docker container images (and host those in a private registry).
+
+
+## Packages
+Packages are the entities of zwo, that allow to have structure and modularity in the stuff provisioned to hosts. While
+it would be totally be possible to just write a list of commands to a host, that wouldn't be easy to manage, maintain
+and reuse. Packages should be as small as possible (like providing the commands to set up one programm or service), but
+as large as necessary (there is no sense in putting each and every command into a separate package).
+
+Packages have two purposes: one the one hand they are the reusable container for configuration (what version of ruby
+should be installed for example), on the other hand they modify the internal datastructure `Runlist`. The latter is done
+implementing the `Compiler` interface. The required method `Compile` is given such a Runlist that can be filled with
+commands. During provisioning these commands are first compiled (taking the configuration of the package and host into
+account) and then executed. Albeit there is a cache, that will prevent commands from being executed, as long as all
+predecessor are unchanged (if a command needs to be exeucted as it changed compared to the previous run, all successors
+are executed too).
+
+
+## Requirements
+The following subsections should be taken into account when provisioning systems.
+
 
 ### SSH
 Some debian systems don't have a root account you can directly log on too, but require to use sudo. This is kind of
@@ -18,6 +43,12 @@ There are some requirements though. All administrators must be in the sudoers gr
 configured to not
 ask for passwords. This can be done editing the sudoers file (use the `sudo visudo` command to get there). The following
 line should be modified:
-   %sudo ALL=(ALL:ALL) ALL
-   to be like
-      %sudo ALL=(ALL:ALL) NOPASSWD:ALL
+	%sudo ALL=(ALL:ALL) ALL
+to be like
+	%sudo ALL=(ALL:ALL) NOPASSWD:ALL
+
+
+### Docker Images
+Building docker container images requires a host that is running docker and has the build flag set. This is required to
+set some firewall rules to make the internet (where base images will be loaded for example) accessible.
+

@@ -1,3 +1,4 @@
+// Util functions that don't fit anywhere else.
 package utils
 
 import (
