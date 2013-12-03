@@ -2,6 +2,7 @@ package zwo
 
 import (
 	"fmt"
+	"github.com/dynport/gologger"
 	"github.com/dynport/zwo/host"
 	"runtime/debug"
 )
@@ -9,6 +10,14 @@ import (
 // Provision the given host with the given packages. This is where zwo's secret leprechauns sit and do their work!
 func ProvisionHost(host *host.Host, packages ...Compiler) (e error) {
 	return newSSHClient(host).provisionHost(packages...)
+}
+
+func ProvisionHostDryrun(host *host.Host, packages ...Compiler) (e error) {
+	logger.PushPrefix(gologger.Colorize(226, "DRYRUN"))
+	defer logger.PopPrefix()
+	sc := newSSHClient(host)
+	sc.dryrun = true
+	return sc.provisionHost(packages...)
 }
 
 // Provision the given packages into a docker container image tagged with the given tag (the according registry will be

@@ -11,6 +11,7 @@ import (
 )
 
 type sshClient struct {
+	dryrun bool
 	client *gossh.Client
 	host   *host.Host
 }
@@ -76,6 +77,10 @@ func (sc *sshClient) provision(rl *Runlist) (e error) {
 }
 
 func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
+	if sc.dryrun {
+		return nil
+	}
+
 	checksumFile := fmt.Sprintf("%s/%s", checksumDir, task.checksum)
 
 	rsp, e := sc.client.Execute(task.action.Shell())
@@ -129,9 +134,13 @@ func (sc *sshClient) cleanUpRemainingCachedEntries(checksumDir string, checksumH
 	for k, _ := range checksumHash {
 		invalidCacheEntries = append(invalidCacheEntries, fmt.Sprintf("%s.done", k))
 	}
-	cmd := fmt.Sprintf("cd %s && rm -f *.failed %s", checksumDir, strings.Join(invalidCacheEntries, " "))
-	logger.Debug(cmd)
-	sc.executeCommand(cmd)
+	if sc.dryrun {
+		logger.Info("invalidated commands:", invalidCacheEntries)
+	} else {
+		cmd := fmt.Sprintf("cd %s && rm -f *.failed %s", checksumDir, strings.Join(invalidCacheEntries, " "))
+		logger.Debug(cmd)
+		sc.executeCommand(cmd)
+	}
 	return nil
 }
 
