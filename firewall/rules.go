@@ -29,6 +29,16 @@ type Rule struct {
 	destHosts *hostSet
 }
 
+// Add a local service, i.e. something that runs on the local machine an should be made accessible to the outside world.
+func LocalService(description string) (r *Rule) {
+	return &Rule{description: description, chain: "INPUT"}
+}
+
+// Add a remote service, i.e. something that runs outside the box but should be reachable (required for paranoid mode).
+func RemoteService(description string) (r *Rule) {
+	return &Rule{description: description, chain: "OUTPUT"}
+}
+
 // A service provided by docker.
 func DockerService(description string) (r *Rule) {
 	return &Rule{description: description, chain: "FORWARD", destIface: "docker0"}
@@ -47,12 +57,18 @@ func (r *Rule) WithProtocol(proto string) *Rule {
 
 // The destination's port.
 func (r *Rule) AtDestinationPort(port int) *Rule {
+	if r.protocol == "" {
+		panic("no protocol selected")
+	}
 	r.destPort = port
 	return r
 }
 
 // The source's port.
 func (r *Rule) AtSourcePort(port int) *Rule {
+	if r.protocol == "" {
+		panic("no protocol selected")
+	}
 	r.srcPort = port
 	return r
 }
@@ -100,6 +116,13 @@ func (r *Rule) Convert() (cmd string) {
 	}
 	if r.destHosts != nil {
 		cmd += " -m set --match-set " + r.destHosts.Name + " dst"
+	}
+
+	if r.srcIP != nil {
+		cmd += " --source " + r.srcIP.String()
+	}
+	if r.destHosts != nil {
+		cmd += " --destination " + r.destIP.String()
 	}
 
 	if r.srcIface != "" {
