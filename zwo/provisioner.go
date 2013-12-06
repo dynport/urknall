@@ -49,8 +49,19 @@ func precompileRunlists(host *host.Host, packages ...Compiler) (runLists []*Runl
 
 	runLists = make([]*Runlist, 0, len(packages))
 
+	runlistNames := map[string]bool{}
+
 	for _, pkg := range packages { // Precompile runlists.
 		pkgName := packageName(pkg)
+
+		if pkgName == "" {
+			return nil, fmt.Errorf("package name empty")
+		}
+
+		if runlistNames[pkgName] {
+			return nil, fmt.Errorf("package %q used twice", pkgName)
+		}
+		runlistNames[pkgName] = true
 
 		rl := &Runlist{host: host}
 		rl.setConfig(pkg)
