@@ -11,7 +11,7 @@ import (
 )
 
 type RubyPackage struct {
-	Version string `json:"version" default:"2.0.0-p247" desc:"package version"`
+	Version string `zwo="default=2.0.0-p247 required=true default='    ' "`
 }
 
 func (ruby *RubyPackage) Compile(r *zwo.Runlist) {
