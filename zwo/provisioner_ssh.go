@@ -28,15 +28,13 @@ func (sc *sshClient) provisionHost(packages ...Compiler) (e error) {
 		logger.Debug("no packages given; will only provision basic host settings")
 	}
 
-	pkgRunLists, e := precompileRunlists(sc.host, packages...)
+	pkgs := createHostPackages(sc.host)
+	pkgs = append(pkgs, packages...)
+
+	runLists, e := precompileRunlists(sc.host, pkgs...)
 	if e != nil {
 		return e
 	}
-
-	runLists := make([]*Runlist, 0, len(pkgRunLists)+2)
-	runLists = append(runLists, createHostPreRunlist(sc.host))
-	runLists = append(runLists, pkgRunLists...)
-	runLists = append(runLists, createHostPostRunlist(sc.host))
 
 	return provisionRunlists(runLists, sc.provision)
 }

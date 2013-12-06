@@ -1,54 +1,65 @@
 package zwo
 
 import (
-	"github.com/dynport/dgtk/goup"
-	. "github.com/dynport/zwo/cmd"
-	"github.com/dynport/zwo/firewall"
 	"github.com/dynport/zwo/host"
 )
 
-func createHostPreRunlist(h *host.Host) (rl *Runlist) {
-	rl = &Runlist{host: h}
-	rl.setName("int:host.setup")
-	rl.setConfig(h)
+func createHostPackages(host *host.Host) (p []Compiler) {
+	p = []Compiler{}
+	p = append(p, &hostPackage{Host: host})
+	p = append(p, &firewallPackage{Host: host})
 
-	if h.Hostname() != "" { // Set hostname.
-		rl.AddFile("/etc/hostname", h.Hostname(), "root", 0755)
+	if host.IsDockerHost() {
+		p = append(p, &dockerPackage{Host: host})
+	}
+
+	return p
+}
+
+type hostPackage struct {
+	*host.Host
+}
+
+func (hp *hostPackage) Compile(rl *Runlist) {
+	if rl.host.Hostname() != "" { // Set hostname.
+		rl.AddFile("/etc/hostname", hp.Hostname(), "root", 0755)
 		rl.AddFile("/etc/hosts", "127.0.0.1 {{ .Hostname }} localhost", "root", 0755)
 		rl.Execute("hostname -F /etc/hostname")
 	}
+}
 
+func (hp *hostPackage) CompileName() string {
+	return "zwo.host"
+}
+
+
+type firewallPackage struct {
+	*host.Host
+}
+
+func (fw *firewallPackage) Compile(rl *Runlist) {
 	rl.Execute(InstallPackages("iptables", "ipset"))
 
-	// Write initial set of iptables rules to make sure system is not open during installation.
 	rl.AddAsset("/etc/network/if-pre-up.d/iptables", "fw_upstart.sh", "root", 0744)
-	setupIPTables(rl)
-	installDocker(h, rl)
-
-	return rl
-}
-
-func createHostPostRunlist(h *host.Host) (rl *Runlist) {
-	rl = &Runlist{host: h}
-	rl.setName("int:host.firewall")
-	rl.setConfig(h)
-	setupIPTables(rl)
-
-	return rl
-}
-
-func setupIPTables(rl *Runlist) {
 	rl.AddAsset("/etc/iptables/rules_ipv4", "fw_rules_ipv4.conf", "root", 0644)
 	rl.AddAsset("/etc/iptables/rules_ipv6", "fw_rules_ipv6.conf", "root", 0644)
 	rl.Execute("modprobe iptable_filter && modprobe iptable_nat") // here to make sure next command succeeds.
 	rl.Execute("IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables")
 }
 
-func installDocker(h *host.Host, rl *Runlist) {
-	if !h.IsDockerHost() {
-		return
-	}
+func (fw *firewallPackage) CompileName() string {
+	return "zwo.fw"
+}
 
+type dockerPackage struct {
+	*host.Host
+}
+
+func (dp *dockerPackage) CompileName() string {
+	return "zwo.docker"
+}
+
+func (dp *dockerPackage) Compile(rl *Runlist) {
 	rl.Execute(
 		Or("grep universe /etc/apt/sourceslist",
 			And("sed 's/main$/main universe/' -i /etc/apt/sources.list",
@@ -61,11 +72,11 @@ func installDocker(h *host.Host, rl *Runlist) {
 			installDockerKernelOnPrecise(),
 			"exit 1"))
 
-	rl.Execute(getDockerBinary(h))
-	rl.Init(createUpstart(h), "")
+	rl.Execute(dp.getDockerBinary())
+	rl.Init(dp.createUpstart(), "")
 	rl.Execute("start docker")
 
-	if h.Docker.WithRegistry {
+	if dp.Docker.WithRegistry {
 		rl.WaitForUnixSocket("/var/run/docker.sock", 10)
 		rl.Execute("docker run -d -p 0.0.0.0:5000:5000 stackbrew/registry")
 	}
@@ -84,17 +95,17 @@ func installDockerKernelOnPrecise() string {
 		"apt-get -o Dpkg::Options::='--force-confnew' install linux-generic-lts-raring -y")
 }
 
-func getDockerBinary(h *host.Host) string {
+func (dp *dockerPackage) getDockerBinary() string {
 	baseUrl := "http://get.docker.io/builds/Linux/x86_64"
 
-	if h.DockerVersion() < "0.6.0" {
+	if dp.DockerVersion() < "0.6.0" {
 		panic("version lower than 0.6.0 not supported yet")
 	}
-	url := baseUrl + "/docker-" + h.DockerVersion()
+	url := baseUrl + "/docker-" + dp.DockerVersion()
 	return DownloadToFile(url, "/usr/local/bin/docker", "root", 0700)
 }
 
-func createUpstart(h *host.Host) *goup.Upstart {
+func (dp *dockerPackage) createUpstart() *goup.Upstart {
 	execCmd := "/usr/local/bin/docker -d -r -H unix:///var/run/docker.sock -H tcp://127.0.0.1:4243 2>&1 | logger -i -t docker"
 	return &goup.Upstart{
 		Name:          "docker",
