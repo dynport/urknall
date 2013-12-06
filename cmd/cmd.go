@@ -142,3 +142,20 @@ func DownloadAndExtract(url, targetDir string) string {
 func filenameFromUrl(url string) string {
 	return path.Base(url)
 }
+
+// Wait for the given path to appear, with the given timeout.
+func WaitForFile(path string, timeoutInSeconds int) string {
+	t := 10 * timeoutInSeconds
+	return fmt.Sprintf(
+		"x=0; while ((x<%d)) && [ ! -e %s ]; do x=\\$((x+1)); sleep .1; done && { ((x<%d)) || { echo \"file %s did not appear\" 1>&2 && exit 1; }; }",
+		t, path, t, path)
+}
+
+// Wait for the given unix file socket to appear, with the given timeout.
+func WaitForUnixSocket(path string, timeoutInSeconds int) string {
+	t := 10 * timeoutInSeconds
+	return fmt.Sprintf(
+		"x=0; while ((x<%d)) && ! { netstat -lx | grep \"%s$\"; }; do x=\\$((x+1)); sleep .1; done && { ((x<%d)) || { echo \"socket %s did not appear\" 1>&2 && exit 1; }; }",
+		t, path, t, path)
+}
+
