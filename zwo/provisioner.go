@@ -51,6 +51,10 @@ func precompileRunlists(host *host.Host, packages ...Compiler) (runLists []*Runl
 	runlistNames := map[string]bool{}
 
 	for _, pkg := range packages { // Precompile runlists.
+		if e = validatePackage(pkg); e != nil {
+			return nil, e
+		}
+
 		pkgName := packageName(pkg)
 
 		if pkgName == "" {
