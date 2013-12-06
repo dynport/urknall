@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/dynport/dgtk/goup"
 	"github.com/dynport/zwo/assets"
-	"github.com/dynport/zwo/firewall"
 	"github.com/dynport/zwo/host"
 	"github.com/dynport/zwo/utils"
 	"os"
@@ -87,11 +86,6 @@ func (rl *Runlist) Init(us *goup.Upstart, ds string) {
 	}
 
 	rl.actions = append(rl.actions, &upstartAction{upstart: us, docker: ds, host: rl.host})
-}
-
-// Add a firewall rule.
-func (rl *Runlist) AddFirewallRule(rule *firewall.Rule) {
-	rl.host.AddFirewallRule(rule)
 }
 
 // The configuration is used to expand the templates used for the commands, i.e. all fields and methods of the given

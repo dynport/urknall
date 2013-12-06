@@ -68,10 +68,7 @@ func installDocker(h *host.Host, rl *Runlist) {
 	if h.Docker.WithRegistry {
 		rl.WaitForUnixSocket("/var/run/docker.sock", 10)
 		rl.Execute("docker run -d -p 0.0.0.0:5000:5000 stackbrew/registry")
-		rl.AddFirewallRule(firewall.DockerService("docker registry").WithProtocol("tcp").AtDestinationPort(5000).ProvidedFor("set", "docker_hosts"))
 	}
-
-	rl.AddFirewallRule(firewall.ServiceForDocker("access to world"))
 }
 
 func installDockerKernelOnRaring() string {
