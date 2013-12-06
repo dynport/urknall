@@ -8,15 +8,14 @@ import (
 )
 
 // Provision the given host with the given packages. This is where zwo's secret leprechauns sit and do their work!
-func ProvisionHost(host *host.Host, packages ...Compiler) (e error) {
-	return newSSHClient(host).provisionHost(packages...)
-}
-
-func ProvisionHostDryrun(host *host.Host, packages ...Compiler) (e error) {
-	logger.PushPrefix(gologger.Colorize(226, "DRYRUN"))
-	defer logger.PopPrefix()
+func ProvisionHost(host *host.Host, dryrun bool, packages ...Compiler) (e error) {
 	sc := newSSHClient(host)
-	sc.dryrun = true
+	if dryrun {
+		sc.dryrun = true
+		logger.PushPrefix(gologger.Colorize(226, "DRYRUN"))
+		defer logger.PopPrefix()
+	}
+
 	return sc.provisionHost(packages...)
 }
 
