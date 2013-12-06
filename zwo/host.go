@@ -1,6 +1,8 @@
 package zwo
 
 import (
+	"github.com/dynport/dgtk/goup"
+	. "github.com/dynport/zwo/cmd"
 	"github.com/dynport/zwo/host"
 )
 
