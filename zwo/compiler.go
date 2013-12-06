@@ -13,6 +13,12 @@ type Compiler interface {
 	Compile(rl *Runlist) // Add the package specific commands to the runlist.
 }
 
+// The 'CompileNamer' interface is used to specify an explicit name for an package (if interface is not implemented on
+// the package then the package's struct name will be used).
+type CompileNamer interface {
+	CompileName() string
+}
+
 func validatePackage(pkg interface{}) error {
 	v := reflect.ValueOf(pkg)
 	if v.Kind() == reflect.Ptr {
