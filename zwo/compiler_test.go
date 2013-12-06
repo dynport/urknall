@@ -15,7 +15,7 @@ func shouldBeError(actual interface{}, expected ...interface{}) string {
 	msg, msgIsString := expected[0].(string)
 
 	if !actIsError {
-		return fmt.Sprintf("expected something of type error\nexpected: %s\nactual: %s", msg, actual)
+		return fmt.Sprintf("expected something of type error\nexpected: %s\n  actual: %s", msg, actual)
 	}
 
 	if !msgIsString {
@@ -23,7 +23,7 @@ func shouldBeError(actual interface{}, expected ...interface{}) string {
 	}
 
 	if err.Error() != msg {
-		return fmt.Sprintf("error message did not match\nexpected: %s\nactual: %s", msg, actual)
+		return fmt.Sprintf("error message did not match\nexpected: %s\n  actual: %s", msg, actual)
 	}
 
 	return ""
@@ -32,24 +32,97 @@ func shouldBeError(actual interface{}, expected ...interface{}) string {
 func TestBoolValidation(t *testing.T) {
 	Convey("Given a package with a bool field that is required", t, func() {
 		type pkg struct {
-			Field bool `zwo:"required:true"`
+			Field bool `zwo:"required=true"`
 		}
-		Convey("When an instance is created without specifying a value", func () {
+
+		Convey("When an instance is created without value set", func () {
 			instance := &pkg{}
 			Convey("Then validation must return an error", func() {
-				So(validatePackage(instance), shouldBeError, "[package:pkg][field:Field] required field not set")
+				So(validatePackage(instance), shouldBeError, `[package:pkg][field:Field] type "bool" doesn't support "required" tag`)
 			})
 		})
+		Convey("When an instance is created with value set to false", func () {
+			instance := &pkg{Field: false}
+			Convey("Then validation must return an error", func() {
+				So(validatePackage(instance), shouldBeError, `[package:pkg][field:Field] type "bool" doesn't support "required" tag`)
+			})
+		})
+		Convey("When an instance is created with value set to true", func () {
+			instance := &pkg{Field: true}
+			Convey("Then validation must return an error", func() {
+				So(validatePackage(instance), shouldBeError, `[package:pkg][field:Field] type "bool" doesn't support "required" tag`)
+			})
+		})
+	})
+
+	Convey("Given a package with a bool field with a default value", t, func() {
+		type pkg struct {
+			Field bool `zwo:"default=false"`
+		}
+
+		Convey("When an instance is created with value not set", func () {
+			instance := &pkg{}
+			Convey("Then validation must succeed", func() {
+				So(validatePackage(instance), ShouldBeNil)
+			})
+			Convey("Then value must be set to default", func() {
+				So(instance.Field, ShouldEqual, false)
+			})
+		})
+
 		Convey("When an instance is created with value set to false", func () {
 			instance := &pkg{Field: false}
 			Convey("Then validation must succeed", func() {
 				So(validatePackage(instance), ShouldBeNil)
 			})
+			Convey("Then value must be set to false", func() {
+				So(instance.Field, ShouldEqual, false)
+			})
 		})
+
 		Convey("When an instance is created with value set to true", func () {
 			instance := &pkg{Field: true}
 			Convey("Then validation must succeed", func() {
 				So(validatePackage(instance), ShouldBeNil)
+			})
+			Convey("Then value must be set to true", func() {
+				So(instance.Field, ShouldEqual, true)
+			})
+		})
+	})
+
+	Convey("Given a package with a size tag", t, func () {
+		type pkg struct {
+			Field bool `zwo:"size=3"`
+		}
+		Convey("When an instance is created", func() {
+			instance := &pkg{Field: true}
+			Convey("Then validation must fail", func() {
+				So(validatePackage(instance), shouldBeError, `[package:pkg][field:Field] type "bool" doesn't support "size" tag`)
+			})
+		})
+	})
+
+	Convey("Given a package with a min tag", t, func () {
+		type pkg struct {
+			Field bool `zwo:"min=3"`
+		}
+		Convey("When an instance is created", func() {
+			instance := &pkg{Field: true}
+			Convey("Then validation must fail", func() {
+				So(validatePackage(instance), shouldBeError, `[package:pkg][field:Field] type "bool" doesn't support "min" tag`)
+			})
+		})
+	})
+
+	Convey("Given a package with a max tag", t, func () {
+		type pkg struct {
+			Field bool `zwo:"max=3"`
+		}
+		Convey("When an instance is created", func() {
+			instance := &pkg{Field: true}
+			Convey("Then validation must fail", func() {
+				So(validatePackage(instance), shouldBeError, `[package:pkg][field:Field] type "bool" doesn't support "max" tag`)
 			})
 		})
 	})
@@ -58,7 +131,7 @@ func TestBoolValidation(t *testing.T) {
 func TestStringValidation(t *testing.T) {
 	Convey("Given a package with a string field that is required", t, func() {
 		type pkg struct {
-			Field string `zwo:"required:true"`
+			Field string `zwo:"required=true"`
 		}
 		Convey("When an instance is created without specifying a value", func() {
 			instance := &pkg{}
@@ -84,7 +157,7 @@ func TestStringValidation(t *testing.T) {
 
 	Convey("Given a package with a string field that has a default value", t, func() {
 		type pkg struct {
-			Field string `zwo:"default:'the value'"`
+			Field string `zwo:"default='the value'"`
 		}
 		Convey("When an instance is created without specifying a value", func() {
 			instance := &pkg{}
@@ -113,7 +186,7 @@ func TestStringValidation(t *testing.T) {
 
 	Convey("Given a package with a string field that has minimum and maximum length specified", t, func() {
 		type pkg struct {
-			Field string `zwo:"min:3, max:4"`
+			Field string `zwo:"min=3 max=4"`
 		}
 		Convey("When an instance is created without specifying a value", func() {
 			instance := &pkg{}
@@ -125,7 +198,7 @@ func TestStringValidation(t *testing.T) {
 		Convey("When an instance is created with a value smaller than the minimum length", func() {
 			instance := &pkg{Field: "ab"}
 			Convey("Then validation must fail with an according error", func() {
-				So(validatePackage(instance), shouldBeError, "[package:pkg][field:Field] length of value 'ab' smaller than specified minimum length '3'")
+				So(validatePackage(instance), shouldBeError, `[package:pkg][field:Field] length of value "ab" smaller than specified minimum length "3"`)
 			})
 		})
 
@@ -146,14 +219,14 @@ func TestStringValidation(t *testing.T) {
 		Convey("When an instance is created with a value longer than the maximum length", func() {
 			instance := &pkg{Field: "abcde"}
 			Convey("Then validation must fail with an according error", func() {
-				So(validatePackage(instance), shouldBeError, "[package:pkg][field:Field] length of value 'abcde' greater than specified maximum length '4'")
+				So(validatePackage(instance), shouldBeError, `[package:pkg][field:Field] length of value "abcde" greater than specified maximum length "4"`)
 			})
 		})
 	})
 
 	Convey("Given a package with a string field that has a size set", t, func() {
 		type pkg struct {
-			Field string `zwo:"size:3"`
+			Field string `zwo:"size=3"`
 		}
 		Convey("When an instance is created without specifying a value", func() {
 			instance := &pkg{}
@@ -165,7 +238,7 @@ func TestStringValidation(t *testing.T) {
 		Convey("When an instance is created with a value smaller than the size", func() {
 			instance := &pkg{Field: "ab"}
 			Convey("Then validation must fail with an according error", func() {
-				So(validatePackage(instance), shouldBeError, "[package:pkg][field:Field] length of value 'ab' doesn't match specified size '3'")
+				So(validatePackage(instance), shouldBeError, `[package:pkg][field:Field] length of value "ab" doesn't match specified size "3"`)
 			})
 		})
 
@@ -179,14 +252,14 @@ func TestStringValidation(t *testing.T) {
 		Convey("When an instance is created with a value larger than the size", func() {
 			instance := &pkg{Field: "abcd"}
 			Convey("Then validation must fail with an according error", func() {
-				So(validatePackage(instance), shouldBeError, "[package:pkg][field:Field] length of value 'abcd' doesn't match specified size '3'")
+				So(validatePackage(instance), shouldBeError, `[package:pkg][field:Field] length of value "abcd" doesn't match specified size "3"`)
 			})
 		})
 	})
 
 	Convey("Given a package with a string field that has minimum length specified with an invalid value", t, func() {
 		type pkg struct {
-			Field string `zwo:"min:..3"`
+			Field string `zwo:"min=..3"`
 		}
 		Convey("When an instance is created", func() {
 			instance := &pkg{}
@@ -198,12 +271,37 @@ func TestStringValidation(t *testing.T) {
 
 	Convey("Given a package with a string field that has maximum length specified with an invalid value", t, func() {
 		type pkg struct {
-			Field string `zwo:"max:4a"`
+			Field string `zwo:"max=4a"`
 		}
 		Convey("When an instance is created", func() {
 			instance := &pkg{}
 			Convey("Then validation must fail with an according error", func() {
 				So(validatePackage(instance), shouldBeError, "[package:pkg][field:Field] failed to parse value of field 'max': strconv.ParseInt: parsing \"4a\": invalid syntax")
+			})
+		})
+	})
+}
+
+func TestMultiTags(t *testing.T) {
+	Convey("Given a package with multiple tags set on a field", t, func() {
+		type pkg struct {
+			Field string `zwo:"default='foo' min=3 max=4"`
+		}
+
+		Convey("When an instance is create without a value set", func() {
+			instance := &pkg{}
+			Convey("Then validation must succeed", func() {
+				So(validatePackage(instance), ShouldBeNil)
+			})
+			Convey("Then the instances value must be set properly", func() {
+				So(instance.Field, ShouldEqual, "foo")
+			})
+		})
+
+		Convey("When an instance is create without a erroneous valiue set", func() {
+			instance := &pkg{Field: "ab"}
+			Convey("Then validation must fail", func() {
+				So(validatePackage(instance), shouldBeError, `[package:pkg][field:Field] length of value "ab" smaller than specified minimum length "3"`)
 			})
 		})
 	})

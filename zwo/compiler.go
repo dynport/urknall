@@ -35,11 +35,11 @@ func validatePackage(pkg interface{}) error {
 
 func validateInt(field reflect.StructField, value int64, opts *validationOptions) (e error) {
 	if opts.min != 0 && value < opts.min {
-		return fmt.Errorf("[field:%s] value '%d' smaller than specified minimum '%d'", field.Name, value, opts.min)
+		return fmt.Errorf(`[field:%s] value "%d" smaller than specified minimum "%d"`, field.Name, value, opts.min)
 	}
 
 	if opts.max != 0 && value > opts.max {
-		return fmt.Errorf("[field:%s] value '%d' greater than specified maximum '%d'", field.Name, value, opts.max)
+		return fmt.Errorf(`[field:%s] value "%d" greater than specified maximum "%d"`, field.Name, value, opts.max)
 	}
 
 	return nil
@@ -47,15 +47,15 @@ func validateInt(field reflect.StructField, value int64, opts *validationOptions
 
 func validateString(field reflect.StructField, value string, opts *validationOptions) (e error) {
 	if opts.min != 0 && value != "" && (int64(len(value))) < opts.min {
-		return fmt.Errorf("[field:%s] length of value '%s' smaller than specified minimum length '%d'", field.Name, value, opts.min)
+		return fmt.Errorf(`[field:%s] length of value %q smaller than specified minimum length "%d"`, field.Name, value, opts.min)
 	}
 
 	if opts.max != 0 && int64(len(value)) > opts.max {
-		return fmt.Errorf("[field:%s] length of value '%s' greater than specified maximum length '%d'", field.Name, value, opts.max)
+		return fmt.Errorf(`[field:%s] length of value %q greater than specified maximum length "%d"`, field.Name, value, opts.max)
 	}
 
 	if opts.size != 0 && value != "" && int64(len(value)) != opts.size {
-		return fmt.Errorf("[field:%s] length of value '%s' doesn't match specified size '%d'", field.Name, value, opts.size)
+		return fmt.Errorf(`[field:%s] length of value %q doesn't match specified size "%d"`, field.Name, value, opts.size)
 	}
 
 	return nil
@@ -78,12 +78,12 @@ func parseFieldValidationString(field reflect.StructField) (opts *validationOpti
 	sA := false
 	for i, c := range tagString {
 		if c == '\'' {
-			sA = ! sA
+			sA = !sA
 		}
 
-		if (c == ',' || i+1 == len(tagString)) && ! sA {
+		if (c == ' ' || i+1 == len(tagString)) && !sA {
 			fields = append(fields, tagString[idxStart:i+1])
-			idxStart = i+1
+			idxStart = i + 1
 		}
 	}
 	if sA {
@@ -91,19 +91,24 @@ func parseFieldValidationString(field reflect.StructField) (opts *validationOpti
 	}
 
 	for fIdx := range fields {
-		kvList := strings.SplitN(fields[fIdx], ":", 2)
+		kvList := strings.SplitN(fields[fIdx], "=", 2)
 		if len(kvList) != 2 {
-			return nil, fmt.Errorf("failed to parse key value pair '%s'", fields[fIdx])
+			return nil, fmt.Errorf("failed to parse key value pair %q", fields[fIdx])
 		}
 		key := strings.TrimSpace(kvList[0])
-		value := strings.Trim(kvList[1], " ,'")
+		value := strings.Trim(kvList[1], " '")
 
 		switch key {
 		case "required":
-			if value != "true" && value != "false" {
-				return nil, fmt.Errorf("wrong value for 'required' validation field: '%s'", value)
+			switch field.Type.String() {
+			case "string":
+				if value != "true" && value != "false" {
+					return nil, fmt.Errorf("wrong value for 'required' validation field: %q", value)
+				}
+				opts.required = value == "true"
+			default:
+				return nil, fmt.Errorf(`type %q doesn't support "required" tag`, field.Type.String())
 			}
-			opts.required = value == "true"
 		case "default":
 			switch field.Type.String() {
 			case "string":
@@ -116,30 +121,49 @@ func parseFieldValidationString(field reflect.StructField) (opts *validationOpti
 				opts.defaultValue = i
 			case "bool":
 				if value != "true" && value != "false" {
-					return nil, fmt.Errorf("wrong value for field 'default': only 'true' and 'false' are allowed (is '%s')", value)
+					return nil, fmt.Errorf("wrong value for field 'default': only 'true' and 'false' are allowed (is %q)", value)
 				}
 				opts.defaultValue = value == "true"
 			default:
-				return nil, fmt.Errorf("type '%s' not supported yet", field.Type.String())
+				return nil, fmt.Errorf("type %q not supported yet", field.Type.String())
 			}
 		case "size":
-			i, e := strconv.ParseInt(value, 10, 64)
-			if e != nil {
-				return nil, fmt.Errorf("failed to parse value of field 'size': %s", e.Error())
+			switch field.Type.String() {
+			case "string":
+				i, e := strconv.ParseInt(value, 10, 64)
+				if e != nil {
+					return nil, fmt.Errorf("failed to parse value of field 'size': %s", e.Error())
+				}
+				opts.size = i
+			default:
+				return nil, fmt.Errorf(`type %q doesn't support "size" tag`, field.Type.String())
 			}
-			opts.size = i
 		case "min":
-			i, e := strconv.ParseInt(value, 10, 64)
-			if e != nil {
-				return nil, fmt.Errorf("failed to parse value of field 'min': %s", e.Error())
+			switch field.Type.String() {
+			case "string":
+				fallthrough
+			case "int":
+				i, e := strconv.ParseInt(value, 10, 64)
+				if e != nil {
+					return nil, fmt.Errorf("failed to parse value of field 'min': %s", e.Error())
+				}
+				opts.min = i
+			default:
+				return nil, fmt.Errorf(`type %q doesn't support "min" tag`, field.Type.String())
 			}
-			opts.min = i
 		case "max":
-			i, e := strconv.ParseInt(value, 10, 64)
-			if e != nil {
-				return nil, fmt.Errorf("failed to parse value of field 'max': %s", e.Error())
+			switch field.Type.String() {
+			case "string":
+				fallthrough
+			case "int":
+				i, e := strconv.ParseInt(value, 10, 64)
+				if e != nil {
+					return nil, fmt.Errorf("failed to parse value of field 'max': %s", e.Error())
+				}
+				opts.max = i
+			default:
+				return nil, fmt.Errorf(`type %q doesn't support "max" tag`, field.Type.String())
 			}
-			opts.max = i
 		}
 	}
 	return opts, nil
@@ -151,12 +175,12 @@ func validateField(field reflect.StructField, value reflect.Value) error {
 		return fmt.Errorf("[field:%s] %s", field.Name, e.Error())
 	}
 
-	if opts.required && value.String() == "" {
-		return fmt.Errorf("[field:%s] required field not set", field.Name)
-	}
-
 	switch field.Type.String() {
 	case "string":
+		if opts.required && value.String() == "" {
+			return fmt.Errorf("[field:%s] required field not set", field.Name)
+		}
+
 		if opts.defaultValue != nil && value.String() == "" {
 			value.SetString(opts.defaultValue.(string))
 		}
