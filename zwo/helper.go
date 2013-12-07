@@ -16,7 +16,7 @@ func padToFixedLength(s string, l int) string {
 func packageName(pkg Compiler) (name string) {
 	switch p := pkg.(type) {
 	case CompileNamer:
-		return p.CompileName()
+		return strings.ToLower(p.CompileName())
 	default:
 		pkgName := fmt.Sprintf("%T", pkg)
 		return strings.ToLower(pkgName[1:])
