@@ -35,11 +35,11 @@ func validatePackage(pkg interface{}) error {
 
 func validateInt(field reflect.StructField, value int64, opts *validationOptions) (e error) {
 	if opts.min != 0 && value < opts.min {
-		return fmt.Errorf(`[field:%s] value "%d" smaller than specified minimum "%d"`, field.Name, value, opts.min)
+		return fmt.Errorf(`[field:%s] value "%d" smaller than the specified minimum "%d"`, field.Name, value, opts.min)
 	}
 
 	if opts.max != 0 && value > opts.max {
-		return fmt.Errorf(`[field:%s] value "%d" greater than specified maximum "%d"`, field.Name, value, opts.max)
+		return fmt.Errorf(`[field:%s] value "%d" greater than the specified maximum "%d"`, field.Name, value, opts.max)
 	}
 
 	return nil
@@ -47,19 +47,25 @@ func validateInt(field reflect.StructField, value int64, opts *validationOptions
 
 func validateString(field reflect.StructField, value string, opts *validationOptions) (e error) {
 	if opts.min != 0 && value != "" && (int64(len(value))) < opts.min {
-		return fmt.Errorf(`[field:%s] length of value %q smaller than specified minimum length "%d"`, field.Name, value, opts.min)
+		return fmt.Errorf(`[field:%s] length of value %q smaller than the specified minimum length "%d"`, field.Name, value, opts.min)
 	}
 
 	if opts.max != 0 && int64(len(value)) > opts.max {
-		return fmt.Errorf(`[field:%s] length of value %q greater than specified maximum length "%d"`, field.Name, value, opts.max)
+		return fmt.Errorf(`[field:%s] length of value %q greater than the specified maximum length "%d"`, field.Name, value, opts.max)
 	}
 
 	if opts.size != 0 && value != "" && int64(len(value)) != opts.size {
-		return fmt.Errorf(`[field:%s] length of value %q doesn't match specified size "%d"`, field.Name, value, opts.size)
+		return fmt.Errorf(`[field:%s] length of value %q doesn't match the specified size "%d"`, field.Name, value, opts.size)
 	}
 
 	return nil
 }
+
+const (
+	parse_INT_ERROR   = `failed to parse value (not an int) of tag %q: "%s"`
+	parse_BOOL_ERROR  = `failed to parse value (neither "true" nor "false") of tag %q: "%s"`
+	unknown_TAG_ERROR = `type %q doesn't support %q tag`
+)
 
 type validationOptions struct {
 	required     bool
@@ -87,13 +93,13 @@ func parseFieldValidationString(field reflect.StructField) (opts *validationOpti
 		}
 	}
 	if sA {
-		return nil, fmt.Errorf("failed to parse tag due to erroneous quote levels")
+		return nil, fmt.Errorf("failed to parse tag due to erroneous quotes")
 	}
 
 	for fIdx := range fields {
 		kvList := strings.SplitN(fields[fIdx], "=", 2)
 		if len(kvList) != 2 {
-			return nil, fmt.Errorf("failed to parse key value pair %q", fields[fIdx])
+			return nil, fmt.Errorf("failed to parse annotation (value missing): %q", fields[fIdx])
 		}
 		key := strings.TrimSpace(kvList[0])
 		value := strings.Trim(kvList[1], " '")
@@ -103,11 +109,11 @@ func parseFieldValidationString(field reflect.StructField) (opts *validationOpti
 			switch field.Type.String() {
 			case "string":
 				if value != "true" && value != "false" {
-					return nil, fmt.Errorf("wrong value for 'required' validation field: %q", value)
+					return nil, fmt.Errorf(parse_BOOL_ERROR, key, value)
 				}
 				opts.required = value == "true"
 			default:
-				return nil, fmt.Errorf(`type %q doesn't support "required" tag`, field.Type.String())
+				return nil, fmt.Errorf(unknown_TAG_ERROR, field.Type.String(), key)
 			}
 		case "default":
 			switch field.Type.String() {
@@ -116,27 +122,27 @@ func parseFieldValidationString(field reflect.StructField) (opts *validationOpti
 			case "int":
 				i, e := strconv.ParseInt(value, 10, 64)
 				if e != nil {
-					return nil, fmt.Errorf("failed to parse value of field 'default': %s", e.Error())
+					return nil, fmt.Errorf(parse_INT_ERROR, key, value)
 				}
 				opts.defaultValue = i
 			case "bool":
 				if value != "true" && value != "false" {
-					return nil, fmt.Errorf("wrong value for field 'default': only 'true' and 'false' are allowed (is %q)", value)
+					return nil, fmt.Errorf(parse_BOOL_ERROR, key, value)
 				}
 				opts.defaultValue = value == "true"
 			default:
-				return nil, fmt.Errorf("type %q not supported yet", field.Type.String())
+				return nil, fmt.Errorf(unknown_TAG_ERROR, field.Type.String(), key)
 			}
 		case "size":
 			switch field.Type.String() {
 			case "string":
 				i, e := strconv.ParseInt(value, 10, 64)
 				if e != nil {
-					return nil, fmt.Errorf("failed to parse value of field 'size': %s", e.Error())
+					return nil, fmt.Errorf(parse_INT_ERROR, key, value)
 				}
 				opts.size = i
 			default:
-				return nil, fmt.Errorf(`type %q doesn't support "size" tag`, field.Type.String())
+				return nil, fmt.Errorf(unknown_TAG_ERROR, field.Type.String(), key)
 			}
 		case "min":
 			switch field.Type.String() {
@@ -145,11 +151,11 @@ func parseFieldValidationString(field reflect.StructField) (opts *validationOpti
 			case "int":
 				i, e := strconv.ParseInt(value, 10, 64)
 				if e != nil {
-					return nil, fmt.Errorf("failed to parse value of field 'min': %s", e.Error())
+					return nil, fmt.Errorf(parse_INT_ERROR, key, value)
 				}
 				opts.min = i
 			default:
-				return nil, fmt.Errorf(`type %q doesn't support "min" tag`, field.Type.String())
+				return nil, fmt.Errorf(unknown_TAG_ERROR, field.Type.String(), key)
 			}
 		case "max":
 			switch field.Type.String() {
@@ -158,12 +164,14 @@ func parseFieldValidationString(field reflect.StructField) (opts *validationOpti
 			case "int":
 				i, e := strconv.ParseInt(value, 10, 64)
 				if e != nil {
-					return nil, fmt.Errorf("failed to parse value of field 'max': %s", e.Error())
+					return nil, fmt.Errorf(parse_INT_ERROR, key, value)
 				}
 				opts.max = i
 			default:
-				return nil, fmt.Errorf(`type %q doesn't support "max" tag`, field.Type.String())
+				return nil, fmt.Errorf(unknown_TAG_ERROR, field.Type.String(), key)
 			}
+		default:
+			return nil, fmt.Errorf(`tag %q unknown`, key)
 		}
 	}
 	return opts, nil
