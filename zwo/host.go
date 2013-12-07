@@ -23,10 +23,10 @@ type hostPackage struct {
 }
 
 func (hp *hostPackage) Compile(rl *Runlist) {
-	if rl.host.Hostname() != "" { // Set hostname.
-		rl.AddFile("/etc/hostname", hp.Hostname(), "root", 0755)
-		rl.AddFile("/etc/hosts", "127.0.0.1 {{ .Hostname }} localhost", "root", 0755)
-		rl.Execute("hostname -F /etc/hostname")
+	if hp.Hostname() != "" { // Set hostname.
+		rl.Add(&FileCommand{Path: "/etc/hostname", Content: hp.Hostname()})
+		rl.Add(&FileCommand{Path: "/etc/hosts", Content: "127.0.0.1 {{ .Hostname }} localhost"})
+		rl.Add("hostname -F /etc/hostname")
 	}
 }
 
@@ -34,19 +34,18 @@ func (hp *hostPackage) CompileName() string {
 	return "zwo.host"
 }
 
-
 type firewallPackage struct {
 	*host.Host
 }
 
 func (fw *firewallPackage) Compile(rl *Runlist) {
-	rl.Execute(InstallPackages("iptables", "ipset"))
+	rl.Add(InstallPackages("iptables", "ipset"))
 
-	rl.AddAsset("/etc/network/if-pre-up.d/iptables", "fw_upstart.sh", "root", 0744)
-	rl.AddAsset("/etc/iptables/rules_ipv4", "fw_rules_ipv4.conf", "root", 0644)
-	rl.AddAsset("/etc/iptables/rules_ipv6", "fw_rules_ipv6.conf", "root", 0644)
-	rl.Execute("modprobe iptable_filter && modprobe iptable_nat") // here to make sure next command succeeds.
-	rl.Execute("IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables")
+	rl.Add(WriteAsset("/etc/network/if-pre-up.d/iptables", "fw_upstart.sh", "root", 0744))
+	rl.Add(WriteAsset("/etc/iptables/rules_ipv4", "fw_rules_ipv4.conf", "root", 0644))
+	rl.Add(WriteAsset("/etc/iptables/rules_ipv6", "fw_rules_ipv6.conf", "root", 0644))
+	rl.Add("modprobe iptable_filter && modprobe iptable_nat") // here to make sure next command succeeds.
+	rl.Add("IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables")
 }
 
 func (fw *firewallPackage) CompileName() string {
@@ -62,35 +61,34 @@ func (dp *dockerPackage) CompileName() string {
 }
 
 func (dp *dockerPackage) Compile(rl *Runlist) {
-	rl.Execute(
+	rl.Add(
 		Or("grep universe /etc/apt/sourceslist",
 			And("sed 's/main$/main universe/' -i /etc/apt/sources.list",
 				"apt-get update")))
-	rl.Execute(
+	rl.Add(
 		InstallPackages("curl", "build-essential", "git-core", "bsdtar", "lxc", "aufs-tools"))
-	rl.Execute(
+	rl.Add(
 		Or(
 			installDockerKernelOnRaring(),
 			installDockerKernelOnPrecise(),
 			"exit 1"))
 
-	rl.Execute(dp.getDockerBinary())
-	rl.Init(dp.createUpstart(), "")
-	rl.Execute("start docker")
+	rl.Add(dp.dockerBinary())
+	rl.Add(&UpstartCommand{Upstart: dp.createUpstart()})
+	rl.Add("start docker")
 
 	if dp.Docker.WithRegistry {
-		rl.Execute(
-			And(WaitForUnixSocket("/var/run/docker.sock", 10),
-				"docker run -d -p 0.0.0.0:5000:5000 stackbrew/registry"))
+		rl.Add(WaitForUnixSocket("/var/run/docker.sock", 10))
+		rl.Add("docker run -d -p 0.0.0.0:5000:5000 stackbrew/registry")
 	}
 }
 
-func installDockerKernelOnRaring() string {
+func installDockerKernelOnRaring() *ShellCommand {
 	return And("lsb_release -c | grep raring",
 		InstallPackages("linux-image-extra-$(uname -r)"))
 }
 
-func installDockerKernelOnPrecise() string {
+func installDockerKernelOnPrecise() *ShellCommand {
 	return And("lsb_release -c | grep precise",
 		IfNot("-f /etc/apt/sources.list.d/precise-updates.list",
 			And("echo 'deb http://archive.ubuntu.com/ubuntu precise-updates main' > /etc/apt/sources.list.d/precise-updates.list",
@@ -98,7 +96,7 @@ func installDockerKernelOnPrecise() string {
 		"apt-get -o Dpkg::Options::='--force-confnew' install linux-generic-lts-raring -y")
 }
 
-func (dp *dockerPackage) getDockerBinary() string {
+func (dp *dockerPackage) dockerBinary() *ShellCommand {
 	baseUrl := "http://get.docker.io/builds/Linux/x86_64"
 
 	if dp.DockerVersion() < "0.6.0" {

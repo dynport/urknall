@@ -66,9 +66,9 @@ func precompileRunlists(host *host.Host, packages ...Compiler) (runLists []*Runl
 		}
 		runlistNames[pkgName] = true
 
-		rl := &Runlist{host: host}
-		rl.setConfig(pkg)
-		rl.setName(pkgName)
+		rl := &Runlist{}
+		rl.pkg = pkg
+		rl.name = pkgName
 		pkg.Compile(rl)
 
 		runLists = append(runLists, rl)
@@ -83,7 +83,7 @@ func provisionRunlists(runLists []*Runlist, provisionFunc func(*Runlist) error) 
 	for i := range runLists {
 		rl := runLists[i]
 
-		logger.PushPrefix(padToFixedLength(rl.getName(), 15))
+		logger.PushPrefix(padToFixedLength(rl.name, 15))
 
 		if e = provisionFunc(runLists[i]); e != nil {
 			logger.Errorf("failed to provision: %s", e.Error())

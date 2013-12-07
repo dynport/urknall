@@ -11,55 +11,39 @@ import (
 )
 
 type RubyPackage struct {
-	Version string `zwo="default=2.0.0-p247 required=true default='    ' "`
+	Version     string `zwo="default=2.0.0-p247"`
+	WithBundler bool
 }
 
 func (ruby *RubyPackage) Compile(r *zwo.Runlist) {
-	r.Execute(
+	r.Add(
 		InstallPackages("curl", "build-essential", "git-core",
 			"libyaml-dev", "libxml2-dev", "libxslt1-dev",
 			"libreadline-dev", "libssl-dev", "zlib1g-dev"))
-	r.Execute(
-		And("mkdir -p /opt/downloads",
-			"cd /opt/downloads",
-			"curl -SsfLO \"{{ .getDownloadURL }}\""))
 
-	r.Execute(
-		And("mkdir -p /opt/src",
-			"cd /opt/src",
-			"tar xvfz {{ .getSourceFilename }}"))
+	r.Add(
+		DownloadAndExtract(ruby.downloadURL(), ruby.SourcePath()))
 
-	r.Execute(
-		And("cd {{ .getSoucePath }}",
-			"./configure --disable-install-doc",
-			"make"))
+	r.Add(
+		And("cd {{ .SourcePath }}",
+			"./configure --disable-install-doc --prefix={{ .InstallPath }}",
+			"make",
+			"make install"))
 
-	r.Execute(
-		And(
-			"cd {{ .getSoucePath }}",
-			"make install",
-			"ln -nfs /opt/{{ .getPathSegment }} /opt/ruby"))
-
-	r.AddFile("/root/.profile.d/ruby", "export PATH=/opt/ruby/bin:$PATH", "", 0)
+	if ruby.WithBundler {
+		r.Add("{{ .InstallPath }}/bin/gem install bundler")
+	}
 }
 
-func (ruby *RubyPackage) getSourceFilename() string {
-	return fmt.Sprintf("ruby-%s.tar.gz", ruby.Version)
-}
-
-func (ruby *RubyPackage) getDownloadURL() string {
+func (ruby *RubyPackage) downloadURL() string {
 	majorVersion := strings.Join(strings.Split(ruby.Version, ".")[0:2], ".")
-	return fmt.Sprintf("ftp://ftp.ruby-lang.org/pub/ruby/%s/%s", majorVersion, ruby.getSourceFilename())
+	return fmt.Sprintf("ftp://ftp.ruby-lang.org/pub/ruby/%s/ruby-%s.tar.gz", majorVersion, ruby.Version)
 }
 
-func (ruby *RubyPackage) getPathSegment() string {
-	return fmt.Sprintf("ruby-%s", ruby.Version)
+func (ruby *RubyPackage) InstallPath() string {
+	return fmt.Sprintf("/opt/ruby-%s", ruby.Version)
 }
 
-func (ruby *RubyPackage) getSourcePath() string {
-	return fmt.Sprintf("/opt/src/%s", ruby.getPathSegment())
-}
-
-func cdShellCmd(path string) string {
-	return fmt.Sprintf("cd %s", path)
+func (ruby *RubyPackage) SourcePath() string {
+	return fmt.Sprintf("/opt/src/ruby-%s", ruby.Version)
 }

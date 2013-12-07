@@ -1,4 +1,4 @@
-package zwo
+package cmd
 
 import (
 	"github.com/dynport/zwo/host"

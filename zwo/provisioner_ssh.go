@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/dynport/gologger"
 	"github.com/dynport/gossh"
+	"github.com/dynport/zwo/cmd"
 	"github.com/dynport/zwo/host"
 	"path"
 	"strings"
@@ -40,9 +41,9 @@ func (sc *sshClient) provisionHost(packages ...Compiler) (e error) {
 }
 
 func (sc *sshClient) provision(rl *Runlist) (e error) {
-	tasks := buildTasksForRunlist(rl)
+	tasks := sc.buildTasksForRunlist(rl)
 
-	checksumDir := fmt.Sprintf("/var/cache/zwo/tree/%s", rl.getName())
+	checksumDir := fmt.Sprintf("/var/cache/zwo/tree/%s", rl.name)
 
 	checksumHash, e := sc.buildChecksumHash(checksumDir)
 	if e != nil {
@@ -51,9 +52,9 @@ func (sc *sshClient) provision(rl *Runlist) (e error) {
 
 	for i := range tasks {
 		task := tasks[i]
-		logMsg := task.action.Logging()
+		logMsg := task.command.Logging(sc.host)
 		if _, found := checksumHash[task.checksum]; found { // Task is cached.
-			logger.Infof("[%s][%.8s]%s", gologger.Colorize(33, "CACHED"), task.checksum, logMsg)
+			logger.Infof("\b[%s][%.8s]%s", gologger.Colorize(33, "CACHED"), task.checksum, logMsg)
 			delete(checksumHash, task.checksum) // Delete checksums of cached tasks from hash.
 			continue
 		}
@@ -65,7 +66,7 @@ func (sc *sshClient) provision(rl *Runlist) (e error) {
 			checksumHash = make(map[string]struct{})
 		}
 
-		logger.Infof("[%s  ][%.8s] %s", gologger.Colorize(34, "EXEC"), task.checksum, logMsg)
+		logger.Infof("\b[%s  ][%.8s]%s", gologger.Colorize(34, "EXEC"), task.checksum, logMsg)
 		if e = sc.runTask(task, checksumDir); e != nil {
 			return e
 		}
@@ -81,10 +82,10 @@ func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
 
 	checksumFile := fmt.Sprintf("%s/%s", checksumDir, task.checksum)
 
-	rsp, e := sc.client.Execute(task.action.Shell())
+	rsp, e := sc.client.Execute(task.command.Shell(sc.host))
 
 	// Write the checksum file (containing information on the command run).
-	sc.writeChecksumFile(checksumFile, e != nil, task.action.Logging(), rsp)
+	sc.writeChecksumFile(checksumFile, e != nil, task.command.Logging(sc.host), rsp)
 
 	if e != nil {
 		return fmt.Errorf("Reason: %s", strings.TrimSpace(rsp.Stderr()))
@@ -94,8 +95,8 @@ func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
 }
 
 func (sc *sshClient) executeCommand(cmdRaw string) *gossh.Result {
-	c := &commandAction{cmd: cmdRaw, host: sc.host}
-	result, e := sc.client.Execute(c.Shell())
+	c := &cmd.ShellCommand{Command: cmdRaw}
+	result, e := sc.client.Execute(c.Shell(sc.host))
 	if e != nil {
 		stderr := ""
 		if result != nil {
@@ -156,30 +157,27 @@ func (sc *sshClient) writeChecksumFile(checksumFile string, failed bool, logMsg 
 		checksumFile += ".done"
 	}
 
-	c := &fileAction{
-		path:    checksumFile,
-		content: strings.Join(content, "\n"),
-		host:    sc.host}
+	c := cmd.WriteFile(checksumFile, strings.Join(content, "\n"), "root", 0644)
 
-	if _, e := sc.client.Execute(c.Shell()); e != nil {
+	if _, e := sc.client.Execute(c.Shell(sc.host)); e != nil {
 		panic(fmt.Sprintf("failed to write checksum file: %s", e.Error()))
 	}
 }
 
 type taskData struct {
-	action   action // The command to be executed.
-	checksum string // The checksum of the command.
+	command  cmd.Commander // The command to be executed.
+	checksum string        // The checksum of the command.
 }
 
-func buildTasksForRunlist(rl *Runlist) (tasks []*taskData) {
-	tasks = make([]*taskData, 0, len(rl.actions))
+func (sc *sshClient) buildTasksForRunlist(rl *Runlist) (tasks []*taskData) {
+	tasks = make([]*taskData, 0, len(rl.commands))
 
 	cmdHash := sha256.New()
-	for i := range rl.actions {
-		rawCmd := rl.actions[i].Shell()
+	for i := range rl.commands {
+		rawCmd := rl.commands[i].Shell(sc.host)
 		cmdHash.Write([]byte(rawCmd))
 
-		task := &taskData{action: rl.actions[i], checksum: fmt.Sprintf("%x", cmdHash.Sum(nil))}
+		task := &taskData{command: rl.commands[i], checksum: fmt.Sprintf("%x", cmdHash.Sum(nil))}
 		tasks = append(tasks, task)
 	}
 	return tasks

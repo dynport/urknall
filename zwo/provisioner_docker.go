@@ -79,14 +79,14 @@ func (dc *dockerClient) provisionImage(tag string, packages ...Compiler) (imageI
 
 func countActions(runLists []*Runlist) (i int) {
 	for idx := range runLists {
-		i += len(runLists[idx].actions)
+		i += len(runLists[idx].commands)
 	}
 	return i
 }
 
 func (dc *dockerClient) buildDockerFile(rl *Runlist) (e error) {
-	for i := range rl.actions {
-		dc.dockerfile += rl.actions[i].Docker() + "\n"
+	for i := range rl.commands {
+		dc.dockerfile += rl.commands[i].Docker(dc.host) + "\n"
 	}
 	return nil
 }

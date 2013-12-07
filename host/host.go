@@ -22,11 +22,10 @@ type Host struct {
 }
 
 type DockerSettings struct {
-	Version          string
-	WithRegistry     bool
-	WithBuildSupport bool
-	Paranoid         bool
-	Registry         string
+	Version          string // Docker version to run.
+	WithRegistry     bool   // Run an image on this host, that will provide a registry for docker images.
+	WithBuildSupport bool   // Configure the associated host so that building images is possible.
+	Registry         string // URL of the registry to use.
 }
 
 // Create a new hosts structure.
