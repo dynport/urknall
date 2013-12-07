@@ -1,24 +1,67 @@
 package cmd
 
 import (
+	"github.com/dynport/zwo/host"
 	. "github.com/smartystreets/goconvey/convey"
 	"os"
 	"testing"
 )
 
+func TestAsUserCommand(t *testing.T) {
+	Convey("When the AsUser function is called with a string", t, func() {
+		cmd := AsUser("gfrey", "do something")
+		Convey("Then the resulting command must be executed as the given user", func() {
+			So(cmd.user, ShouldEqual, "gfrey")
+		})
+	})
+
+	Convey("Given a ShellCommand", t, func() {
+		sc := &ShellCommand{Command: "do something"}
+		Convey("When the AsUser function is called with it", func() {
+			cmd := AsUser("gfrey", sc)
+			Convey("Then the resulting command must be executed as the given user", func() {
+				So(cmd.user, ShouldEqual, "gfrey")
+			})
+		})
+
+		Convey("Given the user is already set", func() {
+			sc.user = "gfrey"
+			Convey("When the AsUser function is called with it", func() {
+				f := func() { AsUser("gfrey", sc) }
+				Convey("Then the AsUser functin must panic", func() {
+					So(f, ShouldPanicWith, `nesting "AsUser" calls not supported`)
+				})
+			})
+		})
+	})
+
+	Convey("Given a FileCommand", t, func() {
+		fc := &FileCommand{Path: "tmpf", Content: "foobar"}
+		Convey("When the AsUser function is called with it", func() {
+			f := func() { AsUser("gfrey", fc) }
+			Convey("Then the AsUser functin must panic", func() {
+				So(f, ShouldPanicWith, `type "*cmd.FileCommand" not supported`)
+			})
+		})
+	})
+}
+
 func TestUpdatePackagesCommand(t *testing.T) {
+	h, _ := host.New("127.0.0.1", "", "")
 	Convey("When the UpdatePackages command is called", t, func() {
 		cmd := UpdatePackages()
 		Convey("Then the command must contain apt-get update", func() {
-			So(cmd, ShouldContainSubstring, "apt-get update")
+			So(cmd.Shell(h), ShouldContainSubstring, "apt-get update")
 		})
 		Convey("Then the command must contain apt-get upgrade", func() {
-			So(cmd, ShouldContainSubstring, "apt-get upgrade")
+			So(cmd.Shell(h), ShouldContainSubstring, "apt-get upgrade")
 		})
 	})
 }
 
 func TestInstallPackagesCommand(t *testing.T) {
+	h, _ := host.New("127.0.0.1", "", "")
+
 	Convey("When the InstallPackages command is called without any packages given", t, func() {
 		Convey("Then the function panics", func() {
 			f := func() { InstallPackages() }
@@ -29,20 +72,22 @@ func TestInstallPackagesCommand(t *testing.T) {
 	Convey("When the InstallPackages command is called for a package foo", t, func() {
 		c := InstallPackages("foo")
 		Convey("Then the result should contain the foo package", func() {
-			So(c, ShouldContainSubstring, "foo")
+			So(c.Shell(h), ShouldContainSubstring, "foo")
 		})
 	})
 
 	Convey("When the InstallPackages command is called for packages foo and bar", t, func() {
 		c := InstallPackages("foo", "bar")
 		Convey("Then the result should contain the both packages", func() {
-			So(c, ShouldContainSubstring, "foo")
-			So(c, ShouldContainSubstring, "bar")
+			So(c.Shell(h), ShouldContainSubstring, "foo")
+			So(c.Shell(h), ShouldContainSubstring, "bar")
 		})
 	})
 }
 
 func TestAndCommand(t *testing.T) {
+	h, _ := host.New("127.0.0.1", "", "")
+
 	Convey("When the And command is called without any subcommands given", t, func() {
 		Convey("Then the function panics", func() {
 			f := func() { And() }
@@ -53,19 +98,42 @@ func TestAndCommand(t *testing.T) {
 	Convey("When the And command is called for a command foo", t, func() {
 		c := And("foo")
 		Convey("Then the result should only contain the foo command", func() {
-			So(c, ShouldEqual, "foo")
+			So(c.Shell(h), ShouldEqual, "foo")
 		})
 	})
 
 	Convey("When the And command is called for commands foo and bar", t, func() {
 		c := And("foo", "bar")
 		Convey("Then the result should contain the combined commands", func() {
-			So(c, ShouldEqual, "{ foo && bar; }")
+			So(c.Shell(h), ShouldEqual, "{ foo && bar; }")
+		})
+	})
+
+	Convey("When the And command is called for mixed commands", t, func() {
+		c := And(&ShellCommand{Command: "foo"}, "bar")
+		Convey("Then the result should contain the combined commands", func() {
+			So(c.Shell(h), ShouldEqual, "{ foo && bar; }")
+		})
+	})
+
+	Convey("When the And command is called for mixed commands where one has a user set", t, func() {
+		f := func() { And(&ShellCommand{Command: "foo", user: "gfrey"}, "bar") }
+		Convey("Then And function must panic", func() {
+			So(f, ShouldPanicWith, "AsUser not supported in nested commands")
+		})
+	})
+
+	Convey("When the And command is called for mixed commands where one is not a ShellCommand", t, func() {
+		f := func() { And(&FileCommand{Path: "foo"}, "bar") }
+		Convey("Then And function must panic", func() {
+			So(f, ShouldPanicWith, `type "*cmd.FileCommand" not supported`)
 		})
 	})
 }
 
 func TestOrCommand(t *testing.T) {
+	h, _ := host.New("127.0.0.1", "", "")
+
 	Convey("When the Or command is called without any subcommands given", t, func() {
 		Convey("Then the function panics", func() {
 			f := func() { Or() }
@@ -76,19 +144,42 @@ func TestOrCommand(t *testing.T) {
 	Convey("When the Or command is called for a command foo", t, func() {
 		c := Or("foo")
 		Convey("Then the result should only contain the foo command", func() {
-			So(c, ShouldEqual, "foo")
+			So(c.Shell(h), ShouldEqual, "foo")
 		})
 	})
 
 	Convey("When the Or command is called for commands foo and bar", t, func() {
 		c := Or("foo", "bar")
 		Convey("Then the result should contain the combined commands", func() {
-			So(c, ShouldEqual, "{ foo || bar; }")
+			So(c.Shell(h), ShouldEqual, "{ foo || bar; }")
+		})
+	})
+
+	Convey("When the Or command is called for mixed commands", t, func() {
+		c := Or(&ShellCommand{Command: "foo"}, "bar")
+		Convey("Then the result should contain the combined commands", func() {
+			So(c.Shell(h), ShouldEqual, "{ foo || bar; }")
+		})
+	})
+
+	Convey("When the Or command is called for mixed commands where one has a user set", t, func() {
+		f := func() { Or(&ShellCommand{Command: "foo", user: "gfrey"}, "bar") }
+		Convey("Then Or function must panic", func() {
+			So(f, ShouldPanicWith, "AsUser not supported in nested commands")
+		})
+	})
+
+	Convey("When the Or command is called for mixed commands where one is not a ShellCommand", t, func() {
+		f := func() { Or(&FileCommand{Path: "foo"}, "bar") }
+		Convey("Then Or function must panic", func() {
+			So(f, ShouldPanicWith, `type "*cmd.FileCommand" not supported`)
 		})
 	})
 }
 
 func TestMkdirCommand(t *testing.T) {
+	h, _ := host.New("127.0.0.1", "", "")
+
 	Convey("When the Mkdir command is called without a path", t, func() {
 		Convey("Then the function panics", func() {
 			f := func() { Mkdir("", "", 0) }
@@ -103,7 +194,7 @@ func TestMkdirCommand(t *testing.T) {
 			var mode os.FileMode = 0
 			Convey("Then the mkdir command won't set owner or permissions", func() {
 				c := Mkdir(path, owner, mode)
-				So(c, ShouldEqual, "mkdir -p /tmp/foo")
+				So(c.Shell(h), ShouldEqual, "mkdir -p /tmp/foo")
 			})
 		})
 
@@ -112,7 +203,7 @@ func TestMkdirCommand(t *testing.T) {
 			var mode os.FileMode = 0
 			Convey("Then the mkdir command will change the owner", func() {
 				c := Mkdir(path, owner, mode)
-				So(c, ShouldContainSubstring, "chown gfrey /tmp/foo")
+				So(c.Shell(h), ShouldContainSubstring, "chown gfrey /tmp/foo")
 			})
 		})
 
@@ -121,7 +212,7 @@ func TestMkdirCommand(t *testing.T) {
 			var mode os.FileMode = 0755
 			Convey("Then the mkdir command will change the permissions", func() {
 				c := Mkdir(path, owner, mode)
-				So(c, ShouldContainSubstring, "chmod 755 /tmp/foo")
+				So(c.Shell(h), ShouldContainSubstring, "chmod 755 /tmp/foo")
 			})
 		})
 
@@ -130,14 +221,16 @@ func TestMkdirCommand(t *testing.T) {
 			var mode os.FileMode = 0755
 			Convey("Then the mkdir command will change owner and permissions", func() {
 				c := Mkdir(path, owner, mode)
-				So(c, ShouldContainSubstring, "chown gfrey /tmp/foo")
-				So(c, ShouldContainSubstring, "chmod 755 /tmp/foo")
+				So(c.Shell(h), ShouldContainSubstring, "chown gfrey /tmp/foo")
+				So(c.Shell(h), ShouldContainSubstring, "chmod 755 /tmp/foo")
 			})
 		})
 	})
 }
 
 func TestIfCommand(t *testing.T) {
+	h, _ := host.New("127.0.0.1", "", "")
+
 	Convey("When the If command is called without a test", t, func() {
 		f := func() { If("", "") }
 		Convey("Then the function panics", func() {
@@ -161,14 +254,33 @@ func TestIfCommand(t *testing.T) {
 			cmd := "echo \"true\""
 			Convey("Then the resulting command will contain both", func() {
 				c := If(test, cmd)
-				So(c, ShouldContainSubstring, test)
-				So(c, ShouldContainSubstring, cmd)
+				So(c.Shell(h), ShouldContainSubstring, test)
+				So(c.Shell(h), ShouldContainSubstring, cmd)
+			})
+		})
+
+		Convey("Given a ShellCommand", func() {
+			cmd := &ShellCommand{Command: `echo "true"`}
+			Convey("Then the resulting command will contain both", func() {
+				c := If(test, cmd)
+				So(c.Shell(h), ShouldContainSubstring, test)
+				So(c.Shell(h), ShouldContainSubstring, `echo "true"`)
+			})
+		})
+
+		Convey("Given a FileCommand", func() {
+			cmd := &FileCommand{Path: "/tmpf"}
+			f := func() { If(test, cmd) }
+			Convey("Then the function panics", func() {
+				So(f, ShouldPanicWith, `type "*cmd.FileCommand" not supported`)
 			})
 		})
 	})
 }
 
 func TestIfNotCommand(t *testing.T) {
+	h, _ := host.New("127.0.0.1", "", "")
+
 	Convey("When the IfNot command is called without a test", t, func() {
 		f := func() { IfNot("", "") }
 		Convey("Then the function panics", func() {
@@ -193,15 +305,34 @@ func TestIfNotCommand(t *testing.T) {
 			Convey("When the IfNot command is called with those", func() {
 				c := IfNot(test, cmd)
 				Convey("Then the result must contain both", func() {
-					So(c, ShouldContainSubstring, test)
-					So(c, ShouldContainSubstring, cmd)
+					So(c.Shell(h), ShouldContainSubstring, test)
+					So(c.Shell(h), ShouldContainSubstring, cmd)
 				})
+			})
+		})
+
+		Convey("Given a ShellCommand", func() {
+			cmd := &ShellCommand{Command: `echo "true"`}
+			Convey("Then the resulting command will contain both", func() {
+				c := IfNot(test, cmd)
+				So(c.Shell(h), ShouldContainSubstring, test)
+				So(c.Shell(h), ShouldContainSubstring, `echo "true"`)
+			})
+		})
+
+		Convey("Given a FileCommand", func() {
+			cmd := &FileCommand{Path: "/tmpf"}
+			f := func() { IfNot(test, cmd) }
+			Convey("Then the function panics", func() {
+				So(f, ShouldPanicWith, `type "*cmd.FileCommand" not supported`)
 			})
 		})
 	})
 }
 
 func TestDownloadToFileCommand(t *testing.T) {
+	h, _ := host.New("127.0.0.1", "", "")
+
 	Convey("Given an empty URL", t, func() {
 		url := ""
 		destination := ""
@@ -230,10 +361,10 @@ func TestDownloadToFileCommand(t *testing.T) {
 		Convey("When the DownloadToFile method is called", func() {
 			c := DownloadToFile(url, destination, "", 0)
 			Convey("Then the result must contain a download command", func() {
-				So(c, ShouldContainSubstring, "curl -SsfLO "+url)
+				So(c.Shell(h), ShouldContainSubstring, "curl -SsfLO "+url)
 			})
 			Convey("Then the result must contain a move command", func() {
-				So(c, ShouldContainSubstring, "mv /tmp/downloads/foobar.gz "+destination)
+				So(c.Shell(h), ShouldContainSubstring, "mv /tmp/downloads/foobar.gz "+destination)
 			})
 		})
 		Convey("Given an owner different from root", func() {
@@ -241,7 +372,7 @@ func TestDownloadToFileCommand(t *testing.T) {
 			Convey("When the DownloadToFile method is called", func() {
 				c := DownloadToFile(url, destination, owner, 0)
 				Convey("Then the result must contain a chown command", func() {
-					So(c, ShouldContainSubstring, "chown gfrey /tmp/foobar.gz")
+					So(c.Shell(h), ShouldContainSubstring, "chown gfrey /tmp/foobar.gz")
 				})
 			})
 		})
@@ -250,7 +381,7 @@ func TestDownloadToFileCommand(t *testing.T) {
 			Convey("When the DownloadToFile method is called", func() {
 				c := DownloadToFile(url, destination, "", permissions)
 				Convey("Then the result must contain a chmod command", func() {
-					So(c, ShouldContainSubstring, "chmod 644 /tmp/foobar.gz")
+					So(c.Shell(h), ShouldContainSubstring, "chmod 644 /tmp/foobar.gz")
 				})
 			})
 		})
@@ -258,6 +389,8 @@ func TestDownloadToFileCommand(t *testing.T) {
 }
 
 func TestDownloadAndExtractComamnd(t *testing.T) {
+	h, _ := host.New("127.0.0.1", "", "")
+
 	Convey("Given an empty URL", t, func() {
 		url := ""
 		targetDir := ""
@@ -286,12 +419,11 @@ func TestDownloadAndExtractComamnd(t *testing.T) {
 		Convey("When the DownloadAndExtract method is called", func() {
 			c := DownloadAndExtract(url, targetDir)
 			Convey("Then the result must contain a download command", func() {
-				So(c, ShouldContainSubstring, "curl -SsfLO "+url)
+				So(c.Shell(h), ShouldContainSubstring, "curl -SsfLO "+url)
 			})
 			Convey("Then the result must contain an extract command", func() {
-				So(c, ShouldContainSubstring, "tar xvfz /tmp/downloads/foobar.tgz")
+				So(c.Shell(h), ShouldContainSubstring, "tar xvfz /tmp/downloads/foobar.tgz")
 			})
 		})
 	})
-
 }
