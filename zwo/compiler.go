@@ -7,13 +7,13 @@ import (
 	"strings"
 )
 
-// A 'Compiler' is an entity (lets call it a package) that adds commands to a given runlist, taking into account their
+// A "Compiler" is an entity (lets call it a package) that adds commands to a given runlist, taking into account their
 // own configuration.
 type Compiler interface {
 	Compile(rl *Runlist) // Add the package specific commands to the runlist.
 }
 
-// The 'CompileNamer' interface is used to specify an explicit name for an package (if interface is not implemented on
+// The "CompileNamer" interface is used to specify an explicit name for an package (if interface is not implemented on
 // the package then the package's struct name will be used).
 type CompileNamer interface {
 	CompileName() string

@@ -6,6 +6,8 @@ import (
 	"github.com/dynport/zwo/host"
 )
 
+// Create an upstart command. That is a script executed on system start. See the github.com/dynport/dgtk/goup package
+// for further details.
 type UpstartCommand struct {
 	Upstart *goup.Upstart // Upstart configuration.
 }

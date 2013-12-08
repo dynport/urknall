@@ -1,6 +1,7 @@
 // The RubyPackage is used to provision ruby on a host.
 //
-// TODO: add prefix support
+// Ruby will be downloaded, extracted, configured, built, and installed to `/opt/ruby-{{ .Version }}`. If the `Bundle`
+// flag is set, bundler will be installed.
 package ruby
 
 import (

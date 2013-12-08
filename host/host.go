@@ -1,4 +1,9 @@
-// struct to provide basic information on the host to provision.
+// Type to provide basic information on the host to provision. This contains all the essential information required to
+// reach and access the host (like the IP address and SSH credentials). Additionally there is information on the basic
+// setup of the machine, including system related things (like the hostname and firewall) and services (like docker).
+//
+//	TODO(gfrey): Add better support for interfaces and IPs.
+//	TODO(gfrey): Add handling and support for IPv6 (currently the firewall will block everything).
 package host
 
 import (
@@ -7,6 +12,10 @@ import (
 	"net"
 )
 
+// The host type. Use the "New" function to create the basic value.
+//
+// Please note that you need to set the primary interface (the one the host is accessible on) name, if that is not
+// "eth0". That should only be necessary on rare circumstances.
 type Host struct {
 	ip       net.IP // Host's IP address used to provision the system.
 	user     string // User used to log in.
@@ -14,13 +23,14 @@ type Host struct {
 	iface    string // Primary network interface of the host.
 
 	Paranoid bool // Make the firewall as restrictive as possible.
-	WithVPN  bool // Connect host to a VPN. Assumes 'tun0' as interface.
+	WithVPN  bool // Connect host to a VPN. Assumes "tun0" as interface.
 
 	Docker *DockerSettings // Make the host a docker container carrier.
 
 	rules []*firewall.Rule // List of rules used for the firewall.
 }
 
+// If the associated host should run (or build) docker containers this type can be used to configure docker.
 type DockerSettings struct {
 	Version          string // Docker version to run.
 	WithRegistry     bool   // Run an image on this host, that will provide a registry for docker images.
@@ -28,7 +38,11 @@ type DockerSettings struct {
 	Registry         string // URL of the registry to use.
 }
 
-// Create a new hosts structure.
+// Create a new hosts structure. This function will return an error if no or and invalid IP (ipv4 and ipv6 are
+// supported) is given. The hostname is optional, but should be set for better communication on the host. The user set
+// in here should be the user used to access the machine. As SSH is used with publickey authentication, this user must
+// exist on the host and have one of your public keys in its authorizes hosts file. If an empty user is given, "root" is
+// assumed.
 func New(ip, user, hostname string) (host *Host, e error) {
 	h := &Host{Paranoid: true}
 
@@ -57,7 +71,7 @@ func (h *Host) setIPAddress(ip string) (e error) {
 	return nil
 }
 
-// Get the host's IP address.
+// Get the host's IP address. This is the public IP address used for SSH access.
 func (h *Host) IPAddress() string {
 	return h.ip.String()
 }
@@ -67,7 +81,7 @@ func (h *Host) Hostname() string {
 	return h.hostname
 }
 
-// Get the user used to access the host. If none is given the 'root' account is as default.
+// Get the user used to access the host. If none is given the "root" account is as default.
 func (h *Host) User() string {
 	if h.user == "" {
 		return "root"
@@ -88,7 +102,7 @@ func (h *Host) Interface() string {
 	return h.iface
 }
 
-// Get docker version.
+// Get docker version that should be used. Will panic if the host has no docker enabled.
 func (h *Host) DockerVersion() string {
 	if h.Docker == nil {
 		panic("not a docker host")
@@ -104,12 +118,12 @@ func (h *Host) IsDockerHost() bool {
 	return h.Docker != nil
 }
 
-// Predicate to test whether host should be used to build docker images.
+// Predicate to test whether the host should be used to build docker images.
 func (h *Host) IsDockerBuildHost() bool {
 	return h.Docker != nil && h.Docker.WithBuildSupport
 }
 
-// Predicate to test whether sudo is required (user for the host is not 'root').
+// Predicate to test whether sudo is required (user for the host is not "root").
 func (h *Host) IsSudoRequired() bool {
 	if h.user != "" && h.user != "root" {
 		return true
@@ -117,12 +131,17 @@ func (h *Host) IsSudoRequired() bool {
 	return false
 }
 
-// Add a firewall rule.
+// Add a firewall rule. See the github.com/dynport/zwo/firewall package for further information on how to build and
+// configure firewall rules.
+//
+// By default the host will only have SSH accessible from the outside (in case of the Paranoid flag being set, even
+// output will be limited to certain protocols). For any of the installed services to be reachable you must configure
+// access.
 func (h *Host) AddFirewallRule(r *firewall.Rule) {
 	h.rules = append(h.rules, r)
 }
 
-// Compile rules into something iptables can digest.
+// Compile rules into a set of commands iptables-restore can digest.
 func (h *Host) FirewallRules() (rules []string) {
 	rules = []string{}
 	for _, rule := range h.rules {

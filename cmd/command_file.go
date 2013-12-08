@@ -13,6 +13,10 @@ import (
 	"strings"
 )
 
+// The "FileCommand" is used to write files to the host being provisioned. The go templating mechanism
+// (see http://golang.org/pkg/text/template) is used with the file's content and the package the command for rendering
+// the file is taken from. Thereby it is possible to have dynamic content (based on the packages' configuration) for the
+// file content and at the same time store it in an asset (that must not be preprocessed or compiled by hand).
 type FileCommand struct {
 	Path        string      // Path to the file to create.
 	Content     string      // Content of the file to create.
@@ -20,11 +24,14 @@ type FileCommand struct {
 	Permissions os.FileMode // Permissions of the file created (only changed from system default if set).
 }
 
-// Convenient helper method to create a file with owner and permissions.
+// Helper method to create a file at the given path with the given content, and with owner and permissions set
+// accordingly.
 func WriteFile(path string, content string, owner string, permissions os.FileMode) *FileCommand {
 	return &FileCommand{Path: path, Content: content, Owner: owner, Permissions: permissions}
 }
 
+// Helper method to write the asset with the given name to the location given, with owner and permissions set
+// accordingly. If no asset with the given name exists the function will panic!
 func WriteAsset(path, assetName, owner string, permissions os.FileMode) *FileCommand {
 	content, e := assets.Get(assetName)
 	if e != nil {

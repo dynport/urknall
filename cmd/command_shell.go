@@ -8,12 +8,21 @@ import (
 	"strings"
 )
 
+// A shell command is just that: something that is executed in a shell on the host to be provisioned. There is quite a
+// lot of infrastructure to build such commands. To make construction of complicated commands easier those helpers use
+// the most generic type "interface{}". Thereby it is possible to use these functions with "strings" or other
+// "ShellCommands" (returned by other helpers for example).
+//
+// There are some commands that relate to the system's package management. Those are currently based on apt, i.e. only
+// debian based systems can be used (our current system of choice is ubuntu server in version 12.04LTS as of this
+// writing).
 type ShellCommand struct {
 	Command string // Command to be executed in the shell.
 	user    string // User to run the command as.
 }
 
-// Convenience function to run a command as a certain user. Please note that nested calls will not work (function will panic).
+// Convenience function to run a command as a certain user. Note that nested calls will not work. The function will
+// panic if it detects such a scenario.
 func AsUser(user string, i interface{}) *ShellCommand {
 	switch c := i.(type) {
 	case *ShellCommand:
@@ -29,12 +38,12 @@ func AsUser(user string, i interface{}) *ShellCommand {
 	}
 }
 
-// Upgrade the package cache and update the installed packages.
+// Upgrade the package cache and update the installed packages (using apt).
 func UpdatePackages() *ShellCommand {
 	return And("apt-get update", "DEBIAN_FRONTEND=noninteractive apt-get upgrade -y")
 }
 
-// Install the given packages.
+// Install the given packages (using apt-get).
 func InstallPackages(pkgs ...string) *ShellCommand {
 	if len(pkgs) == 0 {
 		panic("empty package list given")
@@ -44,7 +53,8 @@ func InstallPackages(pkgs ...string) *ShellCommand {
 	}
 }
 
-// Combine the given commands with "and" (all must succeed).
+// Combine the given commands with "and", i.e. all commands must succeed. Execution is stopped immediately if one of the
+// commands fails, the subsequent ones are not execute!
 func And(cmds ...interface{}) *ShellCommand {
 	if len(cmds) == 0 {
 		panic("empty list of commands given")
@@ -59,7 +69,7 @@ func And(cmds ...interface{}) *ShellCommand {
 	return &ShellCommand{Command: finalCommand}
 }
 
-// Combine the given commands with "or" (try one after one, till the first works).
+// Combine the given commands with "or", i.e. try one after one, untill the first returns success.
 func Or(cmds ...interface{}) *ShellCommand {
 	if len(cmds) == 0 {
 		panic("empty list of commands given")
@@ -110,7 +120,14 @@ func Mkdir(path, owner string, permissions os.FileMode) *ShellCommand {
 	return And(cmds...)
 }
 
-// If the tests succeeds run the given command (see "man test" for test syntax).
+// If the tests succeeds run the given command. The test must be based on bash's test syntax (see "man test"). Just
+// state what should be given, like for example "-f /tmp/foo", to state that the file (-f) "/tmp/foo" must exist.
+//
+// Note that this is a double-edged sword, perfectly fit to hurt yourself. Take the following example:
+//	[[ -f /tmp/foo ]] && echo "file exists" && exit 1
+// The intention is to fail if a certain file exists. The problem is that this doesn't work out. The command must return
+// a positive return value if the file does not exit, but it won't. Use the "IfNot" method like in this statement:
+//	[[ ! -f /tmp/foo ]] || { echo "file exists" && exit 1; }
 func If(test string, i interface{}) *ShellCommand {
 	if test == "" {
 		panic("empty test given")
@@ -132,7 +149,7 @@ func If(test string, i interface{}) *ShellCommand {
 	}
 }
 
-// If the tests does not succeed run the given command (see "man test" for test syntax).
+// If the tests does not succeed run the given command. The tests must be based on bash's test syntax (see "man test").
 func IfNot(test string, i interface{}) *ShellCommand {
 	if test == "" {
 		panic("empty test given")
@@ -164,7 +181,10 @@ func download(url string) *ShellCommand {
 		fmt.Sprintf("curl -SsfLO %s", url))
 }
 
-// Downlowad the URL to the destination with owner and permissions set accordingly.
+// Download the URL and write the file to the given destination, with owner and permissions set accordingly.
+// Destination can either be an existing directory or a file. If a directory is given the downloaded file will moved
+// there using the file name from the URL. If it is a file, the downloaded file will be moved (and possibly renamed) to
+// that destination. Overwriting an existing file is not possible (command fails in that case)!
 func DownloadToFile(url, destination, owner string, permissions os.FileMode) *ShellCommand {
 	cmds := make([]interface{}, 0, 4)
 	cmds = append(cmds, download(url))
@@ -208,7 +228,7 @@ func filenameFromUrl(url string) string {
 	return path.Base(url)
 }
 
-// Wait for the given path to appear, with the given timeout.
+// Wait for the given path to appear. Break and fail if it doesn't appear after the given number of seconds.
 func WaitForFile(path string, timeoutInSeconds int) *ShellCommand {
 	t := 10 * timeoutInSeconds
 	cmd := fmt.Sprintf(
@@ -219,7 +239,7 @@ func WaitForFile(path string, timeoutInSeconds int) *ShellCommand {
 	}
 }
 
-// Wait for the given unix file socket to appear, with the given timeout.
+// Wait for the given unix file socket to appear. Break and fail if it doesn't appear after the given number of seconds.
 func WaitForUnixSocket(path string, timeoutInSeconds int) *ShellCommand {
 	t := 10 * timeoutInSeconds
 	cmd := fmt.Sprintf(

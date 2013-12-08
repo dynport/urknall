@@ -7,7 +7,8 @@ import (
 	"runtime/debug"
 )
 
-// Provision the given host with the given packages. This is where zwo's secret leprechauns sit and do their work!
+// Provision the given host with the given packages. If "dryrun" is set, no actions are performed. This can be used to
+// get a feeling of what would happen.
 func ProvisionHost(host *host.Host, dryrun bool, packages ...Compiler) (e error) {
 	sc := newSSHClient(host)
 	if dryrun {

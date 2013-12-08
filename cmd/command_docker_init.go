@@ -5,6 +5,10 @@ import (
 	"github.com/dynport/zwo/host"
 )
 
+// A command to be executed when a container is started. This is equivalent to the "UpstartCommand" of the bare metal
+// (or virtual machine) provisioning.
+//
+// TODO: Generalize the "DockerInitCommand" so that it can set all the commands supported by dockerfiles.
 type DockerInitCommand struct {
 	Command string // Command to be executed on container start.
 }
