@@ -186,46 +186,85 @@ func download(url string) *ShellCommand {
 // there using the file name from the URL. If it is a file, the downloaded file will be moved (and possibly renamed) to
 // that destination. Overwriting an existing file is not possible (command fails in that case)!
 func DownloadToFile(url, destination, owner string, permissions os.FileMode) *ShellCommand {
+	filename := path.Base(url)
+
 	cmds := make([]interface{}, 0, 4)
 	cmds = append(cmds, download(url))
 
 	if destination == "" {
 		panic("empty destination given")
 	}
-	cmds = append(cmds, fmt.Sprintf("mv /tmp/downloads/%s %s", filenameFromUrl(url), destination))
+	// don't overwrite existing files.
+	cmds = append(cmds, IfNot(
+		fmt.Sprintf("! -f %s", destination),
+		And(`echo "destination already exists; will not overwrite"`,
+			"exit 1")))
+	cmds = append(cmds, fmt.Sprintf("mv /tmp/downloads/%s %s", filename, destination))
 
 	if owner != "" && owner != "root" {
 		cmds = append(cmds, Or(
 			If(fmt.Sprintf("-f %s", destination), fmt.Sprintf("chown %s %s", owner, destination)),
-			If(fmt.Sprintf("-d %s", destination), fmt.Sprintf("chown %s %s/%s", owner, destination, filenameFromUrl(url))),
+			If(fmt.Sprintf("-d %s", destination), fmt.Sprintf("chown %s %s/%s", owner, destination, filename)),
 			And("echo \"Couldn't determine target\"", "exit 1")))
 	}
 	if permissions != 0 {
 		cmds = append(cmds, Or(
 			If(fmt.Sprintf("-f %s", destination), fmt.Sprintf("chmod %o %s", permissions, destination)),
-			If(fmt.Sprintf("-d %s", destination), fmt.Sprintf("chmod %o %s/%s", permissions, destination, filenameFromUrl(url))),
+			If(fmt.Sprintf("-d %s", destination), fmt.Sprintf("chmod %o %s/%s", permissions, destination, filename)),
 			And("echo \"Couldn't determine target\"", "exit 1")))
 	}
 	return And(cmds...)
 }
 
-// Download the URL and extract in the given directory.
-func DownloadAndExtract(url, targetDir string) *ShellCommand {
-	downloadCmd := download(url)
-
+// Extract the file at the given directory. The following file extensions are currently supported (".tar", ".tgz",
+// ".tar.gz", ".tbz", ".tar.bz2" for tar archives, and ".zip" for zipfiles).
+func ExtractFile(file, targetDir string) *ShellCommand {
 	if targetDir == "" {
 		panic("empty target directory given")
 	}
 
+	var extractCmd *ShellCommand
+	switch {
+	case strings.HasSuffix(file, ".tar"):
+		extractCmd = extractTarArchive(file, targetDir, "")
+	case strings.HasSuffix(file, ".tgz"):
+		fallthrough
+	case strings.HasSuffix(file, ".tar.gz"):
+		extractCmd = extractTarArchive(file, targetDir, "gz")
+	case strings.HasSuffix(file, ".tbz"):
+		fallthrough
+	case strings.HasSuffix(file, ".tar.bz2"):
+		extractCmd = extractTarArchive(file, targetDir, "bz2")
+	case strings.HasSuffix(file, ".zip"):
+		extractCmd = &ShellCommand{Command: fmt.Sprintf("unzip -d %s %s", targetDir, file)}
+	default:
+		panic(fmt.Sprintf("type of file %q not a supported archive", path.Base(file)))
+	}
+
 	return And(
-		downloadCmd,
-		If(fmt.Sprintf("! -d %s", targetDir), Mkdir(targetDir, "", 0)),
-		fmt.Sprintf("cd %s", targetDir),
-		fmt.Sprintf("tar xvfz /tmp/downloads/%s", filenameFromUrl(url)))
+		Mkdir(targetDir, "", 0),
+		extractCmd)
 }
 
-func filenameFromUrl(url string) string {
-	return path.Base(url)
+func extractTarArchive(path, targetDir, compression string) *ShellCommand {
+	additionalCommand := ""
+	switch compression {
+	case "gz":
+		additionalCommand = "z"
+	case "bz2":
+		additionalCommand = "j"
+	}
+	return And(
+		fmt.Sprintf("cd %s", targetDir),
+		fmt.Sprintf("tar xvf%s %s", additionalCommand, path))
+}
+
+// Download the file from the given URL and extract it to the given directory. If the directory does not exist it is
+// created. See the "ExtractFile" command for a list of supported archive types.
+func DownloadAndExtract(url, targetDir string) *ShellCommand {
+	downloadCmd := download(url)
+	archivePath := fmt.Sprintf("/tmp/downloads/%s", path.Base(url))
+	return And(downloadCmd, ExtractFile(archivePath, targetDir))
 }
 
 // Wait for the given path to appear. Break and fail if it doesn't appear after the given number of seconds.
