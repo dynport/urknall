@@ -23,7 +23,7 @@ func (ruby *RubyPackage) Package(r *zwo.Runlist) {
 			"libreadline-dev", "libssl-dev", "zlib1g-dev"))
 
 	r.Add(
-		DownloadAndExtract(ruby.downloadURL(), ruby.SourcePath()))
+		DownloadAndExtract(ruby.downloadURL(), "/opt/src"))
 
 	r.Add(
 		And("cd {{ .SourcePath }}",
