@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/dynport/zwo/host"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -48,22 +47,8 @@ func TestAddFileForLogging(t *testing.T) {
 		}
 
 		Convey("Then the logging line should contain information on path and content", func() {
-			h, _ := host.New("127.0.0.1", "", "")
-			v := fAct.Logging(h)
+			v := fAct.Logging()
 			So(v, ShouldEqual, "[FILE   ] /tmp/foo << something")
-		})
-	})
-
-	Convey("Given a file action with sudo required", t, func() {
-		fAct := &FileCommand{
-			Content: "something",
-			Path:    "/tmp/foo",
-		}
-
-		Convey("Then the logging line should contain information on path and content", func() {
-			h, _ := host.New("127.0.0.1", "gfrey", "")
-			v := fAct.Logging(h)
-			So(v, ShouldEqual, "[FILE   ][SUDO] /tmp/foo << something")
 		})
 	})
 
@@ -75,8 +60,7 @@ func TestAddFileForLogging(t *testing.T) {
 		}
 
 		Convey("Then the logging line should contain information on path and content", func() {
-			h, _ := host.New("127.0.0.1", "", "")
-			v := fAct.Logging(h)
+			v := fAct.Logging()
 			So(v, ShouldEqual, "[FILE   ][CHOWN:gfrey] /tmp/foo << something")
 		})
 	})
@@ -89,8 +73,7 @@ func TestAddFileForLogging(t *testing.T) {
 		}
 
 		Convey("Then the logging line should contain information on path and content", func() {
-			h, _ := host.New("127.0.0.1", "", "")
-			v := fAct.Logging(h)
+			v := fAct.Logging()
 			So(v, ShouldEqual, "[FILE   ][CHMOD:0644] /tmp/foo << something")
 		})
 	})
@@ -102,8 +85,7 @@ func TestAddFileForLogging(t *testing.T) {
 		}
 
 		Convey("Then the logging line should truncate the content to 50 characters", func() {
-			h, _ := host.New("127.0.0.1", "", "")
-			v := fAct.Logging(h)
+			v := fAct.Logging()
 			So(v, ShouldEqual, "[FILE   ] /tmp/foo << 123456789.123456789.123456789.123456789.123456789.")
 		})
 	})
@@ -118,16 +100,13 @@ func TestAddFileForDocker(t *testing.T) {
 		}
 
 		Convey("Then the docker runfile should contain a simple command", func() {
-			h, _ := host.New("127.0.0.1", "", "")
-			v := fAct.Docker(h)
+			v := fAct.Docker()
 			So(v, ShouldStartWith, "RUN")
 		})
 	})
 }
 
 func TestAddFileForShell(t *testing.T) {
-	h, _ := host.New("127.0.0.1", "", "")
-
 	rawContent := "something"
 	zippedContent := `H4sIAAAJbogA/yrOz00tycjMSwcAAAD//wEAAP//+zHaCQkAAAA=`
 	hash := "3fc9b689459d738f8c88a3a48aa9e33542016b7a4052e001aaa536fca74813cb"
@@ -140,7 +119,7 @@ func TestAddFileForShell(t *testing.T) {
 
 		Convey("When no path is set", func() {
 			Convey("Then the creation of the actual shell command must fail", func() {
-				So(func() { fAct.Shell(h) }, ShouldPanicWith, "no path given")
+				So(func() { fAct.Shell() }, ShouldPanicWith, "no path given")
 			})
 		})
 
@@ -148,21 +127,21 @@ func TestAddFileForShell(t *testing.T) {
 			fAct.Path = "/tmp/foo"
 			Convey("When no content is given", func() {
 				Convey("Then the creation of the actual shell command must fail", func() {
-					So(func() { fAct.Shell(h) }, ShouldPanicWith, "no content given")
+					So(func() { fAct.Shell() }, ShouldPanicWith, "no content given")
 				})
 			})
 
 			Convey("When content is given", func() {
 				fAct.Content = rawContent
 				Convey("Then creation of the shell command succeeds", func() {
-					sc := fAct.Shell(h)
+					sc := fAct.Shell()
 					So(sc, ShouldContainSubstring, commandBase)
 				})
 
 				Convey("When a owner different then root is given", func() {
 					fAct.Owner = "gfrey"
 					Convey("Then the shell command contains a chown call", func() {
-						sc := fAct.Shell(h)
+						sc := fAct.Shell()
 						So(sc, ShouldContainSubstring, "chown gfrey /tmp/wunderscale.")
 					})
 				})
@@ -170,7 +149,7 @@ func TestAddFileForShell(t *testing.T) {
 				Convey("When a file mode other than 0 is given", func() {
 					fAct.Permissions = 0644
 					Convey("Then the shell command contains a chmod call", func() {
-						sc := fAct.Shell(h)
+						sc := fAct.Shell()
 						So(sc, ShouldContainSubstring, "chmod 644 /tmp/wunderscale.")
 					})
 				})

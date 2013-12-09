@@ -30,12 +30,12 @@ func TestPadToFixedLength(t *testing.T) {
 
 type testPkgWoutCNamer struct{}
 
-func (t *testPkgWoutCNamer) Pack(r *Runlist) {
+func (t *testPkgWoutCNamer) Package(r *Runlist) {
 }
 
 type testPkgWCNamer struct{}
 
-func (t *testPkgWCNamer) Pack(r *Runlist) {
+func (t *testPkgWCNamer) Package(r *Runlist) {
 }
 
 func (t *testPkgWCNamer) PackageName() string {

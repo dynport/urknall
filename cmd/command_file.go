@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/dynport/zwo/assets"
-	"github.com/dynport/zwo/host"
 	"os"
 	"path/filepath"
 	"strings"
@@ -40,13 +39,13 @@ func WriteAsset(path, assetName, owner string, permissions os.FileMode) *FileCom
 	return WriteFile(path, string(content), owner, permissions)
 }
 
-func (fc *FileCommand) Docker(host *host.Host) string {
-	return "RUN " + fc.Shell(host)
+func (fc *FileCommand) Docker() string {
+	return "RUN " + fc.Shell()
 }
 
 var b64 = base64.StdEncoding
 
-func (fc *FileCommand) Shell(host *host.Host) string {
+func (fc *FileCommand) Shell() string {
 	buf := &bytes.Buffer{}
 
 	if fc.Path == "" {
@@ -91,7 +90,7 @@ func (fc *FileCommand) Shell(host *host.Host) string {
 	return cmd
 }
 
-func (fc *FileCommand) Logging(host *host.Host) string {
+func (fc *FileCommand) Logging() string {
 	sList := []string{"[FILE   ]"}
 
 	if fc.Owner != "" && fc.Owner != "root" {

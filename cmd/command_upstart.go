@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"github.com/dynport/dgtk/goup"
-	"github.com/dynport/zwo/host"
 )
 
 // Create an upstart command. That is a script executed on system start. See the github.com/dynport/dgtk/goup package
@@ -12,11 +11,11 @@ type UpstartCommand struct {
 	Upstart *goup.Upstart // Upstart configuration.
 }
 
-func (uA *UpstartCommand) Docker(host *host.Host) string {
+func (uA *UpstartCommand) Docker() string {
 	return ""
 }
 
-func (uA *UpstartCommand) Shell(host *host.Host) string {
+func (uA *UpstartCommand) Shell() string {
 	if uA.Upstart == nil {
 		return ""
 	}
@@ -25,9 +24,9 @@ func (uA *UpstartCommand) Shell(host *host.Host) string {
 		Content:     uA.Upstart.CreateScript(),
 		Permissions: 0644,
 	}
-	return fA.Shell(host)
+	return fA.Shell()
 }
 
-func (uA *UpstartCommand) Logging(host *host.Host) string {
+func (uA *UpstartCommand) Logging() string {
 	return fmt.Sprintf("[UPSTART] Adding upstart script for '%s'.", uA.Upstart.Name)
 }

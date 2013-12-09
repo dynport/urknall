@@ -2,7 +2,6 @@ package zwo
 
 import (
 	"github.com/dynport/zwo/cmd"
-	"github.com/dynport/zwo/host"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -11,13 +10,13 @@ type customCommand struct {
 	Content string
 }
 
-func (cc *customCommand) Shell(h *host.Host) string {
+func (cc *customCommand) Shell() string {
 	return "cc: " + cc.Content
 }
-func (cc *customCommand) Docker(h *host.Host) string {
+func (cc *customCommand) Docker() string {
 	return ""
 }
-func (cc *customCommand) Logging(h *host.Host) string {
+func (cc *customCommand) Logging() string {
 	return ""
 }
 

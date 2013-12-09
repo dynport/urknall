@@ -57,7 +57,7 @@ func (sc *sshClient) provision(rl *Runlist) (e error) {
 
 	for i := range tasks {
 		task := tasks[i]
-		logMsg := task.command.Logging(sc.host)
+		logMsg := task.command.Logging()
 		if _, found := checksumHash[task.checksum]; found { // Task is cached.
 			logger.Infof("\b[%s][%.8s]%s", gologger.Colorize(33, "CACHED"), task.checksum, logMsg)
 			delete(checksumHash, task.checksum) // Delete checksums of cached tasks from hash.
@@ -87,14 +87,14 @@ func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
 
 	checksumFile := fmt.Sprintf("%s/%s", checksumDir, task.checksum)
 
-	sCmd := fmt.Sprintf("bash <<EOF_RUNTASK 2> %s.stderr 1> %s.stdout\n%s\nEOF_RUNTASK\n", checksumFile, checksumFile, task.command.Shell(sc.host))
+	sCmd := fmt.Sprintf("bash <<EOF_RUNTASK 2> %s.stderr 1> %s.stdout\n%s\nEOF_RUNTASK\n", checksumFile, checksumFile, task.command.Shell())
 	if sc.host.IsSudoRequired() {
 		sCmd = fmt.Sprintf("sudo bash <<EOF_ZWO_SUDO\n%s\nEOF_ZWO_SUDO\n", sCmd)
 	}
 	rsp, e := sc.client.Execute(sCmd)
 
 	// Write the checksum file (containing information on the command run).
-	sc.writeChecksumFile(checksumFile, e != nil, task.command.Logging(sc.host), rsp)
+	sc.writeChecksumFile(checksumFile, e != nil, task.command.Logging(), rsp)
 
 	return e
 }
@@ -104,7 +104,7 @@ func (sc *sshClient) executeCommand(cmdRaw string) *gossh.Result {
 		cmdRaw = fmt.Sprintf("sudo bash <<EOF_ZWO_SUDO\n%s\nEOF_ZWO_SUDO\n", cmdRaw)
 	}
 	c := &cmd.ShellCommand{Command: cmdRaw}
-	result, e := sc.client.Execute(c.Shell(sc.host))
+	result, e := sc.client.Execute(c.Shell())
 	if e != nil {
 		stderr := ""
 		if result != nil {
@@ -181,7 +181,7 @@ func (sc *sshClient) buildTasksForRunlist(rl *Runlist) (tasks []*taskData) {
 
 	cmdHash := sha256.New()
 	for i := range rl.commands {
-		rawCmd := rl.commands[i].Shell(sc.host)
+		rawCmd := rl.commands[i].Shell()
 		cmdHash.Write([]byte(rawCmd))
 
 		task := &taskData{command: rl.commands[i], checksum: fmt.Sprintf("%x", cmdHash.Sum(nil))}

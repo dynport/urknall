@@ -86,7 +86,7 @@ func countActions(runLists []*Runlist) (i int) {
 
 func (dc *dockerClient) buildDockerFile(rl *Runlist) (e error) {
 	for i := range rl.commands {
-		dc.dockerfile += rl.commands[i].Docker(dc.host) + "\n"
+		dc.dockerfile += rl.commands[i].Docker() + "\n"
 	}
 	return nil
 }

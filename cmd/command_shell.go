@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/dynport/zwo/host"
 	"os"
 	"path"
 	"strings"
@@ -289,18 +288,18 @@ func WaitForUnixSocket(path string, timeoutInSeconds int) *ShellCommand {
 	}
 }
 
-func (sc *ShellCommand) Docker(host *host.Host) string {
+func (sc *ShellCommand) Docker() string {
 	return fmt.Sprintf("RUN %s", sc.Command)
 }
 
-func (sc *ShellCommand) Shell(host *host.Host) string {
+func (sc *ShellCommand) Shell() string {
 	if sc.isExecutedAsUser() {
 		return fmt.Sprintf("su -l %s <<EOF_ZWO_ASUSER\n%s\nEOF_ZWO_ASUSER\n", sc.user, sc.Command)
 	}
 	return sc.Command
 }
 
-func (sc *ShellCommand) Logging(host *host.Host) string {
+func (sc *ShellCommand) Logging() string {
 	s := []string{"[COMMAND]"}
 
 	if sc.isExecutedAsUser() {
