@@ -23,6 +23,7 @@ type hostPackage struct {
 }
 
 func (hp *hostPackage) Compile(rl *Runlist) {
+	rl.Add(UpdatePackages())
 	if hp.Hostname() != "" { // Set hostname.
 		rl.Add(&FileCommand{Path: "/etc/hostname", Content: hp.Hostname()})
 		rl.Add(&FileCommand{Path: "/etc/hosts", Content: "127.0.0.1 {{ .Hostname }} localhost"})
