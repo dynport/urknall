@@ -96,7 +96,10 @@ func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
 	// Write the checksum file (containing information on the command run).
 	sc.writeChecksumFile(checksumFile, e != nil, task.command.Logging(), rsp)
 
-	return e
+	if e != nil {
+		return fmt.Errorf("%s (see %s.failed for more information)", e.Error(), checksumFile)
+	}
+	return nil
 }
 
 func (sc *sshClient) executeCommand(cmdRaw string) *gossh.Result {

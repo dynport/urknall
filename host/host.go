@@ -8,7 +8,7 @@ package host
 
 import (
 	"fmt"
-	"github.com/dynport/zwo/firewall"
+	"github.com/dynport/zwo/fw"
 	"net"
 )
 
@@ -27,7 +27,8 @@ type Host struct {
 
 	Docker *DockerSettings // Make the host a docker container carrier.
 
-	rules []*firewall.Rule // List of rules used for the firewall.
+	Rules  []*fw.Rule  // List of rules used for the firewall.
+	IPSets []*fw.IPSet // List of ipsets for the firewall.
 }
 
 // If the associated host should run (or build) docker containers this type can be used to configure docker.
@@ -129,23 +130,4 @@ func (h *Host) IsSudoRequired() bool {
 		return true
 	}
 	return false
-}
-
-// Add a firewall rule. See the github.com/dynport/zwo/firewall package for further information on how to build and
-// configure firewall rules.
-//
-// By default the host will only have SSH accessible from the outside (in case of the Paranoid flag being set, even
-// output will be limited to certain protocols). For any of the installed services to be reachable you must configure
-// access.
-func (h *Host) AddFirewallRule(r *firewall.Rule) {
-	h.rules = append(h.rules, r)
-}
-
-// Compile rules into a set of commands iptables-restore can digest.
-func (h *Host) FirewallRules() (rules []string) {
-	rules = []string{}
-	for _, rule := range h.rules {
-		rules = append(rules, rule.Convert())
-	}
-	return rules
 }

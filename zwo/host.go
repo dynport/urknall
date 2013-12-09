@@ -43,6 +43,7 @@ func (fw *firewallPackage) Package(rl *Runlist) {
 	rl.Add(InstallPackages("iptables", "ipset"))
 
 	rl.Add(WriteAsset("/etc/network/if-pre-up.d/iptables", "fw_upstart.sh", "root", 0744))
+	rl.Add(WriteAsset("/etc/iptables/ipsets", "fw_ipset.conf", "root", 0644))
 	rl.Add(WriteAsset("/etc/iptables/rules_ipv4", "fw_rules_ipv4.conf", "root", 0644))
 	rl.Add(WriteAsset("/etc/iptables/rules_ipv6", "fw_rules_ipv6.conf", "root", 0644))
 	rl.Add("modprobe iptable_filter && modprobe iptable_nat") // here to make sure next command succeeds.
