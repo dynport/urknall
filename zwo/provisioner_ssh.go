@@ -50,6 +50,11 @@ func (sc *sshClient) provision(rl *Runlist) (e error) {
 		return fmt.Errorf("failed to build checksum hash: %s", e.Error())
 	}
 
+	if sc.host.IsSudoRequired() {
+		logger.PushPrefix("SUDO")
+		defer logger.PopPrefix()
+	}
+
 	for i := range tasks {
 		task := tasks[i]
 		logMsg := task.command.Logging(sc.host)
@@ -82,19 +87,22 @@ func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
 
 	checksumFile := fmt.Sprintf("%s/%s", checksumDir, task.checksum)
 
-	rsp, e := sc.client.Execute(task.command.Shell(sc.host))
+	sCmd := fmt.Sprintf("bash <<EOF_RUNTASK 2> %s.stderr 1> %s.stdout\n%s\nEOF_RUNTASK\n", checksumFile, checksumFile, task.command.Shell(sc.host))
+	if sc.host.IsSudoRequired() {
+		sCmd = fmt.Sprintf("sudo bash <<EOF_ZWO_SUDO\n%s\nEOF_ZWO_SUDO\n", sCmd)
+	}
+	rsp, e := sc.client.Execute(sCmd)
 
 	// Write the checksum file (containing information on the command run).
 	sc.writeChecksumFile(checksumFile, e != nil, task.command.Logging(sc.host), rsp)
 
-	if e != nil {
-		return fmt.Errorf("Reason: %s", strings.TrimSpace(rsp.Stderr()))
-	}
-
-	return nil
+	return e
 }
 
 func (sc *sshClient) executeCommand(cmdRaw string) *gossh.Result {
+	if sc.host.IsSudoRequired() {
+		cmdRaw = fmt.Sprintf("sudo bash <<EOF_ZWO_SUDO\n%s\nEOF_ZWO_SUDO\n", cmdRaw)
+	}
 	c := &cmd.ShellCommand{Command: cmdRaw}
 	result, e := sc.client.Execute(c.Shell(sc.host))
 	if e != nil {
@@ -143,25 +151,24 @@ func (sc *sshClient) cleanUpRemainingCachedEntries(checksumDir string, checksumH
 	return nil
 }
 
-func (sc *sshClient) writeChecksumFile(checksumFile string, failed bool, logMsg string, response *gossh.Result) {
-	content := []string{}
-	content = append(content, fmt.Sprintf("Command: %s", logMsg))
-	content = append(content, "Wrote to STDOUT: #################")
-	content = append(content, response.Stdout())
-	content = append(content, "Wrote to STDERR: #################")
-	content = append(content, response.Stderr())
-
+func (sc *sshClient) writeChecksumFile(checksumFileBase string, failed bool, logMsg string, response *gossh.Result) {
+	checksumFile := checksumFileBase
 	if failed {
 		checksumFile += ".failed"
 	} else {
 		checksumFile += ".done"
 	}
 
-	c := cmd.WriteFile(checksumFile, strings.Join(content, "\n"), "root", 0644)
-
-	if _, e := sc.client.Execute(c.Shell(sc.host)); e != nil {
-		panic(fmt.Sprintf("failed to write checksum file: %s", e.Error()))
+	c := []string{
+		fmt.Sprintf(`echo "%s" > %s`, logMsg, checksumFile),
+		fmt.Sprintf(`echo "STDOUT #####" >> %s`, checksumFile),
+		fmt.Sprintf(`cat %s.stdout >> %s`, checksumFileBase, checksumFile),
+		fmt.Sprintf(`echo "STDERR #####" >> %s`, checksumFile),
+		fmt.Sprintf(`cat %s.stderr >> %s`, checksumFileBase, checksumFile),
+		fmt.Sprintf(`rm -f %s.std*`, checksumFileBase),
 	}
+
+	sc.executeCommand(strings.Join(c, " && "))
 }
 
 type taskData struct {

@@ -88,18 +88,11 @@ func (fc *FileCommand) Shell(host *host.Host) string {
 	}
 	// Move the temporary file to the requested location.
 	cmd += fmt.Sprintf(" && mv %s %s", tmpPath, fc.Path)
-	if host.IsSudoRequired() {
-		return fmt.Sprintf("sudo bash <<EOF\n%s\nEOF\n", cmd)
-	}
 	return cmd
 }
 
 func (fc *FileCommand) Logging(host *host.Host) string {
 	sList := []string{"[FILE   ]"}
-
-	if host.IsSudoRequired() {
-		sList = append(sList, "[SUDO]")
-	}
 
 	if fc.Owner != "" && fc.Owner != "root" {
 		sList = append(sList, fmt.Sprintf("[CHOWN:%s]", fc.Owner))

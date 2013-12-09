@@ -294,35 +294,14 @@ func (sc *ShellCommand) Docker(host *host.Host) string {
 }
 
 func (sc *ShellCommand) Shell(host *host.Host) string {
-	cmdBuilder := 0
-
 	if sc.isExecutedAsUser() {
-		cmdBuilder = 1
+		return fmt.Sprintf("su -l %s <<EOF_ZWO_ASUSER\n%s\nEOF_ZWO_ASUSER\n", sc.user, sc.Command)
 	}
-
-	if host.IsSudoRequired() {
-		cmdBuilder += 2
-	}
-
-	switch cmdBuilder {
-	case 0:
-		return sc.Command
-	case 1:
-		return fmt.Sprintf("su -l %s <<EOF\n%s\nEOF\n", sc.user, sc.Command)
-	case 2:
-		return fmt.Sprintf("sudo bash <<EOF\n%s\nEOF\n", sc.Command)
-	case 3:
-		return fmt.Sprintf("sudo -- su -l %s <<EOF\n%s\nEOF\n", sc.user, sc.Command)
-	}
-	panic("should never be reached")
+	return sc.Command
 }
 
 func (sc *ShellCommand) Logging(host *host.Host) string {
 	s := []string{"[COMMAND]"}
-
-	if host.IsSudoRequired() {
-		s = append(s, "[SUDO]")
-	}
 
 	if sc.isExecutedAsUser() {
 		s = append(s, fmt.Sprintf("[SU:%s]", sc.user))
