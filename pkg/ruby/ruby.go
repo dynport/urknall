@@ -16,7 +16,7 @@ type RubyPackage struct {
 	WithBundler bool
 }
 
-func (ruby *RubyPackage) Compile(r *zwo.Runlist) {
+func (ruby *RubyPackage) Package(r *zwo.Runlist) {
 	r.Add(
 		InstallPackages("curl", "build-essential", "git-core",
 			"libyaml-dev", "libxml2-dev", "libxslt1-dev",

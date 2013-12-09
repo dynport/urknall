@@ -27,7 +27,7 @@ func newDockerClient(host *host.Host) (client *dockerClient, e error) {
 	return &dockerClient{host: host, dockerHost: dh}, nil
 }
 
-func (dc *dockerClient) provisionImage(tag string, packages ...Compiler) (imageId string, e error) {
+func (dc *dockerClient) provisionImage(tag string, packages ...Packager) (imageId string, e error) {
 	logger.PushPrefix(dc.host.IPAddress())
 	defer logger.PopPrefix()
 

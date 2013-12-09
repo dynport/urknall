@@ -6,8 +6,8 @@ import (
 	"github.com/dynport/zwo/host"
 )
 
-func createHostPackages(host *host.Host) (p []Compiler) {
-	p = []Compiler{}
+func createHostPackages(host *host.Host) (p []Packager) {
+	p = []Packager{}
 	p = append(p, &hostPackage{Host: host})
 	p = append(p, &firewallPackage{Host: host})
 
@@ -22,7 +22,7 @@ type hostPackage struct {
 	*host.Host
 }
 
-func (hp *hostPackage) Compile(rl *Runlist) {
+func (hp *hostPackage) Package(rl *Runlist) {
 	rl.Add(UpdatePackages())
 	if hp.Hostname() != "" { // Set hostname.
 		rl.Add(&FileCommand{Path: "/etc/hostname", Content: hp.Hostname()})
@@ -31,7 +31,7 @@ func (hp *hostPackage) Compile(rl *Runlist) {
 	}
 }
 
-func (hp *hostPackage) CompileName() string {
+func (hp *hostPackage) PackageName() string {
 	return "zwo.host"
 }
 
@@ -39,7 +39,7 @@ type firewallPackage struct {
 	*host.Host
 }
 
-func (fw *firewallPackage) Compile(rl *Runlist) {
+func (fw *firewallPackage) Package(rl *Runlist) {
 	rl.Add(InstallPackages("iptables", "ipset"))
 
 	rl.Add(WriteAsset("/etc/network/if-pre-up.d/iptables", "fw_upstart.sh", "root", 0744))
@@ -57,11 +57,11 @@ type dockerPackage struct {
 	*host.Host
 }
 
-func (dp *dockerPackage) CompileName() string {
+func (dp *dockerPackage) PackageName() string {
 	return "zwo.docker"
 }
 
-func (dp *dockerPackage) Compile(rl *Runlist) {
+func (dp *dockerPackage) Package(rl *Runlist) {
 	rl.Add(
 		Or("grep universe /etc/apt/sourceslist",
 			And("sed 's/main$/main universe/' -i /etc/apt/sources.list",

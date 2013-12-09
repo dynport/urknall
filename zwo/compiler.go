@@ -7,16 +7,16 @@ import (
 	"strings"
 )
 
-// A "Compiler" is an entity (lets call it a package) that adds commands to a given runlist, taking into account their
-// own configuration.
-type Compiler interface {
-	Compile(rl *Runlist) // Add the package specific commands to the runlist.
+// A "Packager" is an entity that packs commands into a runlist, taking into account their own configuration.
+type Packager interface {
+	Package(rl *Runlist) // Add the package specific commands to the runlist.
 }
 
-// The "CompileNamer" interface is used to specify an explicit name for an package (if interface is not implemented on
-// the package then the package's struct name will be used).
-type CompileNamer interface {
-	CompileName() string
+// The "PackageNamer" interface is used to specify an explicit name for an package (if interface is not implemented on
+// the package then the package's struct name will be used). This shouldn't be required to often. Use it only if
+// absolutely necessary.
+type PackageNamer interface {
+	PackageName() string
 }
 
 func validatePackage(pkg interface{}) error {
