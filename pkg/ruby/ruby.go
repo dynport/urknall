@@ -38,7 +38,7 @@ func (ruby *RubyPackage) Package(r *zwo.Runlist) {
 
 func (ruby *RubyPackage) downloadURL() string {
 	majorVersion := strings.Join(strings.Split(ruby.Version, ".")[0:2], ".")
-	return fmt.Sprintf("ftp://ftp.ruby-lang.org/pub/ruby/%s/ruby-%s.tar.gz", majorVersion, ruby.Version)
+	return fmt.Sprintf("http://ftp.ruby-lang.org/pub/ruby/%s/ruby-%s.tar.gz", majorVersion, ruby.Version)
 }
 
 func (ruby *RubyPackage) InstallPath() string {
