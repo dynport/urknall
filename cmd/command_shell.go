@@ -20,8 +20,8 @@ type ShellCommand struct {
 	user    string // User to run the command as.
 }
 
-// Convenience function to run a command as a certain user. Note that nested calls will not work. The function will
-// panic if it detects such a scenario.
+// Convenience function to run a command as a certain user. Setting an empty user will do nothing, as the command is
+// then executed as "root". Note that nested calls will not work. The function will panic if it detects such a scenario.
 func AsUser(user string, i interface{}) *ShellCommand {
 	switch c := i.(type) {
 	case *ShellCommand:

@@ -12,17 +12,27 @@ import (
 // TODO(gfrey): There currently is no validation the referenced IPSet exists. This should be added on provisioning to
 // make sure iptables setup won't fail.
 type Target struct {
-	IP        net.IP
-	IPSet     string
-	Port      int
-	Interface string
+	IP        net.IP // IP of the target.
+	IPSet     string // IPSet used for matching.
+	Port      int    // Port packets must use to match.
+	Interface string // Interface the packet goes through.
 }
 
-// A rule defines what is allowed to flow from some source to some destination.
+// A rule defines what is allowed to flow from some source to some destination. A description can be added to make the
+// resulting scripts more readable.
+//
+// The "Chain" field determines which chain the rule is added to. This should be either "INPUT", "OUTPUT", or "FORWARD",
+// with the names of the chains mostly speaking for themselves.
+//
+// The protocol setting is another easy match for the rule and especially required for some of the target's settings,
+// i.e. if a port is specified the protocol must be given too.
+//
+// Source and destination are the two communicating entities. For the input chain the local host is destination and for
+// output it is the source.
 type Rule struct {
-	Description string // Something to print into the rules file (for you to better recognize the rule).
-	Chain       string // Which chain should the rule be written to (mandatory field).
-	Protocol    string // The protocol used. This field may be required if a port is given in "Source" or "Destination".
+	Description string
+	Chain       string // Chain to add the rule to.
+	Protocol    string // The protocol used.
 
 	Source      *Target // The source of the packet.
 	Destination *Target // The destination of the packet.

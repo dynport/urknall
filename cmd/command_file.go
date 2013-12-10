@@ -12,10 +12,15 @@ import (
 	"strings"
 )
 
-// The "FileCommand" is used to write files to the host being provisioned. The go templating mechanism
-// (see http://golang.org/pkg/text/template) is used with the file's content and the package the command for rendering
-// the file is taken from. Thereby it is possible to have dynamic content (based on the packages' configuration) for the
-// file content and at the same time store it in an asset (that must not be preprocessed or compiled by hand).
+// The "FileCommand" is used to write files to the host being provisioned. The go templating mechanism (see
+// http://golang.org/pkg/text/template) is applied on the file's content using the package. Thereby it is possible to
+// have dynamic content (based on the package's configuration) for the file content and at the same time store it in
+// an asset (which is generated at compile time). Please note that the underlying actions will panic if either no path
+// or content are given.
+//
+// BUG(gfrey): It's currently not possible to write files larger than 32k, as the underlying go.crypto/ssh package has a
+// hard limit to this size. Fixing should be possible by adding a data channel to the "Commander" interfaces methods
+// output, that is connected to stdin of the SSH session.
 type FileCommand struct {
 	Path        string      // Path to the file to create.
 	Content     string      // Content of the file to create.
@@ -24,13 +29,15 @@ type FileCommand struct {
 }
 
 // Helper method to create a file at the given path with the given content, and with owner and permissions set
-// accordingly.
+// accordingly. The "Owner" and "Permissions" options are optional in the sense that they are ignored if set to go's
+// default value.
 func WriteFile(path string, content string, owner string, permissions os.FileMode) *FileCommand {
 	return &FileCommand{Path: path, Content: content, Owner: owner, Permissions: permissions}
 }
 
 // Helper method to write the asset with the given name to the location given, with owner and permissions set
-// accordingly. If no asset with the given name exists the function will panic!
+// accordingly. If no asset with the given name exists the function will panic! The "Owner" and "Permissions" options
+// are optional in the sense that they are ignored if set to go's default value.
 func WriteAsset(path, assetName, owner string, permissions os.FileMode) *FileCommand {
 	content, e := assets.Get(assetName)
 	if e != nil {
