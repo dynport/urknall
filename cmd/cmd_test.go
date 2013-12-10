@@ -302,7 +302,7 @@ func TestDownloadToFileCommand(t *testing.T) {
 		Convey("When the DownloadToFile method is called", func() {
 			f := func() { DownloadToFile(url, destination, "", 0) }
 			Convey("Then the DownloadToFile method should panic", func() {
-				So(f, ShouldPanicWith, "empty url given")
+				So(f, ShouldPanicWith, "empty destination given")
 			})
 		})
 	})

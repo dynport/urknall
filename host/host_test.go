@@ -1,7 +1,6 @@
 package host
 
 import (
-	"github.com/dynport/zwo/firewall"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -222,30 +221,6 @@ func TestDockerConfiguration(t *testing.T) {
 				v := h.DockerVersion()
 				Convey("Then the given version is returned", func() {
 					So(v, ShouldEqual, version)
-				})
-			})
-		})
-	})
-}
-
-func TestFirewallRuleHandling(t *testing.T) {
-	Convey("Given a host", t, func() {
-		h, _ := New("127.0.0.1", "", "")
-		Convey("When no rules are set", func() {
-			Convey("And they are retrieved", func() {
-				r := h.FirewallRules()
-				Convey("Then they are empty", func() {
-					So(len(r), ShouldEqual, 0)
-				})
-			})
-		})
-
-		Convey("When a simple rule is set", func() {
-			h.AddFirewallRule(firewall.DockerService("foo"))
-			Convey("And they are retrieved", func() {
-				r := h.FirewallRules()
-				Convey("Then one rule is returned", func() {
-					So(len(r), ShouldEqual, 1)
 				})
 			})
 		})
