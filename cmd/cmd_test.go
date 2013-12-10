@@ -58,13 +58,6 @@ func TestUpdatePackagesCommand(t *testing.T) {
 }
 
 func TestInstallPackagesCommand(t *testing.T) {
-	Convey("When the InstallPackages command is called without any packages given", t, func() {
-		Convey("Then the function panics", func() {
-			f := func() { InstallPackages() }
-			So(f, ShouldPanicWith, "empty package list given")
-		})
-	})
-
 	Convey("When the InstallPackages command is called for a package foo", t, func() {
 		c := InstallPackages("foo")
 		Convey("Then the result should contain the foo package", func() {
@@ -82,13 +75,6 @@ func TestInstallPackagesCommand(t *testing.T) {
 }
 
 func TestAndCommand(t *testing.T) {
-	Convey("When the And command is called without any subcommands given", t, func() {
-		Convey("Then the function panics", func() {
-			f := func() { And() }
-			So(f, ShouldPanicWith, "empty list of commands given")
-		})
-	})
-
 	Convey("When the And command is called for a command foo", t, func() {
 		c := And("foo")
 		Convey("Then the result should only contain the foo command", func() {
@@ -126,13 +112,6 @@ func TestAndCommand(t *testing.T) {
 }
 
 func TestOrCommand(t *testing.T) {
-	Convey("When the Or command is called without any subcommands given", t, func() {
-		Convey("Then the function panics", func() {
-			f := func() { Or() }
-			So(f, ShouldPanicWith, "empty list of commands given")
-		})
-	})
-
 	Convey("When the Or command is called for a command foo", t, func() {
 		c := Or("foo")
 		Convey("Then the result should only contain the foo command", func() {

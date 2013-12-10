@@ -42,24 +42,17 @@ func UpdatePackages() *ShellCommand {
 	return And("apt-get update", "DEBIAN_FRONTEND=noninteractive apt-get upgrade -y")
 }
 
-// Install the given packages (using apt-get).
-func InstallPackages(pkgs ...string) *ShellCommand {
-	if len(pkgs) == 0 {
-		panic("empty package list given")
-	}
+// Install the given packages using apt-get. At least one package must be given (pkgs can be left empty).
+func InstallPackages(pkg string, pkgs ...string) *ShellCommand {
 	return &ShellCommand{
-		Command: fmt.Sprintf("DEBIAN_FRONTEND=noninteractive apt-get install -y %s", strings.Join(pkgs, " ")),
+		Command: fmt.Sprintf("DEBIAN_FRONTEND=noninteractive apt-get install -y %s %s", pkg, strings.Join(pkgs, " ")),
 	}
 }
 
 // Combine the given commands with "and", i.e. all commands must succeed. Execution is stopped immediately if one of the
-// commands fails, the subsequent ones are not execute!
-func And(cmds ...interface{}) *ShellCommand {
-	if len(cmds) == 0 {
-		panic("empty list of commands given")
-	}
-
-	cs := mergeSubCommands(cmds...)
+// commands fails, the subsequent ones are not executed! If only one command is given nothing happens.
+func And(cmd interface{}, cmds ...interface{}) *ShellCommand {
+	cs := mergeSubCommands(cmd, cmds...)
 
 	finalCommand := fmt.Sprintf("{ %s; }", strings.Join(cs, " && "))
 	if len(cs) == 1 {
@@ -68,13 +61,10 @@ func And(cmds ...interface{}) *ShellCommand {
 	return &ShellCommand{Command: finalCommand}
 }
 
-// Combine the given commands with "or", i.e. try one after one, untill the first returns success.
-func Or(cmds ...interface{}) *ShellCommand {
-	if len(cmds) == 0 {
-		panic("empty list of commands given")
-	}
-
-	cs := mergeSubCommands(cmds...)
+// Combine the given commands with "or", i.e. try one after one, untill the first returns success. If only a single
+// command is given, nothing happens.
+func Or(cmd interface{}, cmds ...interface{}) *ShellCommand {
+	cs := mergeSubCommands(cmd, cmds...)
 
 	finalCommand := fmt.Sprintf("{ %s; }", strings.Join(cs, " || "))
 	if len(cs) == 1 {
@@ -83,15 +73,22 @@ func Or(cmds ...interface{}) *ShellCommand {
 	return &ShellCommand{Command: finalCommand}
 }
 
-func mergeSubCommands(cmds ...interface{}) (cs []string) {
-	for i := range cmds {
-		switch cmd := cmds[i].(type) {
+func mergeSubCommands(cmd interface{}, cmds ...interface{}) (cs []string) {
+	cmdList := make([]interface{}, 0, len(cmds)+1)
+	cmdList = append(cmdList, cmd)
+	cmdList = append(cmdList, cmds...)
+
+	for i := range cmdList {
+		switch cmd := cmdList[i].(type) {
 		case *ShellCommand:
 			if cmd.user != "" && cmd.user != "root" {
 				panic("AsUser not supported in nested commands")
 			}
 			cs = append(cs, cmd.Command)
 		case string:
+			if cmd == "" { // ignore empty commands
+				panic("empty command found")
+			}
 			cs = append(cs, cmd)
 		default:
 			panic(fmt.Sprintf(`type "%T" not supported`, cmd))
@@ -100,23 +97,25 @@ func mergeSubCommands(cmds ...interface{}) (cs []string) {
 	return cs
 }
 
-// Create the given directory with the owner and file permissions set accordingly.
+// Create the given directory with the owner and file permissions set accordingly. If the last two options are set to
+// go's default values nothing is done.
 func Mkdir(path, owner string, permissions os.FileMode) *ShellCommand {
 	if path == "" {
 		panic("empty path given to mkdir")
 	}
 
-	cmds := make([]interface{}, 0, 3)
-	cmds = append(cmds, fmt.Sprintf("mkdir -p %s", path))
+	mkdirCmd := fmt.Sprintf("mkdir -p %s", path)
+
+	optsCmds := make([]interface{}, 0, 2)
 	if owner != "" {
-		cmds = append(cmds, fmt.Sprintf("chown %s %s", owner, path))
+		optsCmds = append(optsCmds, fmt.Sprintf("chown %s %s", owner, path))
 	}
 
 	if permissions != 0 {
-		cmds = append(cmds, fmt.Sprintf("chmod %o %s", permissions, path))
+		optsCmds = append(optsCmds, fmt.Sprintf("chmod %o %s", permissions, path))
 	}
 
-	return And(cmds...)
+	return And(mkdirCmd, optsCmds...)
 }
 
 // If the tests succeeds run the given command. The test must be based on bash's test syntax (see "man test"). Just
@@ -185,21 +184,19 @@ func download(url string) *ShellCommand {
 // there using the file name from the URL. If it is a file, the downloaded file will be moved (and possibly renamed) to
 // that destination. Overwriting an existing file is not possible (command fails in that case)!
 func DownloadToFile(url, destination, owner string, permissions os.FileMode) *ShellCommand {
-	filename := path.Base(url)
-
-	cmds := make([]interface{}, 0, 4)
-	cmds = append(cmds, download(url))
-
 	if destination == "" {
 		panic("empty destination given")
 	}
-	// don't overwrite existing files.
-	cmds = append(cmds, IfNot(
-		fmt.Sprintf("! -f %s", destination),
-		And(`echo "destination already exists; will not overwrite"`,
-			"exit 1")))
-	cmds = append(cmds, fmt.Sprintf("mv /tmp/downloads/%s %s", filename, destination))
 
+	filename := path.Base(url)
+	downloadCmd := And(
+		download(url),
+		IfNot(fmt.Sprintf("! -f %s", destination),
+			And(`echo "destination already exists; will not overwrite"`,
+				"exit 1")),
+		fmt.Sprintf("mv /tmp/downloads/%s %s", filename, destination))
+
+	cmds := make([]interface{}, 0, 4)
 	if owner != "" && owner != "root" {
 		cmds = append(cmds, Or(
 			If(fmt.Sprintf("-f %s", destination), fmt.Sprintf("chown %s %s", owner, destination)),
@@ -212,7 +209,7 @@ func DownloadToFile(url, destination, owner string, permissions os.FileMode) *Sh
 			If(fmt.Sprintf("-d %s", destination), fmt.Sprintf("chmod %o %s/%s", permissions, destination, filename)),
 			And("echo \"Couldn't determine target\"", "exit 1")))
 	}
-	return And(cmds...)
+	return And(downloadCmd, cmds...)
 }
 
 // Extract the file at the given directory. The following file extensions are currently supported (".tar", ".tgz",
