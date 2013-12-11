@@ -1,22 +1,22 @@
-// The RubyPackage is used to provision ruby on a host.
+// The Ruby package is used to provision ruby on a host.
 //
 // Ruby will be downloaded, extracted, configured, built, and installed to `/opt/ruby-{{ .Version }}`. If the `Bundle`
 // flag is set, bundler will be installed.
-package ruby
+package pkg
 
 import (
 	"fmt"
+	"github.com/dynport/zwo"
 	. "github.com/dynport/zwo/cmd"
-	"github.com/dynport/zwo/zwo"
 	"strings"
 )
 
-type RubyPackage struct {
+type Ruby struct {
 	Version     string `zwo="default=2.0.0-p247"`
 	WithBundler bool
 }
 
-func (ruby *RubyPackage) Package(r *zwo.Runlist) {
+func (ruby *Ruby) Package(r *zwo.Runlist) {
 	r.Add(
 		InstallPackages("curl", "build-essential", "git-core",
 			"libyaml-dev", "libxml2-dev", "libxslt1-dev",
@@ -36,15 +36,15 @@ func (ruby *RubyPackage) Package(r *zwo.Runlist) {
 	}
 }
 
-func (ruby *RubyPackage) downloadURL() string {
+func (ruby *Ruby) downloadURL() string {
 	majorVersion := strings.Join(strings.Split(ruby.Version, ".")[0:2], ".")
 	return fmt.Sprintf("http://ftp.ruby-lang.org/pub/ruby/%s/ruby-%s.tar.gz", majorVersion, ruby.Version)
 }
 
-func (ruby *RubyPackage) InstallPath() string {
+func (ruby *Ruby) InstallPath() string {
 	return fmt.Sprintf("/opt/ruby-%s", ruby.Version)
 }
 
-func (ruby *RubyPackage) SourcePath() string {
+func (ruby *Ruby) SourcePath() string {
 	return fmt.Sprintf("/opt/src/ruby-%s", ruby.Version)
 }
