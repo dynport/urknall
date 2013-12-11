@@ -1,6 +1,8 @@
 package zwo
 
 import (
+	"fmt"
+	"github.com/dynport/gologger"
 	"github.com/dynport/zwo/fw"
 )
 
@@ -69,6 +71,43 @@ func (h *Host) AddPackage(name string, pkg Package) (e error) {
 
 	h.Packages[name] = pkg
 	return nil
+}
+
+// Provision the host.
+func (h *Host) Provision() (e error) {
+	return h.provision(false)
+}
+
+// Test provisioning of the host, but don't actually execute any commands.
+func (h *Host) ProvisionDryrun() (e error) {
+	return h.provision(true)
+}
+
+func (h *Host) provision(dryrun bool) (e error) {
+	packages := make([]Package, 0, len(h.Packages))
+	for _, pkg := range h.Packages {
+		packages = append(packages, pkg)
+	}
+	sc := newSSHClient(h)
+	if dryrun {
+		sc.dryrun = true
+		logger.PushPrefix(gologger.Colorize(226, "DRYRUN"))
+		defer logger.PopPrefix()
+	}
+	return sc.provisionHost(packages...)
+}
+
+// Provision the given packages into a docker container image tagged with the given tag (the according registry will be
+// added automatically). The build will happen on this host, that must be a docker host with build capability.
+func (h *Host) CreateDockerImage(tag string, packages ...Package) (imageId string, e error) {
+	if !h.IsDockerHost() {
+		return "", fmt.Errorf("host %s is not a docker host", h.Hostname)
+	}
+	dc, e := newDockerClient(h)
+	if e != nil {
+		return "", e
+	}
+	return dc.provisionImage(tag, packages...)
 }
 
 // Get docker version that should be used. Will panic if the host has no docker enabled.
