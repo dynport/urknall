@@ -20,7 +20,7 @@ func newSSHClient(host *Host) (client *sshClient) {
 	return &sshClient{host: host, client: gossh.New(host.IPAddress(), host.User())}
 }
 
-func (sc *sshClient) provisionHost(packages ...Packager) (e error) {
+func (sc *sshClient) provisionHost(packages ...Package) (e error) {
 	logger.PushPrefix(sc.host.IPAddress())
 	defer logger.PopPrefix()
 

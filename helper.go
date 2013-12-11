@@ -13,7 +13,7 @@ func padToFixedLength(s string, l int) string {
 	}
 }
 
-func packageName(pkg Packager) (name string) {
+func packageName(pkg Package) (name string) {
 	switch p := pkg.(type) {
 	case PackageNamer:
 		return strings.ToLower(p.PackageName())

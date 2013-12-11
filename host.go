@@ -5,8 +5,8 @@ import (
 	. "github.com/dynport/zwo/cmd"
 )
 
-func createHostPackages(host *Host) (p []Packager) {
-	p = []Packager{}
+func createHostPackages(host *Host) (p []Package) {
+	p = []Package{}
 	p = append(p, &hostPackage{Host: host})
 	p = append(p, &firewallPackage{Host: host})
 
