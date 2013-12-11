@@ -24,6 +24,8 @@ type Host struct {
 
 	Rules  []*fw.Rule  // List of rules used for the firewall.
 	IPSets []*fw.IPSet // List of ipsets for the firewall.
+
+	Packages map[string]Package // List of packages of the host.
 }
 
 // If the associated host should run (or build) docker containers this type can be used to configure docker.
@@ -53,6 +55,20 @@ func (h *Host) Interface() string {
 		return "eth0"
 	}
 	return h.iface
+}
+
+// Add the given package with the given name to the host.
+func (h *Host) AddPackage(name string, pkg Package) (e error) {
+	if h.Packages == nil {
+		h.Packages = map[string]Package{}
+	}
+
+	if _, found := h.Packages[name]; found {
+		return fmt.Errorf("package with name %q already there", name)
+	}
+
+	h.Packages[name] = pkg
+	return nil
 }
 
 // Get docker version that should be used. Will panic if the host has no docker enabled.
