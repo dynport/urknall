@@ -23,7 +23,7 @@ func ProvisionHost(host *Host, dryrun bool, packages ...Package) (e error) {
 // added automatically). The build will happen on the given host, that must be a docker host with build capability.
 func ProvisionImage(host *Host, tag string, packages ...Package) (imageId string, e error) {
 	if !host.IsDockerHost() {
-		return "", fmt.Errorf("host %s is not a docker host", host.Hostname())
+		return "", fmt.Errorf("host %s is not a docker host", host.Hostname)
 	}
 	dc, e := newDockerClient(host)
 	if e != nil {

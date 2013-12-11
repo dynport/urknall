@@ -16,18 +16,18 @@ type dockerClient struct {
 }
 
 func newDockerClient(host *Host) (client *dockerClient, e error) {
-	dh, e := dockerclient.NewViaTunnel(host.IPAddress(), host.User())
+	dh, e := dockerclient.NewViaTunnel(host.IP, host.user())
 	if e != nil {
 		return nil, e
 	}
 	if host.Docker.WithRegistry {
-		dh.Registry = host.IPAddress() + ":5000"
+		dh.Registry = host.IP + ":5000"
 	}
 	return &dockerClient{host: host, dockerHost: dh}, nil
 }
 
 func (dc *dockerClient) provisionImage(tag string, packages ...Package) (imageId string, e error) {
-	logger.PushPrefix(dc.host.IPAddress())
+	logger.PushPrefix(dc.host.IP)
 	defer logger.PopPrefix()
 
 	if packages == nil || len(packages) == 0 {

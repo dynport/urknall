@@ -17,11 +17,11 @@ type sshClient struct {
 }
 
 func newSSHClient(host *Host) (client *sshClient) {
-	return &sshClient{host: host, client: gossh.New(host.IPAddress(), host.User())}
+	return &sshClient{host: host, client: gossh.New(host.IP, host.user())}
 }
 
 func (sc *sshClient) provisionHost(packages ...Package) (e error) {
-	logger.PushPrefix(sc.host.IPAddress())
+	logger.PushPrefix(sc.host.IP)
 	defer logger.PopPrefix()
 
 	if packages == nil || len(packages) == 0 {
