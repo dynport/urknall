@@ -1,10 +1,4 @@
-// Type to provide basic information on the host to provision. This contains all the essential information required to
-// reach and access the host (like the IP address and SSH credentials). Additionally there is information on the basic
-// setup of the machine, including system related things (like the hostname and firewall) and services (like docker).
-//
-//	TODO(gfrey): Add better support for interfaces and IPs.
-//	TODO(gfrey): Add handling and support for IPv6 (currently the firewall will block everything).
-package host
+package zwo
 
 import (
 	"fmt"
@@ -12,10 +6,13 @@ import (
 	"net"
 )
 
-// The host type. Use the "New" function to create the basic value.
+// The host type. Use the "NewHost" function to create the basic value.
 //
 // Please note that you need to set the primary interface (the one the host is accessible on) name, if that is not
 // "eth0". That should only be necessary on rare circumstances.
+//
+//	TODO(gfrey): Add better support for interfaces and IPs.
+//	TODO(gfrey): Add handling and support for IPv6 (currently the firewall will block everything).
 type Host struct {
 	ip       net.IP // Host's IP address used to provision the system.
 	user     string // User used to log in.
@@ -44,7 +41,7 @@ type DockerSettings struct {
 // in here should be the user used to access the machine. As SSH is used with publickey authentication, this user must
 // exist on the host and have one of your public keys in its authorizes hosts file. If an empty user is given, "root" is
 // assumed.
-func New(ip, user, hostname string) (host *Host, e error) {
+func NewHost(ip, user, hostname string) (host *Host, e error) {
 	h := &Host{Paranoid: true}
 
 	if ip == "" {

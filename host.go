@@ -3,10 +3,9 @@ package zwo
 import (
 	"github.com/dynport/dgtk/goup"
 	. "github.com/dynport/zwo/cmd"
-	"github.com/dynport/zwo/host"
 )
 
-func createHostPackages(host *host.Host) (p []Packager) {
+func createHostPackages(host *Host) (p []Packager) {
 	p = []Packager{}
 	p = append(p, &hostPackage{Host: host})
 	p = append(p, &firewallPackage{Host: host})
@@ -19,7 +18,7 @@ func createHostPackages(host *host.Host) (p []Packager) {
 }
 
 type hostPackage struct {
-	*host.Host
+	*Host
 }
 
 func (hp *hostPackage) Package(rl *Runlist) {
@@ -36,7 +35,7 @@ func (hp *hostPackage) PackageName() string {
 }
 
 type firewallPackage struct {
-	*host.Host
+	*Host
 }
 
 func (fw *firewallPackage) Package(rl *Runlist) {
@@ -55,7 +54,7 @@ func (fw *firewallPackage) CompileName() string {
 }
 
 type dockerPackage struct {
-	*host.Host
+	*Host
 }
 
 func (dp *dockerPackage) PackageName() string {

@@ -6,7 +6,6 @@ import (
 	"github.com/dynport/gologger"
 	"github.com/dynport/gossh"
 	"github.com/dynport/zwo/cmd"
-	"github.com/dynport/zwo/host"
 	"path"
 	"strings"
 )
@@ -14,10 +13,10 @@ import (
 type sshClient struct {
 	dryrun bool
 	client *gossh.Client
-	host   *host.Host
+	host   *Host
 }
 
-func newSSHClient(host *host.Host) (client *sshClient) {
+func newSSHClient(host *Host) (client *sshClient) {
 	return &sshClient{host: host, client: gossh.New(host.IPAddress(), host.User())}
 }
 

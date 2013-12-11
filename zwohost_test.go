@@ -1,4 +1,4 @@
-package host
+package zwo
 
 import (
 	. "github.com/smartystreets/goconvey/convey"

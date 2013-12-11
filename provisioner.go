@@ -3,13 +3,12 @@ package zwo
 import (
 	"fmt"
 	"github.com/dynport/gologger"
-	"github.com/dynport/zwo/host"
 	"runtime/debug"
 )
 
 // Provision the given host with the given packages. If "dryrun" is set, no actions are performed. This can be used to
 // get a feeling of what would happen.
-func ProvisionHost(host *host.Host, dryrun bool, packages ...Packager) (e error) {
+func ProvisionHost(host *Host, dryrun bool, packages ...Packager) (e error) {
 	sc := newSSHClient(host)
 	if dryrun {
 		sc.dryrun = true
@@ -22,7 +21,7 @@ func ProvisionHost(host *host.Host, dryrun bool, packages ...Packager) (e error)
 
 // Provision the given packages into a docker container image tagged with the given tag (the according registry will be
 // added automatically). The build will happen on the given host, that must be a docker host with build capability.
-func ProvisionImage(host *host.Host, tag string, packages ...Packager) (imageId string, e error) {
+func ProvisionImage(host *Host, tag string, packages ...Packager) (imageId string, e error) {
 	if !host.IsDockerHost() {
 		return "", fmt.Errorf("host %s is not a docker host", host.Hostname())
 	}
@@ -34,7 +33,7 @@ func ProvisionImage(host *host.Host, tag string, packages ...Packager) (imageId 
 }
 
 // Precompile the given packages for the given host.
-func precompileRunlists(host *host.Host, packages ...Packager) (runLists []*Runlist, e error) {
+func precompileRunlists(host *Host, packages ...Packager) (runLists []*Runlist, e error) {
 	defer func() {
 		if r := recover(); r != nil {
 			var ok bool

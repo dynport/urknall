@@ -3,20 +3,19 @@ package zwo
 import (
 	"fmt"
 	"github.com/dynport/dgtk/dockerclient"
-	"github.com/dynport/zwo/host"
 	"strings"
 )
 
 type dockerClient struct {
 	baseImage  string
 	tag        string
-	host       *host.Host
+	host       *Host
 	dockerHost *dockerclient.DockerHost
 
 	dockerfile string
 }
 
-func newDockerClient(host *host.Host) (client *dockerClient, e error) {
+func newDockerClient(host *Host) (client *dockerClient, e error) {
 	dh, e := dockerclient.NewViaTunnel(host.IPAddress(), host.User())
 	if e != nil {
 		return nil, e
