@@ -19,7 +19,7 @@ import (
 // or content are given.
 //
 // BUG(gfrey): It's currently not possible to write files larger than 32k, as the underlying go.crypto/ssh package has a
-// hard limit to this size. Fixing should be possible by adding a data channel to the "Commander" interfaces methods
+// hard limit to this size. Fixing should be possible by adding a data channel to the "Command" interfaces methods
 // output, that is connected to stdin of the SSH session.
 type FileCommand struct {
 	Path        string      // Path to the file to create.

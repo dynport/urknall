@@ -8,7 +8,7 @@ import (
 
 // A runlist is a container for commands. Use the following methods to add new commands.
 type Runlist struct {
-	commands []cmd.Commander
+	commands []cmd.Command
 	pkg      interface{}
 	name     string // Name of the compilable.
 }
@@ -21,7 +21,7 @@ func (rl *Runlist) Add(c interface{}) {
 	case *cmd.FileCommand:
 		t.Content = utils.MustRenderTemplate(t.Content, rl.pkg)
 		rl.commands = append(rl.commands, t)
-	case cmd.Commander:
+	case cmd.Command:
 		rl.commands = append(rl.commands, t)
 	case string:
 		// No explicit expansion required as the function is called recursively with a ShellCommand type, that has

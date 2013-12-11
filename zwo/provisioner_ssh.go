@@ -175,8 +175,8 @@ func (sc *sshClient) writeChecksumFile(checksumFileBase string, failed bool, log
 }
 
 type taskData struct {
-	command  cmd.Commander // The command to be executed.
-	checksum string        // The checksum of the command.
+	command  cmd.Command // The command to be executed.
+	checksum string      // The checksum of the command.
 }
 
 func (sc *sshClient) buildTasksForRunlist(rl *Runlist) (tasks []*taskData) {
