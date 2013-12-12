@@ -2,8 +2,8 @@
 
 ASSETS      := $(shell find assets -type f | grep -v ".go$$")
 EXTRA_DEPS  := github.com/dynport/dgtk/goassets github.com/smartystreets/goconvey
-DEPS        := $(shell go list ./... | xargs go list -f '{{join .Deps "\n"}}' | xargs go list -f '{{if not .Standard}}{{.ImportPath}}{{end}}' 2>/dev/null | sort | uniq | grep -v "github.com/dynport/zwo")
-IGN_PKGS    := github.com/dynport/zwo/assets github.com/dynport/zwo/pkg% github.com/dynport/zwo/example
+DEPS        := $(shell go list ./... | xargs go list -f '{{join .Deps "\n"}}' | xargs go list -f '{{if not .Standard}}{{.ImportPath}}{{end}}' 2>/dev/null | sort | uniq | grep -v "github.com/dynport/urknall")
+IGN_PKGS    := github.com/dynport/urknall/assets github.com/dynport/urknall/pkg%
 ALL_PKGS    := $(shell go list ./...)
 PACKAGES    := $(filter-out $(IGN_PKGS),$(ALL_PKGS))
 

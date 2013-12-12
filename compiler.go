@@ -1,4 +1,4 @@
-package zwo
+package urknall
 
 import (
 	"fmt"
@@ -85,7 +85,7 @@ type validationOptions struct {
 
 func parseFieldValidationString(field reflect.StructField) (opts *validationOptions, e error) {
 	opts = &validationOptions{}
-	tagString := field.Tag.Get("zwo")
+	tagString := field.Tag.Get("urknall")
 
 	fields := []string{}
 	idxStart := 0

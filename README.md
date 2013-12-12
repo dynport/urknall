@@ -1,4 +1,4 @@
-# zwo
+# urknall
 Version 2
 
 
@@ -8,12 +8,12 @@ provisioner though, that reuses the packages (collections of commands) and provi
 
 
 ## Hosts
-Hosts are the basic structure zwo works with. A host is a target if provisioned itself, but could also be the build
+Hosts are the basic structure urknall works with. A host is a target if provisioned itself, but could also be the build
 environment for docker container images (and host those in a private registry).
 
 
 ## Packages
-Packages are the entities of zwo, that allow to have structure and modularity in the stuff provisioned to hosts. While
+Packages are the entities of urknall, that allow to have structure and modularity in the stuff provisioned to hosts. While
 it would be totally be possible to just write a list of commands to a host, that wouldn't be easy to manage, maintain
 and reuse. Packages should be as small as possible (like providing the commands to set up one programm or service), but
 as large as necessary (there is no sense in putting each and every command into a separate package).

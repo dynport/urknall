@@ -1,4 +1,4 @@
-package zwo
+package urknall
 
 import (
 	. "github.com/smartystreets/goconvey/convey"

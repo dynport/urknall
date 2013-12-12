@@ -6,7 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"github.com/dynport/zwo/assets"
+	"github.com/dynport/urknall/assets"
 	"os"
 	"path/filepath"
 	"strings"

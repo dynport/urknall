@@ -1,7 +1,7 @@
-package zwo
+package urknall
 
 import (
-	"github.com/dynport/zwo/cmd"
+	"github.com/dynport/urknall/cmd"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )

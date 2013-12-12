@@ -1,9 +1,9 @@
-package zwo
+package urknall
 
 import (
 	"fmt"
-	"github.com/dynport/zwo/cmd"
-	"github.com/dynport/zwo/utils"
+	"github.com/dynport/urknall/cmd"
+	"github.com/dynport/urknall/utils"
 	"runtime/debug"
 )
 

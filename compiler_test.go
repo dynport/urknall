@@ -1,4 +1,4 @@
-package zwo
+package urknall
 
 import (
 	"fmt"
@@ -32,7 +32,7 @@ func shouldBeError(actual interface{}, expected ...interface{}) string {
 func TestBoolValidationRequired(t *testing.T) {
 	Convey("Given a package with a bool field that is required", t, func() {
 		type pkg struct {
-			Field bool `zwo:"required=true"`
+			Field bool `urknall:"required=true"`
 		}
 
 		Convey("When an instance is created without value set", func() {
@@ -47,7 +47,7 @@ func TestBoolValidationRequired(t *testing.T) {
 func TestBoolValidationDefault(t *testing.T) {
 	Convey("Given a package with a bool field with a default value", t, func() {
 		type pkg struct {
-			Field bool `zwo:"default=false"`
+			Field bool `urknall:"default=false"`
 		}
 
 		Convey("When an instance is created with value not set", func() {
@@ -85,7 +85,7 @@ func TestBoolValidationDefault(t *testing.T) {
 func TestBoolValidationSize(t *testing.T) {
 	Convey("Given a package with a size tag", t, func() {
 		type pkg struct {
-			Field bool `zwo:"size=3"`
+			Field bool `urknall:"size=3"`
 		}
 		Convey("When an instance is created", func() {
 			pi := &pkg{Field: true}
@@ -99,7 +99,7 @@ func TestBoolValidationSize(t *testing.T) {
 func TestBoolValidationMin(t *testing.T) {
 	Convey("Given a package with a min tag", t, func() {
 		type pkg struct {
-			Field bool `zwo:"min=3"`
+			Field bool `urknall:"min=3"`
 		}
 		Convey("When an instance is created", func() {
 			pi := &pkg{Field: true}
@@ -113,7 +113,7 @@ func TestBoolValidationMin(t *testing.T) {
 func TestBoolValidationMax(t *testing.T) {
 	Convey("Given a package with a max tag", t, func() {
 		type pkg struct {
-			Field bool `zwo:"max=3"`
+			Field bool `urknall:"max=3"`
 		}
 		Convey("When an instance is created", func() {
 			pi := &pkg{Field: true}
@@ -127,7 +127,7 @@ func TestBoolValidationMax(t *testing.T) {
 func TestIntValidationRequired(t *testing.T) {
 	Convey("Given a package with a int field that is required", t, func() {
 		type pkg struct {
-			Field int `zwo:"required=true"`
+			Field int `urknall:"required=true"`
 		}
 
 		Convey("When an instance is created", func() {
@@ -142,7 +142,7 @@ func TestIntValidationRequired(t *testing.T) {
 func TestIntValidationDefault(t *testing.T) {
 	Convey("Given a package with a int field that has an erroneous default tag", t, func() {
 		type pkg struct {
-			Field int `zwo:"default=five"`
+			Field int `urknall:"default=five"`
 		}
 
 		pi := &pkg{Field: 1}
@@ -153,7 +153,7 @@ func TestIntValidationDefault(t *testing.T) {
 
 	Convey("Given a package with a int field that has a default value", t, func() {
 		type pkg struct {
-			Field int `zwo:"default=5"`
+			Field int `urknall:"default=5"`
 		}
 
 		Convey("When an instance is created without specifying a value", func() {
@@ -185,7 +185,7 @@ func TestIntValidationDefault(t *testing.T) {
 func TestIntValidationMin(t *testing.T) {
 	Convey("Given a package with a int field that has a min value", t, func() {
 		type pkg struct {
-			Field int `zwo:"min=5"`
+			Field int `urknall:"min=5"`
 		}
 
 		Convey("When an instance is created without specifying a value", func() {
@@ -221,7 +221,7 @@ func TestIntValidationMin(t *testing.T) {
 func TestIntValidationMax(t *testing.T) {
 	Convey("Given a package with a int field that has a max value", t, func() {
 		type pkg struct {
-			Field int `zwo:"max=5"`
+			Field int `urknall:"max=5"`
 		}
 
 		Convey("When an instance is created without specifying a value", func() {
@@ -257,7 +257,7 @@ func TestIntValidationMax(t *testing.T) {
 func TestIntValidationSize(t *testing.T) {
 	Convey("Given a package with a int field that has a size value", t, func() {
 		type pkg struct {
-			Field int `zwo:"size=5"`
+			Field int `urknall:"size=5"`
 		}
 
 		pi := &pkg{}
@@ -270,7 +270,7 @@ func TestIntValidationSize(t *testing.T) {
 func TestStringValidationRequired(t *testing.T) {
 	Convey("Given a package with a string field that has an invalid required annotation", t, func() {
 		type pkg struct {
-			Field string `zwo:"required=tru"`
+			Field string `urknall:"required=tru"`
 		}
 		Convey("When an instance is created without specifying a value", func() {
 			pi := &pkg{}
@@ -282,7 +282,7 @@ func TestStringValidationRequired(t *testing.T) {
 
 	Convey("Given a package with a string field that is required", t, func() {
 		type pkg struct {
-			Field string `zwo:"required=true"`
+			Field string `urknall:"required=true"`
 		}
 		Convey("When an instance is created without specifying a value", func() {
 			pi := &pkg{}
@@ -310,7 +310,7 @@ func TestStringValidationRequired(t *testing.T) {
 func TestStringValidationDefault(t *testing.T) {
 	Convey("Given a package with a string field that has a default value", t, func() {
 		type pkg struct {
-			Field string `zwo:"default='the 'default' value'"`
+			Field string `urknall:"default='the 'default' value'"`
 		}
 		Convey("When an instance is created without specifying a value", func() {
 			pi := &pkg{}
@@ -341,7 +341,7 @@ func TestStringValidationDefault(t *testing.T) {
 func TestStringValidationMinMax(t *testing.T) {
 	Convey("Given a package with a string field that has minimum and maximum length specified", t, func() {
 		type pkg struct {
-			Field string `zwo:"min=3 max=4"`
+			Field string `urknall:"min=3 max=4"`
 		}
 		Convey("When an instance is created without specifying a value", func() {
 			pi := &pkg{}
@@ -383,7 +383,7 @@ func TestStringValidationMinMax(t *testing.T) {
 func TestStringValidationSize(t *testing.T) {
 	Convey("Given a package with a string field that has a size set", t, func() {
 		type pkg struct {
-			Field string `zwo:"size=3"`
+			Field string `urknall:"size=3"`
 		}
 		Convey("When an instance is created without specifying a value", func() {
 			pi := &pkg{}
@@ -418,7 +418,7 @@ func TestStringValidationSize(t *testing.T) {
 func TestValidationRequiredInvalid(t *testing.T) {
 	Convey("Given a package with a string field that has the required flag set to a wrong value", t, func() {
 		type pkg struct {
-			Field string `zwo:"required=aberja"`
+			Field string `urknall:"required=aberja"`
 		}
 		Convey("When an instance is created", func() {
 			pi := &pkg{}
@@ -431,7 +431,7 @@ func TestValidationRequiredInvalid(t *testing.T) {
 func TestValidationMinInvalid(t *testing.T) {
 	Convey("Given a package with a string field that has minimum length specified with an invalid value", t, func() {
 		type pkg struct {
-			Field string `zwo:"min=..3"`
+			Field string `urknall:"min=..3"`
 		}
 		Convey("When an instance is created", func() {
 			pi := &pkg{}
@@ -445,7 +445,7 @@ func TestValidationMinInvalid(t *testing.T) {
 func TestValidationMaxInvalid(t *testing.T) {
 	Convey("Given a package with a string field that has maximum length specified with an invalid value", t, func() {
 		type pkg struct {
-			Field string `zwo:"max=4a"`
+			Field string `urknall:"max=4a"`
 		}
 		Convey("When an instance is created", func() {
 			pi := &pkg{}
@@ -459,7 +459,7 @@ func TestValidationMaxInvalid(t *testing.T) {
 func TestValidationSizeInvalid(t *testing.T) {
 	Convey("Given a package with a string field that has size specified with an invalid value", t, func() {
 		type pkg struct {
-			Field string `zwo:"size=4a"`
+			Field string `urknall:"size=4a"`
 		}
 		Convey("When an instance is created", func() {
 			pi := &pkg{}
@@ -473,7 +473,7 @@ func TestValidationSizeInvalid(t *testing.T) {
 func TestMultiTags(t *testing.T) {
 	Convey("Given a package with multiple tags set on a field", t, func() {
 		type pkg struct {
-			Field string `zwo:"default='foo' min=3 max=4"`
+			Field string `urknall:"default='foo' min=3 max=4"`
 		}
 
 		Convey("When an instance is create without a value set", func() {
@@ -498,7 +498,7 @@ func TestMultiTags(t *testing.T) {
 func TestTagParsing(t *testing.T) {
 	Convey("Given a package with a missing single quote", t, func() {
 		type pkg struct {
-			Field string `zwo:"required='abc"`
+			Field string `urknall:"required='abc"`
 		}
 
 		Convey("Then parsing should fail", func() {
@@ -511,7 +511,7 @@ func TestTagParsing(t *testing.T) {
 
 	Convey("Given a package with a to many single quotes", t, func() {
 		type pkg struct {
-			Field string `zwo:"required='ab'c'"`
+			Field string `urknall:"required='ab'c'"`
 		}
 
 		Convey("Then parsing should fail", func() {
@@ -524,7 +524,7 @@ func TestTagParsing(t *testing.T) {
 
 	Convey("Given a package with a key without value", t, func() {
 		type pkg struct {
-			Field string `zwo:"default"`
+			Field string `urknall:"default"`
 		}
 
 		Convey("Then parsing should fail", func() {
@@ -537,7 +537,7 @@ func TestTagParsing(t *testing.T) {
 
 	Convey("Given a package with an invalid key", t, func() {
 		type pkg struct {
-			Field string `zwo:"defaul='asdf'"`
+			Field string `urknall:"defaul='asdf'"`
 		}
 
 		Convey("Then parsing should fail", func() {

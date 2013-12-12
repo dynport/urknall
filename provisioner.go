@@ -1,4 +1,4 @@
-package zwo
+package urknall
 
 // Provision the given list of runlists.
 func provisionRunlists(runLists []*Runlist, provisionFunc func(*Runlist) error) (e error) {

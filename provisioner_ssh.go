@@ -1,11 +1,11 @@
-package zwo
+package urknall
 
 import (
 	"crypto/sha256"
 	"fmt"
 	"github.com/dynport/gologger"
 	"github.com/dynport/gossh"
-	"github.com/dynport/zwo/cmd"
+	"github.com/dynport/urknall/cmd"
 	"path"
 	"strings"
 )
@@ -34,7 +34,7 @@ func (sc *sshClient) provision() (e error) {
 func (sc *sshClient) provisionRunlist(rl *Runlist) (e error) {
 	tasks := sc.buildTasksForRunlist(rl)
 
-	checksumDir := fmt.Sprintf("/var/cache/zwo/tree/%s", rl.name)
+	checksumDir := fmt.Sprintf("/var/cache/urknall/%s", rl.name)
 
 	checksumHash, e := sc.buildChecksumHash(checksumDir)
 	if e != nil {

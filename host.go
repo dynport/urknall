@@ -1,8 +1,8 @@
-package zwo
+package urknall
 
 import (
 	"github.com/dynport/dgtk/goup"
-	. "github.com/dynport/zwo/cmd"
+	. "github.com/dynport/urknall/cmd"
 )
 
 func runlist(name string, pkg Package) *Runlist {

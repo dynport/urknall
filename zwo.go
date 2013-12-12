@@ -1,4 +1,4 @@
-// zwo provides everything necessary to provision machines, i.e. the  mechanisms required to run a set of commands
+// urknall provides everything necessary to provision machines, i.e. the  mechanisms required to run a set of commands
 // somewhere (wherever that is, some bare metal or a docker container). These commands can be encapsulated in a package
 // that has some configuration so that reuse is possible. There is even annotation based validation.
 //
@@ -27,7 +27,7 @@
 //
 // The provisioner will be given a list of packages (entities implementing the "Compiler" interface), compiles a runlist
 // for each and will run those on the host to provision, using the required mechanisms depending on the targeted host.
-package zwo
+package urknall
 
 import (
 	"github.com/dynport/gologger"

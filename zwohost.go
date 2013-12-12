@@ -1,9 +1,9 @@
-package zwo
+package urknall
 
 import (
 	"fmt"
 	"github.com/dynport/gologger"
-	"github.com/dynport/zwo/fw"
+	"github.com/dynport/urknall/fw"
 	"strings"
 )
 
@@ -81,7 +81,7 @@ func (h *Host) AddPackage(name string, pkg Package) (e error) {
 
 // Add the given package with the given name to the host.
 func (h *Host) addSystemPackage(name string, pkg Package) (e error) {
-	name = "zwo." + name
+	name = "uk." + name
 	for i := range h.packageNames {
 		if h.packageNames[i] == name {
 			return fmt.Errorf("package with name %q exists already", name)

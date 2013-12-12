@@ -1,4 +1,4 @@
-// Go subpackage with zwo's command infrastructure. There are some predefined commands (types that implement the
+// Go subpackage with urknall's command infrastructure. There are some predefined commands (types that implement the
 // "Command" interface), but you can write custom commands, of course. Most commands come with helper functions to allow
 // for easy construction when filling runlists.
 //

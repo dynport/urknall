@@ -6,17 +6,17 @@ package pkg
 
 import (
 	"fmt"
-	"github.com/dynport/zwo"
-	. "github.com/dynport/zwo/cmd"
+	"github.com/dynport/urknall"
+	. "github.com/dynport/urknall/cmd"
 	"strings"
 )
 
 type Ruby struct {
-	Version     string `zwo="default=2.0.0-p247"`
+	Version     string `urknall="default=2.0.0-p247"`
 	WithBundler bool
 }
 
-func (ruby *Ruby) Package(r *zwo.Runlist) {
+func (ruby *Ruby) Package(r *urknall.Runlist) {
 	r.Add(
 		InstallPackages("curl", "build-essential", "git-core",
 			"libyaml-dev", "libxml2-dev", "libxslt1-dev",
