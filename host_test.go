@@ -68,6 +68,14 @@ func TestInterfaceHandling(t *testing.T) {
 			})
 		})
 
+		Convey("When adding packages", func() {
+			So(h.AddPackage("pkg", nil), ShouldBeNil)
+			So(h.AddPackage("other_pkg", nil), ShouldBeNil)
+			Convey("when adding a package with the same name", func() {
+				So(h.AddPackage("pkg", nil), ShouldNotBeNil)
+			})
+		})
+
 		Convey("When the interface is explicitly set to the default", func() {
 			h.Interface = defaultInterface
 			Convey("And the Interface method is called", func() {
