@@ -252,7 +252,7 @@ func extractTarArchive(path, targetDir, compression string) *ShellCommand {
 	}
 	return And(
 		fmt.Sprintf("cd %s", targetDir),
-		fmt.Sprintf("tar xvf%s %s", additionalCommand, path))
+		fmt.Sprintf("tar xf%s %s", additionalCommand, path))
 }
 
 // Download the file from the given URL and extract it to the given directory. If the directory does not exist it is

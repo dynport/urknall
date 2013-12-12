@@ -383,7 +383,7 @@ func TestDownloadAndExtractComamnd(t *testing.T) {
 				So(c.Shell(), ShouldContainSubstring, "curl -SsfLO "+url)
 			})
 			Convey("Then the result must contain an extract command", func() {
-				So(c.Shell(), ShouldContainSubstring, "tar xvfz /tmp/downloads/foobar.tgz")
+				So(c.Shell(), ShouldContainSubstring, "tar xfz /tmp/downloads/foobar.tgz")
 			})
 		})
 	})
