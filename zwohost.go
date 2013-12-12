@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/dynport/gologger"
 	"github.com/dynport/zwo/fw"
+	"strings"
 )
 
 // The host type. Use the "NewHost" function to create the basic value.
@@ -27,7 +28,9 @@ type Host struct {
 	Rules  []*fw.Rule  // List of rules used for the firewall.
 	IPSets []*fw.IPSet // List of ipsets for the firewall.
 
-	Packages map[string]Package // List of packages of the host.
+	packageNames   []string
+	userRunlists   []*Runlist
+	systemRunlists []*Runlist
 }
 
 // If the associated host should run (or build) docker containers this type can be used to configure docker.
@@ -61,15 +64,32 @@ func (h *Host) Interface() string {
 
 // Add the given package with the given name to the host.
 func (h *Host) AddPackage(name string, pkg Package) (e error) {
-	if h.Packages == nil {
-		h.Packages = map[string]Package{}
+	if strings.HasPrefix(name, "uk.") {
+		return fmt.Errorf(`package name prefix "uk." reserved (in %q)`, name)
 	}
 
-	if _, found := h.Packages[name]; found {
-		return fmt.Errorf("package with name %q already there", name)
+	for i := range h.packageNames {
+		if h.packageNames[i] == name {
+			return fmt.Errorf("package with name %q exists already", name)
+		}
 	}
 
-	h.Packages[name] = pkg
+	h.packageNames = append(h.packageNames, name)
+	h.userRunlists = append(h.userRunlists, &Runlist{name: name, pkg: pkg})
+	return nil
+}
+
+// Add the given package with the given name to the host.
+func (h *Host) addSystemPackage(name string, pkg Package) (e error) {
+	name = "zwo." + name
+	for i := range h.packageNames {
+		if h.packageNames[i] == name {
+			return fmt.Errorf("package with name %q exists already", name)
+		}
+	}
+
+	h.packageNames = append(h.packageNames, name)
+	h.systemRunlists = append(h.systemRunlists, &Runlist{name: name, pkg: pkg})
 	return nil
 }
 
@@ -84,22 +104,18 @@ func (h *Host) ProvisionDryrun() (e error) {
 }
 
 func (h *Host) provision(dryrun bool) (e error) {
-	packages := make([]Package, 0, len(h.Packages))
-	for _, pkg := range h.Packages {
-		packages = append(packages, pkg)
-	}
 	sc := newSSHClient(h)
 	if dryrun {
 		sc.dryrun = true
 		logger.PushPrefix(gologger.Colorize(226, "DRYRUN"))
 		defer logger.PopPrefix()
 	}
-	return sc.provisionHost(packages...)
+	return sc.provision()
 }
 
 // Provision the given packages into a docker container image tagged with the given tag (the according registry will be
 // added automatically). The build will happen on this host, that must be a docker host with build capability.
-func (h *Host) CreateDockerImage(tag string, packages ...Package) (imageId string, e error) {
+func (h *Host) CreateDockerImage(baseImage, tag string, pkg Package) (imageId string, e error) {
 	if !h.IsDockerHost() {
 		return "", fmt.Errorf("host %s is not a docker host", h.Hostname)
 	}
@@ -107,7 +123,7 @@ func (h *Host) CreateDockerImage(tag string, packages ...Package) (imageId strin
 	if e != nil {
 		return "", e
 	}
-	return dc.provisionImage(tag, packages...)
+	return dc.provisionImage(baseImage, tag, pkg)
 }
 
 // Get docker version that should be used. Will panic if the host has no docker enabled.
@@ -137,4 +153,29 @@ func (h *Host) IsSudoRequired() bool {
 		return true
 	}
 	return false
+}
+
+func (h *Host) runlists() (r []*Runlist) {
+	if h.systemRunlists == nil {
+		h.buildSystemRunlists()
+	}
+
+	r = make([]*Runlist, 0, len(h.systemRunlists)+len(h.userRunlists))
+	r = append(r, h.systemRunlists...)
+	r = append(r, h.userRunlists...)
+	return r
+}
+
+func (h *Host) precompileRunlists() (e error) {
+	for _, runlist := range h.runlists() {
+		if len(runlist.commands) > 0 {
+			return fmt.Errorf("pkg %q seems to be packaged already", runlist.name)
+		}
+
+		if e = runlist.compile(); e != nil {
+			return e
+		}
+	}
+
+	return nil
 }

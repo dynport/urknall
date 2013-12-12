@@ -5,60 +5,51 @@ import (
 	. "github.com/dynport/zwo/cmd"
 )
 
-func createHostPackages(host *Host) (p []Package) {
-	p = []Package{}
-	p = append(p, &hostPackage{Host: host})
-	p = append(p, &firewallPackage{Host: host})
+func runlist(name string, pkg Package) *Runlist {
+	return &Runlist{name: name, pkg: pkg}
+}
 
-	if host.IsDockerHost() {
-		p = append(p, &dockerPackage{Host: host})
+func (h *Host) buildSystemRunlists() {
+	if h.Hostname != "" {
+		h.addSystemPackage("hostname",
+			h.newHostPackage(
+				&FileCommand{Path: "/etc/hostname", Content: h.Hostname},
+				&FileCommand{Path: "/etc/hosts", Content: "127.0.0.1 {{ .Hostname }} localhost"},
+				"hostname -F /etc/hostname"))
 	}
 
-	return p
+	h.addSystemPackage("firewall",
+		h.newHostPackage(
+			InstallPackages("iptables", "ipset"),
+			WriteAsset("/etc/network/if-pre-up.d/iptables", "fw_upstart.sh", "root", 0744),
+			WriteAsset("/etc/iptables/ipsets", "fw_ipset.conf", "root", 0644),
+			WriteAsset("/etc/iptables/rules_ipv4", "fw_rules_ipv4.conf", "root", 0644),
+			WriteAsset("/etc/iptables/rules_ipv6", "fw_rules_ipv6.conf", "root", 0644),
+			"modprobe iptable_filter && modprobe iptable_nat", // here to make sure next command succeeds.
+			"IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables"))
+
+	if h.IsDockerHost() {
+		h.addSystemPackage("docker", &dockerPackage{Host: h})
+	}
 }
 
 type hostPackage struct {
 	*Host
+	cmds []interface{}
+}
+
+func (h *Host) newHostPackage(cmds ...interface{}) *hostPackage {
+	return &hostPackage{Host: h, cmds: cmds}
 }
 
 func (hp *hostPackage) Package(rl *Runlist) {
-	rl.Add(UpdatePackages())
-	if hp.Hostname != "" { // Set hostname.
-		rl.Add(&FileCommand{Path: "/etc/hostname", Content: hp.Hostname})
-		rl.Add(&FileCommand{Path: "/etc/hosts", Content: "127.0.0.1 {{ .Hostname }} localhost"})
-		rl.Add("hostname -F /etc/hostname")
+	for i := range hp.cmds {
+		rl.Add(hp.cmds[i])
 	}
-}
-
-func (hp *hostPackage) PackageName() string {
-	return "zwo.host"
-}
-
-type firewallPackage struct {
-	*Host
-}
-
-func (fw *firewallPackage) Package(rl *Runlist) {
-	rl.Add(InstallPackages("iptables", "ipset"))
-
-	rl.Add(WriteAsset("/etc/network/if-pre-up.d/iptables", "fw_upstart.sh", "root", 0744))
-	rl.Add(WriteAsset("/etc/iptables/ipsets", "fw_ipset.conf", "root", 0644))
-	rl.Add(WriteAsset("/etc/iptables/rules_ipv4", "fw_rules_ipv4.conf", "root", 0644))
-	rl.Add(WriteAsset("/etc/iptables/rules_ipv6", "fw_rules_ipv6.conf", "root", 0644))
-	rl.Add("modprobe iptable_filter && modprobe iptable_nat") // here to make sure next command succeeds.
-	rl.Add("IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables")
-}
-
-func (fw *firewallPackage) CompileName() string {
-	return "zwo.fw"
 }
 
 type dockerPackage struct {
 	*Host
-}
-
-func (dp *dockerPackage) PackageName() string {
-	return "zwo.docker"
 }
 
 func (dp *dockerPackage) Package(rl *Runlist) {

@@ -7,7 +7,6 @@ import (
 )
 
 type dockerClient struct {
-	baseImage  string
 	tag        string
 	host       *Host
 	dockerHost *dockerclient.DockerHost
@@ -26,15 +25,9 @@ func newDockerClient(host *Host) (client *dockerClient, e error) {
 	return &dockerClient{host: host, dockerHost: dh}, nil
 }
 
-func (dc *dockerClient) provisionImage(tag string, packages ...Package) (imageId string, e error) {
+func (dc *dockerClient) provisionImage(baseImage, tag string, pkg Package) (imageId string, e error) {
 	logger.PushPrefix(dc.host.IP)
 	defer logger.PopPrefix()
-
-	if packages == nil || len(packages) == 0 {
-		e := fmt.Errorf("compilables must be given")
-		logger.Errorf(e.Error())
-		return "", e
-	}
 
 	if tag != "" {
 		if !strings.Contains(tag, "/") && dc.dockerHost.Registry != "" {
@@ -43,23 +36,25 @@ func (dc *dockerClient) provisionImage(tag string, packages ...Package) (imageId
 		dc.tag = tag
 	}
 
-	runLists, e := precompileRunlists(dc.host, packages...)
-	if e != nil {
+	runlist := &Runlist{name: tag, pkg: pkg}
+	if e := runlist.compile(); e != nil {
 		return "", e
 	}
 
-	aLen := countActions(runLists)
+	aLen := len(runlist.commands)
 	if aLen >= 42 {
 		return "", fmt.Errorf("docker only supports runlists with up to 42 commands (found %d)", aLen)
 	}
 
-	if dc.baseImage == "" {
-		dc.baseImage = "ubuntu"
+	if baseImage == "" {
+		baseImage = "ubuntu"
 	}
-	dc.dockerfile = fmt.Sprintf("FROM %s\n", dc.baseImage)
+	dc.dockerfile = fmt.Sprintf("FROM %s\n", baseImage)
+
+	runlists := append([]*Runlist{}, runlist)
 
 	// Provisioning the runlist actually means building a dockerfile.
-	if e = provisionRunlists(runLists, dc.buildDockerFile); e != nil {
+	if e = provisionRunlists(runlists, dc.buildDockerFile); e != nil {
 		return "", e
 	}
 

@@ -41,25 +41,3 @@ func (t *testPkgWCNamer) Package(r *Runlist) {
 func (t *testPkgWCNamer) PackageName() string {
 	return "Rumpelstilzchen"
 }
-
-func TestPackageName(t *testing.T) {
-	Convey("Given a package not implementing the PackageNamer interface", t, func() {
-		pkg := &testPkgWoutCNamer{}
-		Convey("When the package's name is retrieved", func() {
-			name := packageName(pkg)
-			Convey("Then it is equal to the package's internal name in lower case", func() {
-				So(name, ShouldEqual, "zwo.testpkgwoutcnamer")
-			})
-		})
-	})
-
-	Convey("Given a package implementing the PackageNamer interface", t, func() {
-		pkg := &testPkgWCNamer{}
-		Convey("When the package's name is retrieved", func() {
-			name := packageName(pkg)
-			Convey("Then it is equal to the name returned from the PackageName method in lowercase", func() {
-				So(name, ShouldEqual, "rumpelstilzchen")
-			})
-		})
-	})
-}

@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"github.com/dynport/zwo/cmd"
 	"github.com/dynport/zwo/utils"
+	"runtime/debug"
 )
 
 // A runlist is a container for commands. Use the following methods to add new commands.
 type Runlist struct {
 	commands []cmd.Command
-	pkg      interface{}
+	pkg      Package
 	name     string // Name of the compilable.
 }
 
@@ -30,4 +31,26 @@ func (rl *Runlist) Add(c interface{}) {
 	default:
 		panic(fmt.Sprintf("type %T not supported!", t))
 	}
+}
+
+func (rl *Runlist) compile() (e error) {
+	defer func() {
+		if r := recover(); r != nil {
+			var ok bool
+			e, ok = r.(error)
+			if !ok {
+				e = fmt.Errorf("failed to precompile package: %v", rl.name)
+			}
+			logger.Info(e.Error())
+			logger.Debug(string(debug.Stack()))
+		}
+	}()
+
+	if e = validatePackage(rl.pkg); e != nil {
+		return e
+	}
+
+	rl.pkg.Package(rl)
+	logger.Debugf("Precompiled package %s", rl.name)
+	return nil
 }

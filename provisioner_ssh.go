@@ -20,26 +20,18 @@ func newSSHClient(host *Host) (client *sshClient) {
 	return &sshClient{host: host, client: gossh.New(host.IP, host.user())}
 }
 
-func (sc *sshClient) provisionHost(packages ...Package) (e error) {
+func (sc *sshClient) provision() (e error) {
 	logger.PushPrefix(sc.host.IP)
 	defer logger.PopPrefix()
 
-	if packages == nil || len(packages) == 0 {
-		logger.Debug("no packages given; will only provision basic host settings")
-	}
-
-	pkgs := createHostPackages(sc.host)
-	pkgs = append(pkgs, packages...)
-
-	runLists, e := precompileRunlists(sc.host, pkgs...)
-	if e != nil {
+	if e = sc.host.precompileRunlists(); e != nil {
 		return e
 	}
 
-	return provisionRunlists(runLists, sc.provision)
+	return provisionRunlists(sc.host.runlists(), sc.provisionRunlist)
 }
 
-func (sc *sshClient) provision(rl *Runlist) (e error) {
+func (sc *sshClient) provisionRunlist(rl *Runlist) (e error) {
 	tasks := sc.buildTasksForRunlist(rl)
 
 	checksumDir := fmt.Sprintf("/var/cache/zwo/tree/%s", rl.name)

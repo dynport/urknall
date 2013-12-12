@@ -20,13 +20,17 @@ func (cc *customCommand) Logging() string {
 	return ""
 }
 
+type somePackage struct {
+	SField string
+	IField int
+}
+
+func (sp *somePackage) Package(rl *Runlist) {
+}
+
 func TestAddCommand(t *testing.T) {
 	Convey("Given a runlist for a certain package", t, func() {
-		type pkg struct {
-			SField string
-			IField int
-		}
-		rl := &Runlist{pkg: &pkg{SField: "something", IField: 1}}
+		rl := &Runlist{pkg: &somePackage{SField: "something", IField: 1}}
 
 		Convey("When a string is added", func() {
 			rl.Add(`string with "{{ .SField }}" and "{{ .IField }}"`)
