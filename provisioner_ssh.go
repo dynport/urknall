@@ -161,16 +161,16 @@ func (sc *sshClient) writeChecksumFile(checksumFileBase string, failed bool, log
 		checksumFile += ".done"
 	}
 
+	// Whoa, super hacky stuff to get the command to the checksum file. The command might contain a lot of stuff, like
+	// apostrophes and the like, that would totally nuke a quoted string. Though there is a here doc.
 	c := []string{
-		fmt.Sprintf(`echo "%s" > %s`, logMsg, checksumFile),
 		fmt.Sprintf(`echo "STDOUT #####" >> %s`, checksumFile),
 		fmt.Sprintf(`cat %s.stdout >> %s`, checksumFileBase, checksumFile),
 		fmt.Sprintf(`echo "STDERR #####" >> %s`, checksumFile),
 		fmt.Sprintf(`cat %s.stderr >> %s`, checksumFileBase, checksumFile),
 		fmt.Sprintf(`rm -f %s.std*`, checksumFileBase),
 	}
-
-	sc.executeCommand(strings.Join(c, " && "))
+	sc.executeCommand(fmt.Sprintf("cat <<EOF_COMMAND > %s && %s\n%s\nEOF_COMMAND\n", checksumFile, strings.Join(c, " && "), logMsg))
 }
 
 type taskData struct {
