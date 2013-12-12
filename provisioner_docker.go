@@ -19,6 +19,7 @@ func newDockerClient(host *Host) (client *dockerClient, e error) {
 	if e != nil {
 		return nil, e
 	}
+	dh.Logger = logger
 	if host.Docker.WithRegistry {
 		dh.Registry = host.IP + ":5000"
 	}
