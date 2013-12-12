@@ -12,6 +12,20 @@ type Package interface {
 	Package(rl *Runlist) // Add the package specific commands to the runlist.
 }
 
+type anonymousPackage struct {
+	cmds []interface{}
+}
+
+func (anon *anonymousPackage) Package(rl *Runlist) {
+	for i := range anon.cmds {
+		rl.Add(anon.cmds[i])
+	}
+}
+
+// Create a package from a set of commands.
+func NewPackage(cmds ...interface{}) Package {
+	return &anonymousPackage{cmds: cmds}
+}
 
 func validatePackage(pkg interface{}) error {
 	v := reflect.ValueOf(pkg)
