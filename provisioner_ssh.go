@@ -41,7 +41,7 @@ func (sc *sshClient) provisionRunlist(rl *Runlist) (e error) {
 		return fmt.Errorf("failed to build checksum hash: %s", e.Error())
 	}
 
-	if sc.host.IsSudoRequired() {
+	if sc.host.isSudoRequired() {
 		logger.PushPrefix("SUDO")
 		defer logger.PopPrefix()
 	}
@@ -79,7 +79,7 @@ func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
 	checksumFile := fmt.Sprintf("%s/%s", checksumDir, task.checksum)
 
 	sCmd := fmt.Sprintf("bash <<EOF_RUNTASK 2> %s.stderr 1> %s.stdout\n%s\nEOF_RUNTASK\n", checksumFile, checksumFile, task.command.Shell())
-	if sc.host.IsSudoRequired() {
+	if sc.host.isSudoRequired() {
 		sCmd = fmt.Sprintf("sudo bash <<EOF_ZWO_SUDO\n%s\nEOF_ZWO_SUDO\n", sCmd)
 	}
 	rsp, e := sc.client.Execute(sCmd)
@@ -94,7 +94,7 @@ func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
 }
 
 func (sc *sshClient) executeCommand(cmdRaw string) *gossh.Result {
-	if sc.host.IsSudoRequired() {
+	if sc.host.isSudoRequired() {
 		cmdRaw = fmt.Sprintf("sudo bash <<EOF_ZWO_SUDO\n%s\nEOF_ZWO_SUDO\n", cmdRaw)
 	}
 	c := &cmd.ShellCommand{Command: cmdRaw}

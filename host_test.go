@@ -17,7 +17,7 @@ func TestUserHandling(t *testing.T) {
 				So(h.user(), ShouldEqual, "root")
 			})
 			Convey("The returned host's 'isSudoRequired' predicate return false", func() {
-				So(h.IsSudoRequired(), ShouldBeFalse)
+				So(h.isSudoRequired(), ShouldBeFalse)
 			})
 		})
 	})
@@ -33,7 +33,7 @@ func TestUserHandling(t *testing.T) {
 				So(h.user(), ShouldEqual, "root")
 			})
 			Convey("The returned host's 'isSudoRequired' predicate return false", func() {
-				So(h.IsSudoRequired(), ShouldBeFalse)
+				So(h.isSudoRequired(), ShouldBeFalse)
 			})
 		})
 	})
@@ -49,7 +49,7 @@ func TestUserHandling(t *testing.T) {
 				So(h.user(), ShouldEqual, user)
 			})
 			Convey("The returned host's 'isSudoRequired' predicate return true", func() {
-				So(h.IsSudoRequired(), ShouldBeTrue)
+				So(h.isSudoRequired(), ShouldBeTrue)
 			})
 		})
 	})
@@ -96,13 +96,13 @@ func TestDockerConfiguration(t *testing.T) {
 		h := &Host{IP: "127.0.0.1"}
 		Convey("Given no docker configuration is set", func() {
 			Convey("Then the docker host predicate should return 'false'", func() {
-				So(h.IsDockerHost(), ShouldBeFalse)
+				So(h.isDockerHost(), ShouldBeFalse)
 			})
 			Convey("Then the docker build host predicate should return 'false'", func() {
-				So(h.IsDockerBuildHost(), ShouldBeFalse)
+				So(h.isDockerBuildHost(), ShouldBeFalse)
 			})
 			Convey("When the docker version is requested", func() {
-				f := func() { h.DockerVersion() }
+				f := func() { h.dockerVersion() }
 				Convey("Then a panic occurs", func() {
 					So(f, ShouldPanicWith, "not a docker host")
 				})
@@ -112,13 +112,13 @@ func TestDockerConfiguration(t *testing.T) {
 		Convey("Given the default docker configuration", func() {
 			h.Docker = &DockerSettings{}
 			Convey("Then the docker host predicate should return 'true'", func() {
-				So(h.IsDockerHost(), ShouldBeTrue)
+				So(h.isDockerHost(), ShouldBeTrue)
 			})
 			Convey("Then the docker build host predicate should return 'false'", func() {
-				So(h.IsDockerBuildHost(), ShouldBeFalse)
+				So(h.isDockerBuildHost(), ShouldBeFalse)
 			})
 			Convey("When the docker version is requested", func() {
-				v := h.DockerVersion()
+				v := h.dockerVersion()
 				Convey("Then the default is returned", func() {
 					So(v, ShouldEqual, defaultVersion)
 				})
@@ -128,7 +128,7 @@ func TestDockerConfiguration(t *testing.T) {
 		Convey("Given the docker configuration with the docker build host flag set", func() {
 			h.Docker = &DockerSettings{WithBuildSupport: true}
 			Convey("Then the docker build host predicate should return 'true'", func() {
-				So(h.IsDockerBuildHost(), ShouldBeTrue)
+				So(h.isDockerBuildHost(), ShouldBeTrue)
 			})
 		})
 
@@ -136,7 +136,7 @@ func TestDockerConfiguration(t *testing.T) {
 			version := "0.5.3"
 			h.Docker = &DockerSettings{Version: version}
 			Convey("When the docker version is requested", func() {
-				v := h.DockerVersion()
+				v := h.dockerVersion()
 				Convey("Then the given version is returned", func() {
 					So(v, ShouldEqual, version)
 				})

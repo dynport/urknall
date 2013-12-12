@@ -28,7 +28,7 @@ func (h *Host) buildSystemRunlists() {
 			"modprobe iptable_filter && modprobe iptable_nat", // here to make sure next command succeeds.
 			"IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables"))
 
-	if h.IsDockerHost() {
+	if h.isDockerHost() {
 		h.addSystemPackage("docker", &dockerPackage{Host: h})
 	}
 }
@@ -91,10 +91,10 @@ func installDockerKernelOnPrecise() *ShellCommand {
 func (dp *dockerPackage) dockerBinary() *ShellCommand {
 	baseUrl := "http://get.docker.io/builds/Linux/x86_64"
 
-	if dp.DockerVersion() < "0.6.0" {
+	if dp.dockerVersion() < "0.6.0" {
 		panic("version lower than 0.6.0 not supported yet")
 	}
-	url := baseUrl + "/docker-" + dp.DockerVersion()
+	url := baseUrl + "/docker-" + dp.dockerVersion()
 	return DownloadToFile(url, "/usr/local/bin/docker", "root", 0700)
 }
 

@@ -116,7 +116,7 @@ func (h *Host) provision(dryrun bool) (e error) {
 // Provision the given packages into a docker container image tagged with the given tag (the according registry will be
 // added automatically). The build will happen on this host, that must be a docker host with build capability.
 func (h *Host) CreateDockerImage(baseImage, tag string, pkg Package) (imageId string, e error) {
-	if !h.IsDockerHost() {
+	if !h.isDockerHost() {
 		return "", fmt.Errorf("host %s is not a docker host", h.Hostname)
 	}
 	dc, e := newDockerClient(h)
@@ -127,7 +127,7 @@ func (h *Host) CreateDockerImage(baseImage, tag string, pkg Package) (imageId st
 }
 
 // Get docker version that should be used. Will panic if the host has no docker enabled.
-func (h *Host) DockerVersion() string {
+func (h *Host) dockerVersion() string {
 	if h.Docker == nil {
 		panic("not a docker host")
 	}
@@ -138,17 +138,17 @@ func (h *Host) DockerVersion() string {
 }
 
 // Predicate to test whether docker must be installed.
-func (h *Host) IsDockerHost() bool {
+func (h *Host) isDockerHost() bool {
 	return h.Docker != nil
 }
 
 // Predicate to test whether the host should be used to build docker images.
-func (h *Host) IsDockerBuildHost() bool {
+func (h *Host) isDockerBuildHost() bool {
 	return h.Docker != nil && h.Docker.WithBuildSupport
 }
 
 // Predicate to test whether sudo is required (user for the host is not "root").
-func (h *Host) IsSudoRequired() bool {
+func (h *Host) isSudoRequired() bool {
 	if h.User != "" && h.User != "root" {
 		return true
 	}
