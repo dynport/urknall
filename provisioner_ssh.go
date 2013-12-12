@@ -10,14 +10,22 @@ import (
 	"strings"
 )
 
-type sshClient struct {
-	dryrun bool
-	client *gossh.Client
-	host   *Host
+type ProvisionOptions struct {
+	LogStdout bool // log stdout of commands
+	DryRun    bool
 }
 
-func newSSHClient(host *Host) (client *sshClient) {
-	return &sshClient{host: host, client: gossh.New(host.IP, host.user())}
+type sshClient struct {
+	client           *gossh.Client
+	host             *Host
+	provisionOptions ProvisionOptions
+}
+
+func newSSHClient(host *Host, opts *ProvisionOptions) (client *sshClient) {
+	if opts == nil {
+		opts = &ProvisionOptions{}
+	}
+	return &sshClient{host: host, client: gossh.New(host.IP, host.user()), provisionOptions: *opts}
 }
 
 func (sc *sshClient) provision() (e error) {
@@ -72,16 +80,25 @@ func (sc *sshClient) provisionRunlist(rl *Runlist) (e error) {
 }
 
 func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
-	if sc.dryrun {
+	if sc.provisionOptions.DryRun {
 		return nil
 	}
 
 	checksumFile := fmt.Sprintf("%s/%s", checksumDir, task.checksum)
 
-	sCmd := fmt.Sprintf("bash <<EOF_RUNTASK 2> %s.stderr 1> %s.stdout\n%s\nEOF_RUNTASK\n", checksumFile, checksumFile, task.command.Shell())
+	stderr := ">(tee " + checksumFile + ".stderr >&2)"
+	stdout := checksumFile + ".stdout"
+
+	if sc.provisionOptions.LogStdout {
+		sc.client.DebugWriter = logger.Info
+		stdout = ">(tee " + stdout + ")"
+	}
+
+	sCmd := fmt.Sprintf("bash <<EOF_RUNTASK 2> %s 1> %s\n%s\nEOF_RUNTASK\n", stderr, stdout, task.command.Shell())
 	if sc.host.isSudoRequired() {
 		sCmd = fmt.Sprintf("sudo bash <<EOF_ZWO_SUDO\n%s\nEOF_ZWO_SUDO\n", sCmd)
 	}
+	sc.client.ErrorWriter = logger.Error
 	rsp, e := sc.client.Execute(sCmd)
 
 	// Write the checksum file (containing information on the command run).
@@ -135,7 +152,7 @@ func (sc *sshClient) cleanUpRemainingCachedEntries(checksumDir string, checksumH
 	for k, _ := range checksumHash {
 		invalidCacheEntries = append(invalidCacheEntries, fmt.Sprintf("%s.done", k))
 	}
-	if sc.dryrun {
+	if sc.provisionOptions.DryRun {
 		logger.Info("invalidated commands:", invalidCacheEntries)
 	} else {
 		cmd := fmt.Sprintf("cd %s && rm -f *.failed %s", checksumDir, strings.Join(invalidCacheEntries, " "))
