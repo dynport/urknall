@@ -69,7 +69,7 @@ func TestInterfaceHandling(t *testing.T) {
 		})
 
 		Convey("When the interface is explicitly set to the default", func() {
-			h.SetInterface(defaultInterface)
+			h.Interface = defaultInterface
 			Convey("And the Interface method is called", func() {
 				v := h.publicInterface()
 				Convey("Then the interface is set to the default", func() {
@@ -79,7 +79,7 @@ func TestInterfaceHandling(t *testing.T) {
 		})
 
 		Convey("When the interface is set to 'tun0'", func() {
-			h.SetInterface("tun0")
+			h.Interface = "tun0"
 			Convey("And the Interface method is called", func() {
 				v := h.publicInterface()
 				Convey("Then the interface is set to 'tun0'", func() {
