@@ -12,7 +12,7 @@ import (
 )
 
 type Ruby struct {
-	Version     string `urknall="default=2.0.0-p247"`
+	Version     string `urknall:"default=2.0.0-p247"`
 	WithBundler bool
 }
 
