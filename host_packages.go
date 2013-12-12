@@ -18,15 +18,17 @@ func (h *Host) buildSystemRunlists() {
 				"hostname -F /etc/hostname"))
 	}
 
-	h.addSystemPackage("firewall",
-		h.newHostPackage(
-			InstallPackages("iptables", "ipset"),
-			WriteAsset("/etc/network/if-pre-up.d/iptables", "fw_upstart.sh", "root", 0744),
-			WriteAsset("/etc/iptables/ipsets", "fw_ipset.conf", "root", 0644),
-			WriteAsset("/etc/iptables/rules_ipv4", "fw_rules_ipv4.conf", "root", 0644),
-			WriteAsset("/etc/iptables/rules_ipv6", "fw_rules_ipv6.conf", "root", 0644),
-			"modprobe iptable_filter && modprobe iptable_nat", // here to make sure next command succeeds.
-			"IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables"))
+	if len(h.Rules) > 0 {
+		h.addSystemPackage("firewall",
+			h.newHostPackage(
+				InstallPackages("iptables", "ipset"),
+				WriteAsset("/etc/network/if-pre-up.d/iptables", "fw_upstart.sh", "root", 0744),
+				WriteAsset("/etc/iptables/ipsets", "fw_ipset.conf", "root", 0644),
+				WriteAsset("/etc/iptables/rules_ipv4", "fw_rules_ipv4.conf", "root", 0644),
+				WriteAsset("/etc/iptables/rules_ipv6", "fw_rules_ipv6.conf", "root", 0644),
+				"modprobe iptable_filter && modprobe iptable_nat", // here to make sure next command succeeds.
+				"IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables"))
+	}
 
 	if h.isDockerHost() {
 		h.addSystemPackage("docker", &dockerPackage{Host: h})
