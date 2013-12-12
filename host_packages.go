@@ -42,6 +42,18 @@ func (h *Host) newHostPackage(cmds ...interface{}) *hostPackage {
 	return &hostPackage{Host: h, cmds: cmds}
 }
 
+func (h *hostPackage) IsDockerHost() bool {
+	return h.isDockerHost()
+}
+
+func (h *hostPackage) IsDockerBuildHost() bool {
+	return h.isDockerHost()
+}
+
+func (h *hostPackage) Interface() string {
+	return h.publicInterface()
+}
+
 func (hp *hostPackage) Package(rl *Runlist) {
 	for i := range hp.cmds {
 		rl.Add(hp.cmds[i])

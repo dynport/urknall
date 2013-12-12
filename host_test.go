@@ -61,7 +61,7 @@ func TestInterfaceHandling(t *testing.T) {
 		h := &Host{IP: "127.0.0.1"}
 		Convey("When no interface is set", func() {
 			Convey("And the Interface method is called", func() {
-				v := h.Interface()
+				v := h.publicInterface()
 				Convey("Then the interface is set to the default", func() {
 					So(v, ShouldEqual, defaultInterface)
 				})
@@ -71,7 +71,7 @@ func TestInterfaceHandling(t *testing.T) {
 		Convey("When the interface is explicitly set to the default", func() {
 			h.SetInterface(defaultInterface)
 			Convey("And the Interface method is called", func() {
-				v := h.Interface()
+				v := h.publicInterface()
 				Convey("Then the interface is set to the default", func() {
 					So(v, ShouldEqual, defaultInterface)
 				})
@@ -81,7 +81,7 @@ func TestInterfaceHandling(t *testing.T) {
 		Convey("When the interface is set to 'tun0'", func() {
 			h.SetInterface("tun0")
 			Convey("And the Interface method is called", func() {
-				v := h.Interface()
+				v := h.publicInterface()
 				Convey("Then the interface is set to 'tun0'", func() {
 					So(v, ShouldEqual, "tun0")
 				})

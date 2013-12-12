@@ -15,10 +15,10 @@ import (
 //	TODO(gfrey): Add better support for interfaces and IPs.
 //	TODO(gfrey): Add handling and support for IPv6 (currently the firewall will block everything).
 type Host struct {
-	IP       string // Host's IP address used to provision the system.
-	User     string // User used to log in.
-	Hostname string // Hostname used on the system.
-	iface    string // Primary network interface of the host.
+	IP        string // Host's IP address used to provision the system.
+	User      string // User used to log in.
+	Hostname  string // Hostname used on the system.
+	Interface string // Primary network interface of the host.
 
 	Paranoid bool // Make the firewall as restrictive as possible.
 	WithVPN  bool // Connect host to a VPN. Assumes "tun0" as interface.
@@ -49,17 +49,12 @@ func (h *Host) user() string {
 	return h.User
 }
 
-// Set the host's primary interface. Must only be set if the primary interface is not "eth0".
-func (h *Host) SetInterface(iface string) {
-	h.iface = iface
-}
-
 // Get the host's primary interface. If none is given "eth0" is returned as default.
-func (h *Host) Interface() string {
-	if h.iface == "" {
+func (h *Host) publicInterface() string {
+	if h.Interface == "" {
 		return "eth0"
 	}
-	return h.iface
+	return h.Interface
 }
 
 // Add the given package with the given name to the host.
