@@ -70,6 +70,6 @@ test: build
 	@go test $(PACKAGES)
 
 assets/assets.go: $(ASSETS)
-	@goassets ./assets > /dev/null 2>&1
-
+	@rm -f $@
+	@goassets -path="assets/assets.go" ./assets > /dev/null 2>&1
 
