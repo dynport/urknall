@@ -82,13 +82,21 @@ func (cfg *iptConfig) String() (s string) {
 		s += " --protocol " + cfg.rule.Protocol
 	}
 	if cfg.sourceIface != "" {
-		s += " --out-interface " + cfg.sourceIface
+		if cfg.rule.Chain == "FORWARD" {
+			s += " --in-interface " + cfg.sourceIface
+		} else {
+			s += " --out-interface " + cfg.sourceIface
+		}
 	}
 	if cfg.destIP != "" {
 		s += " --destination " + cfg.destIP
 	}
 	if cfg.destIface != "" {
-		s += " --in-interface " + cfg.destIface
+		if cfg.rule.Chain == "FORWARD" {
+			s += " --out-interface " + cfg.destIface
+		} else {
+			s += " --in-interface " + cfg.destIface
+		}
 	}
 
 	for module, modOptions := range cfg.moduleConfig {
