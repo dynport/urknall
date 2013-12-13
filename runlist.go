@@ -14,22 +14,25 @@ type Runlist struct {
 	name     string // Name of the compilable.
 }
 
-func (rl *Runlist) Add(c interface{}) {
-	switch t := c.(type) {
-	case *cmd.ShellCommand:
-		t.Command = utils.MustRenderTemplate(t.Command, rl.pkg)
-		rl.commands = append(rl.commands, t)
-	case *cmd.FileCommand:
-		t.Content = utils.MustRenderTemplate(t.Content, rl.pkg)
-		rl.commands = append(rl.commands, t)
-	case cmd.Command:
-		rl.commands = append(rl.commands, t)
-	case string:
-		// No explicit expansion required as the function is called recursively with a ShellCommand type, that has
-		// explicitly renders the template.
-		rl.Add(&cmd.ShellCommand{Command: t})
-	default:
-		panic(fmt.Sprintf("type %T not supported!", t))
+func (rl *Runlist) Add(first interface{}, others ...interface{}) {
+	all := append([]interface{}{first}, others...)
+	for _, c := range all {
+		switch t := c.(type) {
+		case *cmd.ShellCommand:
+			t.Command = utils.MustRenderTemplate(t.Command, rl.pkg)
+			rl.commands = append(rl.commands, t)
+		case *cmd.FileCommand:
+			t.Content = utils.MustRenderTemplate(t.Content, rl.pkg)
+			rl.commands = append(rl.commands, t)
+		case cmd.Command:
+			rl.commands = append(rl.commands, t)
+		case string:
+			// No explicit expansion required as the function is called recursively with a ShellCommand type, that has
+			// explicitly renders the template.
+			rl.Add(&cmd.ShellCommand{Command: t})
+		default:
+			panic(fmt.Sprintf("type %T not supported!", t))
+		}
 	}
 }
 
