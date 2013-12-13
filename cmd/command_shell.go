@@ -169,49 +169,6 @@ func IfNot(test string, i interface{}) *ShellCommand {
 	}
 }
 
-func download(url string) *ShellCommand {
-	if url == "" {
-		panic("empty url given")
-	}
-	return And(
-		"mkdir -p /tmp/downloads",
-		"cd /tmp/downloads",
-		fmt.Sprintf("curl -SsfLO %s", url))
-}
-
-// Download the URL and write the file to the given destination, with owner and permissions set accordingly.
-// Destination can either be an existing directory or a file. If a directory is given the downloaded file will moved
-// there using the file name from the URL. If it is a file, the downloaded file will be moved (and possibly renamed) to
-// that destination. Overwriting an existing file is not possible (command fails in that case)!
-func DownloadToFile(url, destination, owner string, permissions os.FileMode) *ShellCommand {
-	if destination == "" {
-		panic("empty destination given")
-	}
-
-	filename := path.Base(url)
-	downloadCmd := And(
-		download(url),
-		IfNot(fmt.Sprintf("! -f %s", destination),
-			And(`echo "destination already exists; will not overwrite"`,
-				"exit 1")),
-		fmt.Sprintf("mv /tmp/downloads/%s %s", filename, destination))
-
-	cmds := make([]interface{}, 0, 4)
-	if owner != "" && owner != "root" {
-		cmds = append(cmds, Or(
-			If(fmt.Sprintf("-f %s", destination), fmt.Sprintf("chown %s %s", owner, destination)),
-			If(fmt.Sprintf("-d %s", destination), fmt.Sprintf("chown %s %s/%s", owner, destination, filename)),
-			And("echo \"Couldn't determine target\"", "exit 1")))
-	}
-	if permissions != 0 {
-		cmds = append(cmds, Or(
-			If(fmt.Sprintf("-f %s", destination), fmt.Sprintf("chmod %o %s", permissions, destination)),
-			If(fmt.Sprintf("-d %s", destination), fmt.Sprintf("chmod %o %s/%s", permissions, destination, filename)),
-			And("echo \"Couldn't determine target\"", "exit 1")))
-	}
-	return And(downloadCmd, cmds...)
-}
-
 // Extract the file at the given directory. The following file extensions are currently supported (".tar", ".tgz",
 // ".tar.gz", ".tbz", ".tar.bz2" for tar archives, and ".zip" for zipfiles).
 func ExtractFile(file, targetDir string) *ShellCommand {
@@ -253,14 +210,6 @@ func extractTarArchive(path, targetDir, compression string) *ShellCommand {
 	return And(
 		fmt.Sprintf("cd %s", targetDir),
 		fmt.Sprintf("tar xf%s %s", additionalCommand, path))
-}
-
-// Download the file from the given URL and extract it to the given directory. If the directory does not exist it is
-// created. See the "ExtractFile" command for a list of supported archive types.
-func DownloadAndExtract(url, targetDir string) *ShellCommand {
-	downloadCmd := download(url)
-	archivePath := fmt.Sprintf("/tmp/downloads/%s", path.Base(url))
-	return And(downloadCmd, ExtractFile(archivePath, targetDir))
 }
 
 // Wait for the given path to appear. Break and fail if it doesn't appear after the given number of seconds.

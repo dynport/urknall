@@ -102,7 +102,7 @@ func installDockerKernelOnPrecise() *ShellCommand {
 		"apt-get -o Dpkg::Options::='--force-confnew' install linux-generic-lts-raring -y")
 }
 
-func (dp *dockerPackage) dockerBinary() *ShellCommand {
+func (dp *dockerPackage) dockerBinary() *DownloadCommand {
 	baseUrl := "http://get.docker.io/builds/Linux/x86_64"
 
 	if dp.dockerVersion() < "0.6.0" {
