@@ -89,19 +89,9 @@ func (h *Host) addSystemPackage(name string, pkg Package) (e error) {
 }
 
 // Provision the host.
-func (h *Host) Provision() (e error) {
-	return h.provision(false)
-}
-
-// Test provisioning of the host, but don't actually execute any commands.
-func (h *Host) ProvisionDryrun() (e error) {
-	return h.provision(true)
-}
-
-func (h *Host) provision(dryrun bool) (e error) {
-	sc := newSSHClient(h)
-	if dryrun {
-		sc.dryrun = true
+func (h *Host) Provision(opts *ProvisionOptions) (e error) {
+	sc := newSSHClient(h, opts)
+	if opts.DryRun {
 		logger.PushPrefix(gologger.Colorize(226, "DRYRUN"))
 		defer logger.PopPrefix()
 	}
