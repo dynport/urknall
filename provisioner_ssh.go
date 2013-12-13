@@ -84,28 +84,25 @@ func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
 		return nil
 	}
 
-	checksumFile := fmt.Sprintf("%s/%s", checksumDir, task.checksum)
+	stderr := fmt.Sprintf(`>(while read line; do echo "$(date --iso-8601=ns):stderr:$line"; done | tee /tmp/%s.%s.stderr)`, sc.host.user(), task.checksum)
+	stdout := fmt.Sprintf(`>(while read line; do echo "$(date --iso-8601=ns):stdout:$line"; done | tee /tmp/%s.%s.stdout)`, sc.host.user(), task.checksum)
 
-	stderr := ">(tee " + checksumFile + ".stderr >&2)"
-	stdout := checksumFile + ".stdout"
-
+	sc.client.ErrorWriter = logger.Error
 	if sc.provisionOptions.LogStdout {
 		sc.client.DebugWriter = logger.Info
-		stdout = ">(tee " + stdout + ")"
 	}
 
-	sCmd := fmt.Sprintf("bash <<EOF_RUNTASK 2> %s 1> %s\n%s\nEOF_RUNTASK\n", stderr, stdout, task.command.Shell())
+	sCmd := fmt.Sprintf("bash <<EOF_RUNTASK 1> %s 2> %s\n%s\nEOF_RUNTASK\n", stdout, stderr, task.command.Shell())
 	if sc.host.isSudoRequired() {
-		sCmd = fmt.Sprintf("sudo bash <<EOF_ZWO_SUDO\n%s\nEOF_ZWO_SUDO\n", sCmd)
+		sCmd = fmt.Sprintf("sudo %s", sCmd)
 	}
-	sc.client.ErrorWriter = logger.Error
 	rsp, e := sc.client.Execute(sCmd)
 
 	// Write the checksum file (containing information on the command run).
-	sc.writeChecksumFile(checksumFile, e != nil, task.command.Logging(), rsp)
+	sc.writeChecksumFile(checksumDir, task.checksum, e != nil, task.command.Logging(), rsp)
 
 	if e != nil {
-		return fmt.Errorf("%s (see %s.failed for more information)", e.Error(), checksumFile)
+		return fmt.Errorf("%s (see %s/%s.failed for more information)", e.Error(), checksumDir, task.checksum)
 	}
 	return nil
 }
@@ -162,8 +159,9 @@ func (sc *sshClient) cleanUpRemainingCachedEntries(checksumDir string, checksumH
 	return nil
 }
 
-func (sc *sshClient) writeChecksumFile(checksumFileBase string, failed bool, logMsg string, response *gossh.Result) {
-	checksumFile := checksumFileBase
+func (sc *sshClient) writeChecksumFile(checksumDir, checksum string, failed bool, logMsg string, response *gossh.Result) {
+	tmpChecksumFiles := "/tmp/" + sc.host.user() + "." + checksum + ".std*"
+	checksumFile := checksumDir + "/" + checksum
 	if failed {
 		checksumFile += ".failed"
 	} else {
@@ -173,11 +171,8 @@ func (sc *sshClient) writeChecksumFile(checksumFileBase string, failed bool, log
 	// Whoa, super hacky stuff to get the command to the checksum file. The command might contain a lot of stuff, like
 	// apostrophes and the like, that would totally nuke a quoted string. Though there is a here doc.
 	c := []string{
-		fmt.Sprintf(`echo "STDOUT #####" >> %s`, checksumFile),
-		fmt.Sprintf(`cat %s.stdout >> %s`, checksumFileBase, checksumFile),
-		fmt.Sprintf(`echo "STDERR #####" >> %s`, checksumFile),
-		fmt.Sprintf(`cat %s.stderr >> %s`, checksumFileBase, checksumFile),
-		fmt.Sprintf(`rm -f %s.std*`, checksumFileBase),
+		fmt.Sprintf(`cat %s | sort >> %s`, tmpChecksumFiles, checksumFile),
+		fmt.Sprintf(`rm -f %s`, tmpChecksumFiles),
 	}
 	sc.executeCommand(fmt.Sprintf("cat <<EOF_COMMAND > %s && %s\n%s\nEOF_COMMAND\n", checksumFile, strings.Join(c, " && "), logMsg))
 }
