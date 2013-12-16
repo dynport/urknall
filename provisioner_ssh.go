@@ -108,8 +108,9 @@ func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
 }
 
 func (sc *sshClient) executeCommand(cmdRaw string) *gossh.Result {
+	cmdRaw = fmt.Sprintf("bash <<EOF_ZWO_SUDO\n%s\nEOF_ZWO_SUDO\n", cmdRaw)
 	if sc.host.isSudoRequired() {
-		cmdRaw = fmt.Sprintf("sudo bash <<EOF_ZWO_SUDO\n%s\nEOF_ZWO_SUDO\n", cmdRaw)
+		cmdRaw = "sudo " + cmdRaw
 	}
 	c := &cmd.ShellCommand{Command: cmdRaw}
 	result, e := sc.client.Execute(c.Shell())
@@ -128,7 +129,9 @@ func (sc *sshClient) buildChecksumHash(checksumDir string) (checksumMap map[stri
 	sc.executeCommand(fmt.Sprintf("mkdir -p %s", checksumDir))
 
 	checksums := []string{}
-	rsp := sc.executeCommand(fmt.Sprintf("ls %s/*.done | xargs", checksumDir))
+	// The subshell for the if state requires the escaping of the '$' so that the variable is only expanded in the
+	// subshell.
+	rsp := sc.executeCommand(fmt.Sprintf(`for f in "%s"/*.done; do if [[ -f "\$f" ]]; then echo -n "\$f "; fi; done`, checksumDir))
 	for _, checksumFile := range strings.Fields(rsp.Stdout()) {
 		checksum := strings.TrimSuffix(path.Base(checksumFile), ".done")
 		checksums = append(checksums, checksum)
