@@ -14,6 +14,10 @@ type Runlist struct {
 	name     string // Name of the compilable.
 }
 
+func (runlist *Runlist) Name() string {
+	return runlist.name
+}
+
 func (rl *Runlist) Add(first interface{}, others ...interface{}) {
 	all := append([]interface{}{first}, others...)
 	for _, c := range all {
@@ -36,7 +40,8 @@ func (rl *Runlist) Add(first interface{}, others ...interface{}) {
 	}
 }
 
-func (rl *Runlist) compile() (e error) {
+func (rl *Runlist) compile(host *Host) (e error) {
+	Publish("runlists.precompiling.started", &Message{Runlist: rl, Host: host})
 	defer func() {
 		if r := recover(); r != nil {
 			var ok bool
@@ -44,8 +49,7 @@ func (rl *Runlist) compile() (e error) {
 			if !ok {
 				e = fmt.Errorf("failed to precompile package: %v %q", rl.name, r)
 			}
-			logger.Info(e.Error())
-			logger.Debug(string(debug.Stack()))
+			Publish("runlist.panic", &Message{Runlist: rl, Error: e, Stack: string(debug.Stack())})
 		}
 	}()
 
@@ -54,6 +58,6 @@ func (rl *Runlist) compile() (e error) {
 	}
 
 	rl.pkg.Package(rl)
-	logger.Debugf("Precompiled package %s", rl.name)
+	Publish("runlists.precompiling.finished", &Message{Runlist: rl, Host: host})
 	return nil
 }

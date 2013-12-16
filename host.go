@@ -2,7 +2,6 @@ package urknall
 
 import (
 	"fmt"
-	"github.com/dynport/gologger"
 	"github.com/dynport/urknall/fw"
 	"strings"
 )
@@ -95,10 +94,6 @@ func (h *Host) addSystemPackage(name string, pkg Package) (e error) {
 // Provision the host.
 func (h *Host) Provision(opts *ProvisionOptions) (e error) {
 	sc := newSSHClient(h, opts)
-	if opts.DryRun {
-		logger.PushPrefix(gologger.Colorize(226, "DRYRUN"))
-		defer logger.PopPrefix()
-	}
 	return sc.provision()
 }
 
@@ -161,7 +156,7 @@ func (h *Host) precompileRunlists() (e error) {
 			return fmt.Errorf("pkg %q seems to be packaged already", runlist.name)
 		}
 
-		if e = runlist.compile(); e != nil {
+		if e = runlist.compile(h); e != nil {
 			return e
 		}
 	}

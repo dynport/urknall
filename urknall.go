@@ -28,13 +28,3 @@
 // The provisioner will be given a list of packages (entities implementing the "Compiler" interface), compiles a runlist
 // for each and will run those on the host to provision, using the required mechanisms depending on the targeted host.
 package urknall
-
-import (
-	"github.com/dynport/gologger"
-)
-
-var logger = gologger.NewFromEnv()
-
-func init() {
-	logger.Start()
-}
