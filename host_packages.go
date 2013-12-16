@@ -13,6 +13,7 @@ func (h *Host) buildSystemRunlists() {
 	if h.Hostname != "" {
 		h.addSystemPackage("hostname",
 			h.newHostPackage(
+				"hostname localhost", // Set hostname to make sudo happy.
 				&FileCommand{Path: "/etc/hostname", Content: h.Hostname},
 				&FileCommand{Path: "/etc/hosts", Content: "127.0.0.1 {{ .Hostname }} localhost"},
 				"hostname -F /etc/hostname"))
