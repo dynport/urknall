@@ -57,6 +57,10 @@ func (h *Host) publicInterface() string {
 	return h.Interface
 }
 
+func (h *Host) AddCommands(name string, cmds ...interface{}) error {
+	return h.AddPackage(name, NewPackage(cmds...))
+}
+
 // Add the given package with the given name to the host.
 func (h *Host) AddPackage(name string, pkg Package) (e error) {
 	if strings.HasPrefix(name, "uk.") {
