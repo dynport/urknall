@@ -46,13 +46,12 @@ func (sc *sshClient) provisionRunlist(rl *Runlist) (e error) {
 	}
 
 	for i := range tasks {
-		started := time.Now()
 		task := tasks[i]
 		logMsg := task.command.Logging()
+		m := &Message{key: MessageRunlistsProvisionTask, task: task, message: logMsg, host: sc.host, runlist: rl}
 		if _, found := checksumHash[task.checksum]; found { // Task is cached.
-			Publish("runlists.provision.task.cached", &Message{ExecStatus: StatusCached, Task: task, Message: logMsg, Host: sc.host, Runlist: rl,
-				Duration: time.Now().Sub(started),
-			})
+			m.execStatus = statusCached
+			m.publish("finished")
 			delete(checksumHash, task.checksum) // Delete checksums of cached tasks from hash.
 			continue
 		}
@@ -63,15 +62,12 @@ func (sc *sshClient) provisionRunlist(rl *Runlist) (e error) {
 			}
 			checksumHash = make(map[string]struct{})
 		}
-
-		Publish("runlists.provision.task.start", &Message{ExecStatus: StatusExecStart, Task: task, Message: logMsg, Host: sc.host, Runlist: rl})
+		m.execStatus = statusExecStart
+		m.publish("started")
 		e = sc.runTask(task, checksumDir)
-		Publish("runlists.provision.task.finished", &Message{
-			ExecStatus: StatusExecFinished, Task: task, Message: logMsg, Host: sc.host, Duration: time.Now().Sub(started),
-			Runlist: rl,
-			Error:   e,
-		},
-		)
+		m.error_ = e
+		m.execStatus = statusExecFinished
+		m.publish("finished")
 		if e != nil {
 			return e
 		}
@@ -87,7 +83,8 @@ func newDebugWriter(stream string, host *Host, task *taskData) func(i ...interfa
 		if task != nil {
 			runlist = task.runlist
 		}
-		Publish("task.io."+stream, &Message{Host: host, Stream: stream, Task: task, IOMessage: i, Runlist: runlist, Duration: time.Now().Sub(started)})
+		m := &Message{key: "task.io", host: host, stream: stream, task: task, iOMessages: i, runlist: runlist, totalRuntime: time.Now().Sub(started)}
+		m.publish(stream)
 	}
 }
 
@@ -163,11 +160,14 @@ func (sc *sshClient) cleanUpRemainingCachedEntries(checksumDir string, checksumH
 		invalidCacheEntries = append(invalidCacheEntries, fmt.Sprintf("%s.done", k))
 	}
 	if sc.provisionOptions.DryRun {
-		Publish("urknall.cleanup_cache_entries", &Message{InvalidatedCachentries: invalidCacheEntries, Host: sc.host})
+		(&Message{key: MessageCleanupCacheEntries, invalidatedCachentries: invalidCacheEntries, host: sc.host}).publish(".dryrun")
 	} else {
 		cmd := fmt.Sprintf("cd %s && rm -f *.failed %s", checksumDir, strings.Join(invalidCacheEntries, " "))
-		Publish("urknall.cleanup_cache_entries", &Message{Command: cmd, Host: sc.host})
-		sc.executeCommand(cmd)
+		m := &Message{command: cmd, host: sc.host, key: MessageUrknallInternal}
+		m.publish("started")
+		result := sc.executeCommand(cmd)
+		m.sshResult = result
+		m.publish("finished")
 	}
 	return nil
 }

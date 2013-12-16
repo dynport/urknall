@@ -41,7 +41,8 @@ func (rl *Runlist) Add(first interface{}, others ...interface{}) {
 }
 
 func (rl *Runlist) compile(host *Host) (e error) {
-	Publish("runlists.precompiling.started", &Message{Runlist: rl, Host: host})
+	m := &Message{runlist: rl, host: host, key: MessageRunlistsPrecompile}
+	m.publish("started")
 	defer func() {
 		if r := recover(); r != nil {
 			var ok bool
@@ -49,15 +50,16 @@ func (rl *Runlist) compile(host *Host) (e error) {
 			if !ok {
 				e = fmt.Errorf("failed to precompile package: %v %q", rl.name, r)
 			}
-			Publish("runlist.panic", &Message{Runlist: rl, Error: e, Stack: string(debug.Stack())})
+			m.error_ = e
+			m.stack = string(debug.Stack())
+			m.publish("panic")
 		}
 	}()
 
 	if e = validatePackage(rl.pkg); e != nil {
 		return e
 	}
-
 	rl.pkg.Package(rl)
-	Publish("runlists.precompiling.finished", &Message{Runlist: rl, Host: host})
+	m.publish("finished")
 	return nil
 }
