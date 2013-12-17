@@ -3,16 +3,15 @@ package urknall
 import (
 	"crypto/sha256"
 	"fmt"
-	"github.com/dynport/gologger"
 	"github.com/dynport/gossh"
 	"github.com/dynport/urknall/cmd"
 	"path"
 	"strings"
+	"time"
 )
 
 type ProvisionOptions struct {
-	LogStdout bool // log stdout of commands
-	DryRun    bool
+	DryRun bool
 }
 
 type sshClient struct {
@@ -29,9 +28,6 @@ func newSSHClient(host *Host, opts *ProvisionOptions) (client *sshClient) {
 }
 
 func (sc *sshClient) provision() (e error) {
-	logger.PushPrefix(sc.host.IP)
-	defer logger.PopPrefix()
-
 	if e = sc.host.precompileRunlists(); e != nil {
 		return e
 	}
@@ -49,16 +45,13 @@ func (sc *sshClient) provisionRunlist(rl *Runlist) (e error) {
 		return fmt.Errorf("failed to build checksum hash: %s", e.Error())
 	}
 
-	if sc.host.isSudoRequired() {
-		logger.PushPrefix("SUDO")
-		defer logger.PopPrefix()
-	}
-
 	for i := range tasks {
 		task := tasks[i]
 		logMsg := task.command.Logging()
+		m := &Message{key: MessageRunlistsProvisionTask, task: task, message: logMsg, host: sc.host, runlist: rl}
 		if _, found := checksumHash[task.checksum]; found { // Task is cached.
-			logger.Infof("\b[%s][%.8s]%s", gologger.Colorize(33, "CACHED"), task.checksum, logMsg)
+			m.execStatus = statusCached
+			m.publish("finished")
 			delete(checksumHash, task.checksum) // Delete checksums of cached tasks from hash.
 			continue
 		}
@@ -69,14 +62,30 @@ func (sc *sshClient) provisionRunlist(rl *Runlist) (e error) {
 			}
 			checksumHash = make(map[string]struct{})
 		}
-
-		logger.Infof("\b[%s  ][%.8s]%s", gologger.Colorize(34, "EXEC"), task.checksum, logMsg)
-		if e = sc.runTask(task, checksumDir); e != nil {
+		m.execStatus = statusExecStart
+		m.publish("started")
+		e = sc.runTask(task, checksumDir)
+		m.error_ = e
+		m.execStatus = statusExecFinished
+		m.publish("finished")
+		if e != nil {
 			return e
 		}
 	}
 
 	return nil
+}
+
+func newDebugWriter(stream string, host *Host, task *taskData) func(i ...interface{}) {
+	started := time.Now()
+	return func(i ...interface{}) {
+		var runlist *Runlist = nil
+		if task != nil {
+			runlist = task.runlist
+		}
+		m := &Message{key: "task.io", host: host, stream: stream, task: task, iOMessages: i, runlist: runlist, totalRuntime: time.Now().Sub(started)}
+		m.publish(stream)
+	}
 }
 
 func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
@@ -87,10 +96,8 @@ func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
 	stderr := fmt.Sprintf(`>(while read line; do echo "$(date --iso-8601=ns):stderr:$line"; done | tee /tmp/%s.%s.stderr)`, sc.host.user(), task.checksum)
 	stdout := fmt.Sprintf(`>(while read line; do echo "$(date --iso-8601=ns):stdout:$line"; done | tee /tmp/%s.%s.stdout)`, sc.host.user(), task.checksum)
 
-	sc.client.ErrorWriter = logger.Error
-	if sc.provisionOptions.LogStdout {
-		sc.client.DebugWriter = logger.Info
-	}
+	sc.client.DebugWriter = newDebugWriter("stdout", sc.host, task)
+	sc.client.ErrorWriter = newDebugWriter("stderr", sc.host, task)
 
 	sCmd := fmt.Sprintf("bash <<EOF_RUNTASK 1> %s 2> %s\n%s\nEOF_RUNTASK\n", stdout, stderr, task.command.Shell())
 	if sc.host.isSudoRequired() {
@@ -153,11 +160,14 @@ func (sc *sshClient) cleanUpRemainingCachedEntries(checksumDir string, checksumH
 		invalidCacheEntries = append(invalidCacheEntries, fmt.Sprintf("%s.done", k))
 	}
 	if sc.provisionOptions.DryRun {
-		logger.Info("invalidated commands:", invalidCacheEntries)
+		(&Message{key: MessageCleanupCacheEntries, invalidatedCachentries: invalidCacheEntries, host: sc.host}).publish(".dryrun")
 	} else {
 		cmd := fmt.Sprintf("cd %s && rm -f *.failed %s", checksumDir, strings.Join(invalidCacheEntries, " "))
-		logger.Debug(cmd)
-		sc.executeCommand(cmd)
+		m := &Message{command: cmd, host: sc.host, key: MessageUrknallInternal}
+		m.publish("started")
+		result := sc.executeCommand(cmd)
+		m.sshResult = result
+		m.publish("finished")
 	}
 	return nil
 }
@@ -183,6 +193,11 @@ func (sc *sshClient) writeChecksumFile(checksumDir, checksum string, failed bool
 type taskData struct {
 	command  cmd.Command // The command to be executed.
 	checksum string      // The checksum of the command.
+	runlist  *Runlist
+}
+
+func (data *taskData) Command() cmd.Command {
+	return data.command
 }
 
 func (sc *sshClient) buildTasksForRunlist(rl *Runlist) (tasks []*taskData) {
@@ -193,7 +208,7 @@ func (sc *sshClient) buildTasksForRunlist(rl *Runlist) (tasks []*taskData) {
 		rawCmd := rl.commands[i].Shell()
 		cmdHash.Write([]byte(rawCmd))
 
-		task := &taskData{command: rl.commands[i], checksum: fmt.Sprintf("%x", cmdHash.Sum(nil))}
+		task := &taskData{runlist: rl, command: rl.commands[i], checksum: fmt.Sprintf("%x", cmdHash.Sum(nil))}
 		tasks = append(tasks, task)
 	}
 	return tasks

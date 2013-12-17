@@ -4,15 +4,13 @@ package urknall
 func provisionRunlists(runLists []*Runlist, provisionFunc func(*Runlist) error) (e error) {
 	for i := range runLists {
 		rl := runLists[i]
-
-		logger.PushPrefix(padToFixedLength(rl.name, 15))
-
-		if e = provisionFunc(runLists[i]); e != nil {
-			logger.Errorf("failed to provision: %s", e.Error())
+		m := &Message{key: MessageRunlistsProvision, runlist: rl}
+		m.publish("started")
+		if e = provisionFunc(rl); e != nil {
+			m.publishError(e)
 			return e
 		}
-
-		logger.PopPrefix()
+		m.publish("finished")
 	}
 	return nil
 }

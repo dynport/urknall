@@ -19,7 +19,6 @@ func newDockerClient(host *Host) (client *dockerClient, e error) {
 	if e != nil {
 		return nil, e
 	}
-	dh.Logger = logger
 	if host.Docker.WithRegistry {
 		dh.Registry = host.IP + ":5000"
 	}
@@ -27,9 +26,6 @@ func newDockerClient(host *Host) (client *dockerClient, e error) {
 }
 
 func (dc *dockerClient) provisionImage(baseImage, tag string, pkg Package) (imageId string, e error) {
-	logger.PushPrefix(dc.host.IP)
-	defer logger.PopPrefix()
-
 	if tag != "" {
 		if !strings.Contains(tag, "/") && dc.dockerHost.Registry != "" {
 			tag = dc.dockerHost.Registry + "/" + tag
@@ -38,7 +34,7 @@ func (dc *dockerClient) provisionImage(baseImage, tag string, pkg Package) (imag
 	}
 
 	runlist := &Runlist{name: tag, pkg: pkg}
-	if e := runlist.compile(); e != nil {
+	if e := runlist.compile(dc.host); e != nil {
 		return "", e
 	}
 
