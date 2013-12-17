@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/utils"
+	"log"
 	"runtime/debug"
 )
 
@@ -67,6 +68,8 @@ func (rl *Runlist) compile(host *Host) (e error) {
 			m.error_ = e
 			m.stack = string(debug.Stack())
 			m.publish("panic")
+			log.Printf("ERROR: %s", r)
+			log.Print(string(debug.Stack()))
 		}
 	}()
 

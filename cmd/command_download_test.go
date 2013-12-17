@@ -8,28 +8,6 @@ import (
 )
 
 func TestDownloadToFileCommand(t *testing.T) {
-	Convey("Given an empty URL", t, func() {
-		url := ""
-		destination := ""
-		Convey("When the DownloadToFile method is called", func() {
-			f := func() { DownloadToFile(url, destination, "", 0) }
-			Convey("Then the DownloadToFile method should panic", func() {
-				So(f, ShouldPanicWith, "empty url given")
-			})
-		})
-	})
-
-	Convey("Given an url, but an empty destination", t, func() {
-		url := "http://example.com/foobar.gz"
-		destination := ""
-		Convey("When the DownloadToFile method is called", func() {
-			f := func() { DownloadToFile(url, destination, "", 0) }
-			Convey("Then the DownloadToFile method should panic", func() {
-				So(f, ShouldPanicWith, "no destination given")
-			})
-		})
-	})
-
 	Convey("Given an url and an destination", t, func() {
 		url := "http://example.com/foobar.gz"
 		destination := "/tmp"
@@ -64,28 +42,6 @@ func TestDownloadToFileCommand(t *testing.T) {
 }
 
 func TestDownloadAndExtractComamnd(t *testing.T) {
-	Convey("Given an empty URL", t, func() {
-		url := ""
-		targetDir := ""
-		Convey("When the DownloadAndExtract method is called", func() {
-			f := func() { DownloadAndExtract(url, targetDir) }
-			Convey("Then the DownloadAndExtract method should panic", func() {
-				So(f, ShouldPanicWith, "empty url given")
-			})
-		})
-	})
-
-	Convey("Given an URL but an empty target directory", t, func() {
-		url := "http://example.com/foobar.tgz"
-		targetDir := ""
-		Convey("When the DownloadAndExtract method is called", func() {
-			f := func() { DownloadAndExtract(url, targetDir) }
-			Convey("Then the DownloadAndExtract method should panic", func() {
-				So(f, ShouldPanicWith, "no destination given")
-			})
-		})
-	})
-
 	Convey("Given an URL and a target directory", t, func() {
 		url := "http://example.com/foobar.tgz"
 		targetDir := "/tmp/foobar"

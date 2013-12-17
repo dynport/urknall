@@ -97,6 +97,33 @@ func TestAddCommand(t *testing.T) {
 			})
 		})
 
+		Convey("Given a DownloadCommand is added", func() {
+			baseCommand := cmd.DownloadCommand{}
+			Convey("with neither Url nor destination", func() {
+				So(func() { rl.Add(&baseCommand) }, ShouldPanic)
+			})
+
+			Convey("only with Url set", func() {
+				baseCommand.Destination = ""
+				baseCommand.Url = "some.url"
+				So(func() { rl.Add(&baseCommand) }, ShouldPanic)
+			})
+
+			Convey("only with Destination set", func() {
+				baseCommand.Url = ""
+				baseCommand.Destination = "/opt"
+				So(func() { rl.Add(&baseCommand) }, ShouldPanic)
+			})
+
+			Convey("only with Destination set", func() {
+				baseCommand.Url = "some.url/{{ .SField }}"
+				baseCommand.Destination = "/opt/{{ .IField }}"
+				So(func() { rl.Add(&baseCommand) }, ShouldNotPanic)
+				So(baseCommand.Url, ShouldEqual, "some.url/something")
+				So(baseCommand.Destination, ShouldEqual, "/opt/1")
+			})
+		})
+
 		Convey("Given a custom command", func() {
 			baseCommand := customCommand{Content: "something {{ .NotExpanded }}"}
 			Convey("When the custom command is added by value", func() {
