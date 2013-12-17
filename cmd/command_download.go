@@ -25,26 +25,10 @@ type DownloadCommand struct {
 // Download the file from the given URL and extract it to the given directory. If the directory does not exist it is
 // created. See the "ExtractFile" command for a list of supported archive types.
 func DownloadAndExtract(url, destination string) *DownloadCommand {
-	if url == "" {
-		panic("empty url given")
-	}
-
-	if destination == "" {
-		panic("no destination given")
-	}
-
 	return &DownloadCommand{Url: url, Destination: destination, Extract: true}
 }
 
 func DownloadToFile(url, destination, owner string, permissions os.FileMode) *DownloadCommand {
-	if url == "" {
-		panic("empty url given")
-	}
-
-	if destination == "" {
-		panic("no destination given")
-	}
-
 	return &DownloadCommand{Url: url, Destination: destination, Owner: owner, Permissions: permissions}
 }
 

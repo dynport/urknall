@@ -18,6 +18,16 @@ func (runlist *Runlist) Name() string {
 	return runlist.name
 }
 
+func validateDownloadCommand(cmd *cmd.DownloadCommand) {
+	if cmd.Url == "" {
+		panic("empty url given")
+	}
+
+	if cmd.Destination == "" {
+		panic("no destination given")
+	}
+}
+
 func (rl *Runlist) Add(first interface{}, others ...interface{}) {
 	all := append([]interface{}{first}, others...)
 	for _, c := range all {
@@ -25,6 +35,10 @@ func (rl *Runlist) Add(first interface{}, others ...interface{}) {
 		case *cmd.ShellCommand:
 			t.Command = utils.MustRenderTemplate(t.Command, rl.pkg)
 			rl.commands = append(rl.commands, t)
+		case *cmd.DownloadCommand:
+			t.Url = utils.MustRenderTemplate(t.Url, rl.pkg)
+			t.Destination = utils.MustRenderTemplate(t.Destination, rl.pkg)
+			validateDownloadCommand(t)
 		case *cmd.FileCommand:
 			t.Content = utils.MustRenderTemplate(t.Content, rl.pkg)
 			rl.commands = append(rl.commands, t)
