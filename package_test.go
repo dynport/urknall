@@ -44,6 +44,27 @@ func TestBoolValidationRequired(t *testing.T) {
 	})
 }
 
+func TestByteFields(t *testing.T) {
+	Convey("Given a package with a []byte field with a default value", t, func() {
+		type pkg struct {
+			Field []byte `urknall:"default='a test'"`
+		}
+		pi := &pkg{}
+		So(validatePackage(pi), ShouldBeNil)
+		So(string(pi.Field), ShouldEqual, "a test")
+	})
+
+	Convey("Given a package with a []byte field with a required tag", t, func() {
+		type pkg struct {
+			Field []byte `urknall:"required=true"`
+		}
+		pi := &pkg{}
+		So(validatePackage(pi), ShouldNotBeNil)
+		pi.Field = []byte("hello world")
+		So(validatePackage(pi), ShouldBeNil)
+	})
+}
+
 func TestBoolValidationDefault(t *testing.T) {
 	Convey("Given a package with a bool field with a default value", t, func() {
 		type pkg struct {
