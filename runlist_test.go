@@ -121,6 +121,7 @@ func TestAddCommand(t *testing.T) {
 				So(func() { rl.Add(&baseCommand) }, ShouldNotPanic)
 				So(baseCommand.Url, ShouldEqual, "some.url/something")
 				So(baseCommand.Destination, ShouldEqual, "/opt/1")
+				So(rl.commands[len(rl.commands)-1], ShouldEqual, &baseCommand)
 			})
 		})
 

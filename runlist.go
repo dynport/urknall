@@ -40,6 +40,7 @@ func (rl *Runlist) Add(first interface{}, others ...interface{}) {
 			t.Url = utils.MustRenderTemplate(t.Url, rl.pkg)
 			t.Destination = utils.MustRenderTemplate(t.Destination, rl.pkg)
 			validateDownloadCommand(t)
+			rl.commands = append(rl.commands, t)
 		case *cmd.FileCommand:
 			t.Content = utils.MustRenderTemplate(t.Content, rl.pkg)
 			rl.commands = append(rl.commands, t)
