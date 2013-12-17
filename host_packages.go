@@ -27,7 +27,7 @@ func (h *Host) buildSystemRunlists() {
 				WriteAsset("/etc/iptables/ipsets", "fw_ipset.conf", "root", 0644),
 				WriteAsset("/etc/iptables/rules_ipv4", "fw_rules_ipv4.conf", "root", 0644),
 				WriteAsset("/etc/iptables/rules_ipv6", "fw_rules_ipv6.conf", "root", 0644),
-				"modprobe iptable_filter && modprobe iptable_nat", // here to make sure next command succeeds.
+				"{ modprobe iptable_filter && modprobe iptable_nat; }; /bin/true", // here to make sure next command succeeds.
 				"IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables"))
 	}
 
