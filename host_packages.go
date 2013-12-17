@@ -71,7 +71,7 @@ func (dp *dockerPackage) Package(rl *Runlist) {
 	rl.Add(
 		Or("grep universe /etc/apt/sources.list",
 			And("sed 's/main$/main universe/' -i /etc/apt/sources.list",
-				"apt-get update")))
+				"DEBIAN_FRONTEND=noninteractive apt-get update")))
 	rl.Add(
 		InstallPackages("curl", "build-essential", "git-core", "bsdtar", "lxc", "aufs-tools"))
 	rl.Add(
