@@ -56,25 +56,24 @@ func (h *Host) publicInterface() string {
 	return h.Interface
 }
 
-func (h *Host) AddCommands(name string, cmds ...interface{}) error {
-	return h.AddPackage(name, NewPackage(cmds...))
+func (h *Host) AddCommands(name string, cmds ...interface{}) {
+	h.AddPackage(name, NewPackage(cmds...))
 }
 
 // Add the given package with the given name to the host.
-func (h *Host) AddPackage(name string, pkg Package) (e error) {
+func (h *Host) AddPackage(name string, pkg Package) {
 	if strings.HasPrefix(name, "uk.") {
-		return fmt.Errorf(`package name prefix "uk." reserved (in %q)`, name)
+		panic(fmt.Sprintf(`package name prefix "uk." reserved (in %q)`, name))
 	}
 
 	for i := range h.packageNames {
 		if h.packageNames[i] == name {
-			return fmt.Errorf("package with name %q exists already", name)
+			panic(fmt.Sprintf("package with name %q exists already", name))
 		}
 	}
 
 	h.packageNames = append(h.packageNames, name)
 	h.userRunlists = append(h.userRunlists, &Runlist{name: name, pkg: pkg})
-	return nil
 }
 
 // Add the given package with the given name to the host.

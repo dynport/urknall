@@ -69,10 +69,10 @@ func TestInterfaceHandling(t *testing.T) {
 		})
 
 		Convey("When adding packages", func() {
-			So(h.AddPackage("pkg", nil), ShouldBeNil)
-			So(h.AddPackage("other_pkg", nil), ShouldBeNil)
+			So(func() { h.AddPackage("pkg", nil) }, ShouldNotPanic)
+			So(func() { h.AddPackage("other_pkg", nil) }, ShouldNotPanic)
 			Convey("when adding a package with the same name", func() {
-				So(h.AddPackage("pkg", nil), ShouldNotBeNil)
+				So(func() { h.AddPackage("pkg", nil) }, ShouldPanic)
 			})
 		})
 
