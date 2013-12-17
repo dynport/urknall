@@ -3,7 +3,6 @@ package urknall
 import (
 	"fmt"
 	"github.com/dynport/urknall/cmd"
-	"github.com/dynport/urknall/utils"
 	"log"
 	"runtime/debug"
 )
@@ -22,26 +21,21 @@ func (runlist *Runlist) Name() string {
 func (rl *Runlist) Add(first interface{}, others ...interface{}) {
 	all := append([]interface{}{first}, others...)
 	for _, c := range all {
-		switch t := c.(type) {
-		case *cmd.ShellCommand:
-			t.Command = utils.MustRenderTemplate(t.Command, rl.pkg)
-			rl.commands = append(rl.commands, t)
-		case *cmd.DownloadCommand:
-			t.Url = utils.MustRenderTemplate(t.Url, rl.pkg)
-			t.Destination = utils.MustRenderTemplate(t.Destination, rl.pkg)
-			if e := t.Validate(); e != nil {
+		if renderer, ok := c.(cmd.Renderer); ok {
+			renderer.Render(rl.pkg)
+		}
+		if validator, ok := c.(cmd.Validator); ok {
+			if e := validator.Validate(); e != nil {
 				panic(e.Error())
 			}
-			rl.commands = append(rl.commands, t)
-		case *cmd.FileCommand:
-			t.Content = utils.MustRenderTemplate(t.Content, rl.pkg)
-			rl.commands = append(rl.commands, t)
-		case cmd.Command:
-			rl.commands = append(rl.commands, t)
+		}
+		switch t := c.(type) {
 		case string:
 			// No explicit expansion required as the function is called recursively with a ShellCommand type, that has
 			// explicitly renders the template.
 			rl.Add(&cmd.ShellCommand{Command: t})
+		case cmd.Command:
+			rl.commands = append(rl.commands, t)
 		default:
 			panic(fmt.Sprintf("type %T not supported!", t))
 		}

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/dynport/urknall/utils"
 	"os"
 	"path"
 	"strings"
@@ -18,6 +19,10 @@ import (
 type ShellCommand struct {
 	Command string // Command to be executed in the shell.
 	user    string // User to run the command as.
+}
+
+func (cmd *ShellCommand) Render(i interface{}) {
+	cmd.Command = utils.MustRenderTemplate(cmd.Command, i)
 }
 
 // Convenience function to run a command as a certain user. Setting an empty user will do nothing, as the command is

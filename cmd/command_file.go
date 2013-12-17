@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/dynport/urknall/assets"
+	"github.com/dynport/urknall/utils"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,6 +27,10 @@ type FileCommand struct {
 	Content     string      // Content of the file to create.
 	Owner       string      // Owner of the file to create (root per default).
 	Permissions os.FileMode // Permissions of the file created (only changed from system default if set).
+}
+
+func (cmd *FileCommand) Render(i interface{}) {
+	cmd.Content = utils.MustRenderTemplate(cmd.Content, i)
 }
 
 // Helper method to create a file at the given path with the given content, and with owner and permissions set

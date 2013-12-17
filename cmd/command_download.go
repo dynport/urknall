@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/dynport/urknall/utils"
 	"os"
 	"path"
 	"strings"
@@ -40,6 +41,11 @@ func (cmd *DownloadCommand) Validate() error {
 		return fmt.Errorf("Destination must be set")
 	}
 	return nil
+}
+
+func (cmd *DownloadCommand) Render(i interface{}) {
+	cmd.Url = utils.MustRenderTemplate(cmd.Url, i)
+	cmd.Destination = utils.MustRenderTemplate(cmd.Destination, i)
 }
 
 func (dc *DownloadCommand) Docker() string {
