@@ -102,7 +102,7 @@ func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
 
 	sc.client.DebugWriter = newDebugWriter(sc.host, task)
 
-	sCmd := fmt.Sprintf("bash <<EOF_RUNTASK 1> %s 2> %s\n%s\nEOF_RUNTASK\n", stdout, stderr, task.command.Shell())
+	sCmd := fmt.Sprintf("bash <<EOF_RUNTASK 2> %s 1> %s\n%s\nEOF_RUNTASK\n", stderr, stdout, task.command.Shell())
 	if sc.host.isSudoRequired() {
 		sCmd = fmt.Sprintf("sudo %s", sCmd)
 	}
