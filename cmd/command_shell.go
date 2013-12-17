@@ -212,6 +212,17 @@ func extractTarArchive(path, targetDir, compression string) *ShellCommand {
 		fmt.Sprintf("tar xf%s %s", additionalCommand, path))
 }
 
+func AddUser(name string, systemUser bool) *ShellCommand {
+	testForUser := "id " + name + " 2>&1 > /dev/null"
+	userAddOpts := ""
+	if systemUser {
+		userAddOpts = "--system"
+	} else {
+		userAddOpts = "-m -s /bin/bash"
+	}
+	return Or(testForUser, fmt.Sprintf("useradd %s %s", userAddOpts, name))
+}
+
 // Wait for the given path to appear. Break and fail if it doesn't appear after the given number of seconds.
 func WaitForFile(path string, timeoutInSeconds int) *ShellCommand {
 	t := 10 * timeoutInSeconds
