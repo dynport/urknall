@@ -32,6 +32,16 @@ func DownloadToFile(url, destination, owner string, permissions os.FileMode) *Do
 	return &DownloadCommand{Url: url, Destination: destination, Owner: owner, Permissions: permissions}
 }
 
+func (cmd *DownloadCommand) Validate() error {
+	if cmd.Url == "" {
+		return fmt.Errorf("Url must be set")
+	}
+	if cmd.Destination == "" {
+		return fmt.Errorf("Destination must be set")
+	}
+	return nil
+}
+
 func (dc *DownloadCommand) Docker() string {
 	return fmt.Sprintf("RUN %s", dc.Shell())
 }
