@@ -50,11 +50,11 @@ func (logger *stdoutLogger) Started() time.Time {
 
 func (logger *stdoutLogger) formatCommandOuput(message *Message) string {
 	prefix := fmt.Sprintf("[%s][%-8s][%s]", formatIp(message.HostIP()), message.RunlistName(), formatDuration(logger.sinceStarted()))
-	text := fmt.Sprint(message.iOMessages...)
+	line := message.line
 	if message.IsStderr() {
-		text = gocli.Red(text)
+		line = gocli.Red(line)
 	}
-	return prefix + " " + text
+	return prefix + " " + line
 }
 
 func formatIp(ip string) string {
@@ -70,7 +70,7 @@ func (logger *stdoutLogger) DefaultFormatter(message *Message) string {
 			return ""
 		}
 	}
-	if len(message.iOMessages) > 0 {
+	if len(message.line) > 0 {
 		return logger.formatCommandOuput(message)
 	}
 	ip := message.HostIP()

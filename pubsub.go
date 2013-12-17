@@ -53,7 +53,7 @@ type Message struct {
 	duration               time.Duration
 	totalRuntime           time.Duration
 	sshResult              *gossh.Result
-	iOMessages             []interface{}
+	line                   string
 	stream                 string
 	command                string
 	invalidatedCachentries []string

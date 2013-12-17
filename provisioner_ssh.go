@@ -76,15 +76,19 @@ func (sc *sshClient) provisionRunlist(rl *Runlist) (e error) {
 	return nil
 }
 
-func newDebugWriter(stream string, host *Host, task *taskData) func(i ...interface{}) {
+func newDebugWriter(host *Host, task *taskData) func(i ...interface{}) {
 	started := time.Now()
 	return func(i ...interface{}) {
-		var runlist *Runlist = nil
-		if task != nil {
-			runlist = task.runlist
+		parts := strings.SplitN(fmt.Sprint(i...), "\t", 3)
+		if len(parts) == 3 {
+			stream, line := parts[1], parts[2]
+			var runlist *Runlist = nil
+			if task != nil {
+				runlist = task.runlist
+			}
+			m := &Message{key: "task.io", host: host, stream: stream, task: task, line: line, runlist: runlist, totalRuntime: time.Now().Sub(started)}
+			m.publish(stream)
 		}
-		m := &Message{key: "task.io", host: host, stream: stream, task: task, iOMessages: i, runlist: runlist, totalRuntime: time.Now().Sub(started)}
-		m.publish(stream)
 	}
 }
 
@@ -93,11 +97,10 @@ func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
 		return nil
 	}
 
-	stderr := fmt.Sprintf(`>(while read line; do echo "$(date --iso-8601=ns):stderr:$line"; done | tee /tmp/%s.%s.stderr)`, sc.host.user(), task.checksum)
-	stdout := fmt.Sprintf(`>(while read line; do echo "$(date --iso-8601=ns):stdout:$line"; done | tee /tmp/%s.%s.stdout)`, sc.host.user(), task.checksum)
+	stderr := fmt.Sprintf(">(while read line; do echo \"$(date --iso-8601=ns)\tstderr\t$line\"; done | tee /tmp/%s.%s.stderr)", sc.host.user(), task.checksum)
+	stdout := fmt.Sprintf(">(while read line; do echo \"$(date --iso-8601=ns)\tstdout\t$line\"; done | tee /tmp/%s.%s.stdout)", sc.host.user(), task.checksum)
 
-	sc.client.DebugWriter = newDebugWriter("stdout", sc.host, task)
-	sc.client.ErrorWriter = newDebugWriter("stderr", sc.host, task)
+	sc.client.DebugWriter = newDebugWriter(sc.host, task)
 
 	sCmd := fmt.Sprintf("bash <<EOF_RUNTASK 1> %s 2> %s\n%s\nEOF_RUNTASK\n", stdout, stderr, task.command.Shell())
 	if sc.host.isSudoRequired() {
