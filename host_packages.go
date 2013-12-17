@@ -19,7 +19,7 @@ func (h *Host) buildSystemRunlists() {
 				"hostname -F /etc/hostname"))
 	}
 
-	if len(h.Rules) > 0 {
+	if len(h.Firewall) > 0 {
 		h.addSystemPackage("firewall",
 			h.newHostPackage(
 				InstallPackages("iptables", "ipset"),

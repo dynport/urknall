@@ -24,8 +24,8 @@ type Host struct {
 
 	Docker *DockerSettings // Make the host a docker container carrier.
 
-	Rules  []*fw.Rule  // List of rules used for the firewall.
-	IPSets []*fw.IPSet // List of ipsets for the firewall.
+	Firewall fw.Firewall // List of rules used for the firewall.
+	IPSets   []*fw.IPSet // List of ipsets for the firewall.
 
 	packageNames   []string
 	userRunlists   []*Runlist

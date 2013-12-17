@@ -19,3 +19,5 @@
 //
 // TODO(gfrey): Write about how rules are configured in urknall. Have some nice examples.
 package fw
+
+type Firewall []*Rule
