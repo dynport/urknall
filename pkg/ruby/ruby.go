@@ -11,12 +11,12 @@ import (
 	"strings"
 )
 
-type Ruby struct {
+type Package struct {
 	Version     string `urknall:"default=2.0.0-p247"`
 	WithBundler bool
 }
 
-func (ruby *Ruby) Package(r *urknall.Runlist) {
+func (ruby *Package) Package(r *urknall.Runlist) {
 	r.Add(
 		InstallPackages("curl", "build-essential", "git-core",
 			"libyaml-dev", "libxml2-dev", "libxslt1-dev",
@@ -36,15 +36,15 @@ func (ruby *Ruby) Package(r *urknall.Runlist) {
 	}
 }
 
-func (ruby *Ruby) downloadURL() string {
+func (ruby *Package) downloadURL() string {
 	majorVersion := strings.Join(strings.Split(ruby.Version, ".")[0:2], ".")
 	return fmt.Sprintf("http://ftp.ruby-lang.org/pub/ruby/%s/ruby-%s.tar.gz", majorVersion, ruby.Version)
 }
 
-func (ruby *Ruby) InstallPath() string {
+func (ruby *Package) InstallPath() string {
 	return fmt.Sprintf("/opt/ruby-%s", ruby.Version)
 }
 
-func (ruby *Ruby) SourcePath() string {
+func (ruby *Package) SourcePath() string {
 	return fmt.Sprintf("/opt/src/ruby-%s", ruby.Version)
 }
