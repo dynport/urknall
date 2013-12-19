@@ -21,7 +21,7 @@ func (pkg *Package) Package(r *urknall.Runlist) {
 	syslogPatchPath := "/tmp/nginx_syslog_patch"
 	fileName := "syslog_{{ .SyslogPatchVersion }}.patch"
 	r.Add(
-		cmd.InstallPackages("unzip", "libpcre3", "libpcre3-dev", "libssl-dev", "libpcrecpp0", "zlib1g-dev", "libgd2-xpm-dev"),
+		cmd.InstallPackages("curl", "libpcre3", "libpcre3-dev", "libssl-dev", "libpcrecpp0", "zlib1g-dev", "libgd2-xpm-dev"),
 		cmd.DownloadToFile(pkg.url(), "/opt/src", "root", 0644),
 		cmd.Mkdir(syslogPatchPath, "root", 0755),
 		cmd.DownloadToFile("https://raw.github.com/yaoweibin/nginx_syslog_patch/master/config", syslogPatchPath+"/config", "root", 0644),
