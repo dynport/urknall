@@ -1,6 +1,4 @@
 # urknall
-Version 2
-
 
 ## Provisioner
 The main provisioner is using SSH to connect to the host in question and run the required actions. There is one other
