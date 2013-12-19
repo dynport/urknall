@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"github.com/dynport/dgtk/pubsub"
 	"github.com/dynport/urknall"
 	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/fw"
@@ -13,16 +12,12 @@ import (
 	"text/template"
 )
 
-var ps = pubsub.New()
-
 func main() {
 	if len(os.Args) != 2 {
 		log.Fatalf("USAGE: %s <IP>", os.Args[0])
 	}
 
-	// urknall does not do any logging publishes notifications for specific events to which
-	// one can subscribe by registering a pubsub from github.com/dynport/dgtk/pubsub exchange with urknall.RegisterPubSub()
-	// but there is also a default StdoutLogger() which can be activated like this:
+	// activate logging to stdout
 	l, e := urknall.OpenStdoutLogger()
 	if e != nil {
 		log.Fatal(e.Error())
@@ -63,13 +58,14 @@ func main() {
 		},
 	}
 
-	app := &App{
+	// install a custom packag (must implement urknall.Package)
+	host.AddPackage("app", &App{
 		RubyInstallPath:  rb.InstallPath(),
 		NginxInstallPath: nx.InstallPath(),
 		SocketPath:       "/tmp/rack.socket",
 		CurrentPath:      "/app/current",
-	}
-	host.AddPackage("app", app)
+	},
+	)
 
 	// provision the host
 	e = host.Provision(nil)
@@ -85,6 +81,7 @@ type App struct {
 	CurrentPath      string `urknall:"required=true"`
 }
 
+// all commands of packages accept go templates and can access the attributes of the package
 func (app *App) Package(r *urknall.Runlist) {
 	r.Add(
 		"{{ .RubyInstallPath }}/bin/gem install puma --no-ri --no-rdoc", // is executed as plain bash command
