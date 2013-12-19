@@ -1,5 +1,28 @@
 # urknall
 
+## Example
+    
+    host := &urknall.Host{
+    	IP:       "127.0.0.1",
+    	Hostname: "my-urknall-host",
+    	User:     "root", // root is default, if != root all commands are run with sudo
+    }
+    
+    // run commands, "upgrade" is the name which is used to cache execution
+    host.AddCommands("upgrade", "apt-get update", "apt-get uprade -y")
+    
+    // write files
+    host.AddCommands("marker", cmd.WriteFile("/tmp/installed.txt", "OK", "root", 0644))
+    
+    // install packages (implementing urknall.Package)
+    host.AddPackage("nginx", nginx.New("1.4.4"))
+    
+    // provision host with ssh and no extra options
+    // make sure your ssh key(s) are loaded (ssh-add -l)
+    host.Provision(nil)
+
+For a more complex configuration see e.g. [github.com/dynport/urknall/blob/master/urknall-example/rack_app.go](https://github.com/dynport/urknall/blob/master/urknall-example/rack_app.go)
+
 ## Provisioner
 The main provisioner is using SSH to connect to the host in question and run the required actions. There is one other
 provisioner though, that reuses the packages (collections of commands) and provisions docker container images.
