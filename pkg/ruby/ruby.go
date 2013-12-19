@@ -11,6 +11,12 @@ import (
 	"strings"
 )
 
+func New(version string) *Package {
+	return &Package{
+		Version: version,
+	}
+}
+
 type Package struct {
 	Version     string `urknall:"default=2.0.0-p247"`
 	WithBundler bool
