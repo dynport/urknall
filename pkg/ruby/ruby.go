@@ -2,7 +2,7 @@
 //
 // Ruby will be downloaded, extracted, configured, built, and installed to `/opt/ruby-{{ .Version }}`. If the `Bundle`
 // flag is set, bundler will be installed.
-package pkg
+package ruby
 
 import (
 	"fmt"
