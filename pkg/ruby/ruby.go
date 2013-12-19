@@ -24,7 +24,7 @@ type Package struct {
 
 func (ruby *Package) Package(r *urknall.Runlist) {
 	r.Add(
-		InstallPackages("curl", "build-essential", "git-core",
+		InstallPackages("curl", "build-essential",
 			"libyaml-dev", "libxml2-dev", "libxslt1-dev",
 			"libreadline-dev", "libssl-dev", "zlib1g-dev"))
 
