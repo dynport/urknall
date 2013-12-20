@@ -30,6 +30,7 @@ type FileCommand struct {
 }
 
 func (cmd *FileCommand) Render(i interface{}) {
+	cmd.Path = utils.MustRenderTemplate(cmd.Path, i)
 	cmd.Content = utils.MustRenderTemplate(cmd.Content, i)
 }
 
