@@ -19,6 +19,15 @@ func (h *Host) buildSystemRunlists() {
 				"hostname -F /etc/hostname"))
 	}
 
+	if h.Timezone != "" {
+		h.addSystemPackage("timezone",
+			h.newHostPackage(
+				WriteFile("/etc/timezone", h.Timezone, "root", 0644),
+				"dpkg-reconfigure --frontend noninteractive tzdata",
+			),
+		)
+	}
+
 	if len(h.Firewall) > 0 {
 		h.addSystemPackage("firewall",
 			h.newHostPackage(

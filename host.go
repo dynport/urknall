@@ -18,6 +18,7 @@ type Host struct {
 	User      string // User used to log in.
 	Hostname  string // Hostname used on the system.
 	Interface string // Primary network interface of the host.
+	Timezone  string // Local Timezone to be set
 
 	Paranoid bool // Make the firewall as restrictive as possible.
 	WithVPN  bool // Connect host to a VPN. Assumes "tun0" as interface.
