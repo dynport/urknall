@@ -14,7 +14,7 @@ func provisionHost() {
 	}
 
 	// run commands, "upgrade" is the name which is used to cache execution
-	host.AddCommands("upgrade", "apt-get update", "apt-get uprade -y")
+	host.AddCommands("upgrade", "apt-get update", "apt-get upgrade -y")
 
 	// write files
 	host.AddCommands("marker", cmd.WriteFile("/tmp/installed.txt", "OK", "root", 0644))
