@@ -9,11 +9,17 @@ import (
 
 // Delegates action to RenderTemplate. Panics in case of an error returned.
 func MustRenderTemplate(tmplString string, i interface{}) (rendered string) {
-	renderedCommand, e := RenderTemplate(tmplString, i)
-	if e != nil {
-		panic(fmt.Errorf("failed rendering template: %s", e.Error()))
+	for j := 0; j < 8; j++ {
+		renderedCommand, e := RenderTemplate(tmplString, i)
+		if e != nil {
+			panic(fmt.Errorf("failed rendering template: %s", e.Error()))
+		}
+		if renderedCommand == tmplString {
+			return renderedCommand
+		}
+		tmplString = renderedCommand
 	}
-	return renderedCommand
+	panic("found rendering loop. max 8 levels are allowed")
 }
 
 // Render the template from the given string using text/template and the information from the interface provided.
