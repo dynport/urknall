@@ -49,6 +49,14 @@ func (pkg *Package) WriteConfigCommand(b []byte) cmd.Command {
 	return cmd.WriteFile(pkg.InstallPath()+"/conf/nginx.conf", string(b), "root", 0644)
 }
 
+func (pkg *Package) BinPath() string {
+	return pkg.InstallPath() + "/sbin/nginx"
+}
+
+func (pkg *Package) ReloadCommand() string {
+	return utils.MustRenderTemplate("{{ . }} -t && {{ . }} -s reload", pkg.BinPath())
+}
+
 const upstartScript = `# nginx
  
 description "nginx http daemon"
