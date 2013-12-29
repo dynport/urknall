@@ -46,7 +46,7 @@ func (pkg *Package) Package(r *urknall.Runlist) {
 }
 
 func (pkg *Package) WriteConfigCommand(b []byte) cmd.Command {
-	return cmd.WriteFile(pkg.InstallPath(), string(b), "root", 0644)
+	return cmd.WriteFile(pkg.InstallPath()+"/conf/nginx.conf", string(b), "root", 0644)
 }
 
 const upstartScript = `# nginx
