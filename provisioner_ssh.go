@@ -24,7 +24,11 @@ func newSSHClient(host *Host, opts *ProvisionOptions) (client *sshClient) {
 	if opts == nil {
 		opts = &ProvisionOptions{}
 	}
-	return &sshClient{host: host, client: gossh.New(host.IP, host.user()), provisionOptions: *opts}
+	c := gossh.New(host.IP, host.user())
+	if host.Password != "" {
+		c.SetPassword(host.Password)
+	}
+	return &sshClient{host: host, client: c, provisionOptions: *opts}
 }
 
 func (sc *sshClient) provision() (e error) {
