@@ -49,7 +49,7 @@ func (logger *stdoutLogger) Started() time.Time {
 }
 
 func (logger *stdoutLogger) formatCommandOuput(message *Message) string {
-	prefix := fmt.Sprintf("[%s][%-8s][%s]", formatIp(message.HostIP()), message.RunlistName(), formatDuration(logger.sinceStarted()))
+	prefix := fmt.Sprintf("[%s][%s][%s]", formatIp(message.HostIP()), formatRunlistName(message.RunlistName()), formatDuration(logger.sinceStarted()))
 	line := message.line
 	if message.IsStderr() {
 		line = gocli.Red(line)
@@ -84,15 +84,22 @@ func (logger *stdoutLogger) DefaultFormatter(message *Message) string {
 		execStatus = gocli.Colorize(color, execStatus)
 	}
 	parts := []string{
-		fmt.Sprintf("[%s][%-16s][%s][%-8s]%s",
+		fmt.Sprintf("[%s][%s][%s][%-8s]%s",
 			formatIp(ip),
-			runlistName,
+			formatRunlistName(runlistName),
 			formatDuration(logger.sinceStarted()),
 			execStatus,
 			payload,
 		),
 	}
 	return strings.Join(parts, " ")
+}
+
+func formatRunlistName(name string) string {
+	if len(name) > 8 {
+		name = name[0:8]
+	}
+	return fmt.Sprintf("%-8s", name)
 }
 
 func formatDuration(dur time.Duration) string {
