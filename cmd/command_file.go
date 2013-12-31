@@ -120,6 +120,6 @@ func (fc *FileCommand) Logging() string {
 	if cLen > 50 {
 		cLen = 50
 	}
-	sList = append(sList, fmt.Sprintf(" << %s", strings.Replace(string(fc.Content[0:cLen]), "\n", "⁋", -1)))
+	//sList = append(sList, fmt.Sprintf(" << %s", strings.Replace(string(fc.Content[0:cLen]), "\n", "⁋", -1)))
 	return strings.Join(sList, "")
 }
