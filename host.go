@@ -58,8 +58,9 @@ func (h *Host) publicInterface() string {
 	return h.Interface
 }
 
-func (h *Host) AddCommands(name string, cmds ...interface{}) {
-	h.AddPackage(name, NewPackage(cmds...))
+func (h *Host) AddCommands(name string, cmd interface{}, cmds ...interface{}) {
+	cmdList := append([]interface{}{cmd}, cmds...)
+	h.AddPackage(name, NewPackage(cmdList...))
 }
 
 // Add the given package with the given name to the host.
