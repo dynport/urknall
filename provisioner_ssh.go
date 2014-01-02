@@ -104,51 +104,37 @@ func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
 		return nil
 	}
 
-	stderr := fmt.Sprintf(">(while read line; do echo \"$(date --iso-8601=ns)\tstderr\t$line\"; done | tee /tmp/%s.%s.stderr)", sc.host.user(), task.checksum)
-	stdout := fmt.Sprintf(">(while read line; do echo \"$(date --iso-8601=ns)\tstdout\t$line\"; done | tee /tmp/%s.%s.stdout)", sc.host.user(), task.checksum)
-
-	sc.client.DebugWriter = newDebugWriter(sc.host, task)
-
-	sCmd := fmt.Sprintf("bash <<EOF_RUNTASK 2> %s 1> %s\n%s\nEOF_RUNTASK\n", stderr, stdout, task.command.Shell())
+	sCmd := fmt.Sprintf("bash <<EOF_RUNTASK\nset -xe\n%s\nEOF_RUNTASK\n", task.command.Shell())
 	if sc.host.isSudoRequired() {
 		sCmd = fmt.Sprintf("sudo %s", sCmd)
 	}
-	rsp, e := sc.client.Execute(sCmd)
-
-	// Write the checksum file (containing information on the command run).
-	sc.writeChecksumFile(checksumDir, task.checksum, e != nil, task.command.Logging(), rsp)
-
+	con, e := sc.client.Connection()
 	if e != nil {
-		return fmt.Errorf("%s (see %s/%s.failed for more information)", e.Error(), checksumDir, task.checksum)
+		return e
 	}
-	return nil
-}
-
-func (sc *sshClient) executeCommand(cmdRaw string) *gossh.Result {
-	cmdRaw = fmt.Sprintf("bash <<EOF_ZWO_SUDO\n%s\nEOF_ZWO_SUDO\n", cmdRaw)
-	if sc.host.isSudoRequired() {
-		cmdRaw = "sudo " + cmdRaw
-	}
-	c := &cmd.ShellCommand{Command: cmdRaw}
-	result, e := sc.client.Execute(c.Shell())
-	if e != nil {
-		stderr := ""
-		if result != nil {
-			stderr = strings.TrimSpace(result.Stderr())
-		}
-		panic(fmt.Errorf("internal error: %s (%s)", e.Error(), stderr))
-	}
-	return result
+	runner := &remoteTaskRunner{clientConn: con, cmd: sCmd, task: task, host: sc.host, dir: checksumDir}
+	return runner.run()
 }
 
 func (sc *sshClient) buildChecksumHash(checksumDir string) (checksumMap map[string]struct{}, e error) {
-	// Make sure the directory exists.
-	sc.executeCommand(fmt.Sprintf("mkdir -p %s", checksumDir))
+	// Make sure the directory exists. If not create it with group set to "sudo" and group bit set (all new files will
+	// inherit the directory's group). This allows for different users to create, modify and delete the contained
+	// checksum files.
+	createChecksumDirCmd := fmt.Sprintf(`if [ ! -d %[1]s ]; then mkdir -p %[1]s && chgrp sudo %[1]s && chmod g+ws %[1]s; fi`, checksumDir)
+	if sc.host.isSudoRequired() {
+		createChecksumDirCmd = fmt.Sprintf(`sudo bash -c "%s"`, createChecksumDirCmd)
+	}
+	r, e := sc.client.Execute(createChecksumDirCmd)
+	if e != nil {
+		return nil, fmt.Errorf(r.Stderr() + ": " + e.Error())
+	}
 
 	checksums := []string{}
-	// The subshell for the if state requires the escaping of the '$' so that the variable is only expanded in the
-	// subshell.
-	rsp := sc.executeCommand(fmt.Sprintf(`for f in "%s"/*.done; do if [[ -f "\$f" ]]; then echo -n "\$f "; fi; done`, checksumDir))
+
+	rsp, e := sc.client.Execute(fmt.Sprintf(`for f in %s/*.done; do if [[ -f $f ]]; then echo -n "$f "; fi; done`, checksumDir))
+	if e != nil {
+		return nil, e
+	}
 	for _, checksumFile := range strings.Fields(rsp.Stdout()) {
 		checksum := strings.TrimSuffix(path.Base(checksumFile), ".done")
 		checksums = append(checksums, checksum)
@@ -157,7 +143,7 @@ func (sc *sshClient) buildChecksumHash(checksumDir string) (checksumMap map[stri
 	checksumMap = make(map[string]struct{})
 	for i := range checksums {
 		if len(checksums[i]) != 64 {
-			return nil, fmt.Errorf("invalid checksum '%s' found in '%s'", checksums[i], checksumDir)
+			return nil, fmt.Errorf("invalid checksum %q found in %q", checksums, checksumDir)
 		}
 		checksumMap[checksums[i]] = struct{}{}
 	}
@@ -175,29 +161,11 @@ func (sc *sshClient) cleanUpRemainingCachedEntries(checksumDir string, checksumH
 		cmd := fmt.Sprintf("cd %s && rm -f *.failed %s", checksumDir, strings.Join(invalidCacheEntries, " "))
 		m := &Message{command: cmd, host: sc.host, key: MessageUrknallInternal}
 		m.publish("started")
-		result := sc.executeCommand(cmd)
+		result, _ := sc.client.Execute(cmd)
 		m.sshResult = result
 		m.publish("finished")
 	}
 	return nil
-}
-
-func (sc *sshClient) writeChecksumFile(checksumDir, checksum string, failed bool, logMsg string, response *gossh.Result) {
-	tmpChecksumFiles := "/tmp/" + sc.host.user() + "." + checksum + ".std*"
-	checksumFile := checksumDir + "/" + checksum
-	if failed {
-		checksumFile += ".failed"
-	} else {
-		checksumFile += ".done"
-	}
-
-	// Whoa, super hacky stuff to get the command to the checksum file. The command might contain a lot of stuff, like
-	// apostrophes and the like, that would totally nuke a quoted string. Though there is a here doc.
-	c := []string{
-		fmt.Sprintf(`cat %s | sort >> %s`, tmpChecksumFiles, checksumFile),
-		fmt.Sprintf(`rm -f %s`, tmpChecksumFiles),
-	}
-	sc.executeCommand(fmt.Sprintf("cat <<EOF_COMMAND > %s && %s\n%s\nEOF_COMMAND\n", checksumFile, strings.Join(c, " && "), logMsg))
 }
 
 type taskData struct {
