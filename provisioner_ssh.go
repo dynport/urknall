@@ -20,6 +20,9 @@ type sshClient struct {
 	provisionOptions ProvisionOptions
 }
 
+// Directory checksums are stored in.
+const checksumRootDir = "/var/lib/urknall"
+
 func newSSHClient(host *Host, opts *ProvisionOptions) (client *sshClient) {
 	if opts == nil {
 		opts = &ProvisionOptions{}
@@ -42,7 +45,7 @@ func (sc *sshClient) provision() (e error) {
 func (sc *sshClient) provisionRunlist(rl *Runlist) (e error) {
 	tasks := sc.buildTasksForRunlist(rl)
 
-	checksumDir := fmt.Sprintf("/var/cache/urknall/%s", rl.name)
+	checksumDir := fmt.Sprintf(checksumRootDir+"/%s", rl.name)
 
 	checksumHash, e := sc.buildChecksumHash(checksumDir)
 	if e != nil {
