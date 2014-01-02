@@ -79,12 +79,12 @@ func (logger *stdoutLogger) DefaultFormatter(message *Message) string {
 	if message.task != nil {
 		payload = message.task.Command().Logging()
 	}
-	execStatus := message.execStatus
-	if color := colorMapping[execStatus]; color > 0 {
+	execStatus := fmt.Sprintf("%-8s", message.execStatus)
+	if color := colorMapping[message.execStatus]; color > 0 {
 		execStatus = gocli.Colorize(color, execStatus)
 	}
 	parts := []string{
-		fmt.Sprintf("[%s][%s][%s][%-8s]%s",
+		fmt.Sprintf("[%s][%s][%s][%s]%s",
 			formatIp(ip),
 			formatRunlistName(runlistName),
 			formatDuration(logger.sinceStarted()),
