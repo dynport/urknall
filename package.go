@@ -27,6 +27,10 @@ func NewPackage(cmds ...interface{}) Package {
 	return &anonymousPackage{cmds: cmds}
 }
 
+func InitializePackage(pkg interface{}) error {
+	return validatePackage(pkg)
+}
+
 func validatePackage(pkg interface{}) error {
 	v := reflect.ValueOf(pkg)
 	if v.Kind() == reflect.Ptr {
