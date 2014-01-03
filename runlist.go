@@ -36,6 +36,14 @@ func (rl *Runlist) Add(first interface{}, others ...interface{}) {
 			rl.Add(&cmd.ShellCommand{Command: t})
 		case cmd.Command:
 			rl.commands = append(rl.commands, t)
+		case Package:
+			r := &Runlist{}
+			e := validatePackage(t)
+			if e != nil {
+				panic(e.Error())
+			}
+			t.Package(r)
+			rl.commands = append(rl.commands, r.commands...)
 		default:
 			panic(fmt.Sprintf("type %T not supported!", t))
 		}
