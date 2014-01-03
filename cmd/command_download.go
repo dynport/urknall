@@ -62,6 +62,7 @@ func (dc *DownloadCommand) Shell() string {
 
 	cmd := []string{}
 
+	cmd = append(cmd, fmt.Sprintf("which curl || { apt-get update && apt-get install -y curl; }"))
 	cmd = append(cmd, fmt.Sprintf("mkdir -p %s", TMP_DOWNLOAD_DIR))
 	cmd = append(cmd, fmt.Sprintf("cd %s", TMP_DOWNLOAD_DIR))
 	cmd = append(cmd, fmt.Sprintf(`curl -SsfLO "%s"`, dc.Url))
