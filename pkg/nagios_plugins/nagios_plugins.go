@@ -19,7 +19,7 @@ func (plugins *Package) InstallPath() string {
 
 func (plugins *Package) Package(r *urknall.Runlist) {
 	r.Add(
-		cmd.InstallPackages("libssl-dev", "openssl", "file"),
+		cmd.InstallPackages("build-essential", "libssl-dev", "openssl", "file"),
 		cmd.DownloadAndExtract(plugins.url(), "/opt/src"),
 		cmd.And(
 			"cd /opt/src/nagios-plugins-{{ .Version }}",
