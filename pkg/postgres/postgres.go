@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"github.com/dynport/dgtk/goup"
 	"github.com/dynport/urknall"
 	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/utils"
@@ -68,16 +67,16 @@ func (pkg *Package) CreateUserCommand(user *User) string {
 	return `psql -U postgres -c "` + user.CreateCommand() + `"`
 }
 
-func (pkg *Package) UpstartExecCommand(dataDir string) cmd.Command {
-	return &cmd.UpstartCommand{
-		Upstart: &goup.Upstart{
-			Name:          "postgres",
-			StartOnEvents: []string{"runlevel [2345]"},
-			StopOnEvents:  []string{"runlevel [!2345]"},
-			Exec:          "su -l " + user + " -c '" + pkg.installDir() + "/bin/postgres -D " + dataDir + "'",
-		},
-	}
+func (pkg *Package) UpstartExecCommand() cmd.Command {
+	return cmd.WriteFile("/etc/init/postgres.conf", utils.MustRenderTemplate(upstart, pkg), "root", 0644)
 }
+
+const upstart = `
+start on runlevel [2345]
+stop on runlevel [!2345]
+setuid {{ .User }}
+exec {{ .InstallDir }}/bin/postgres -D {{ .DataDir }}
+`
 
 func (pkg *Package) url() string {
 	return "http://ftp.postgresql.org/pub/source/v{{ .Version }}/postgresql-{{ .Version }}.tar.gz"
