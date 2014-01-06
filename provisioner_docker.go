@@ -56,7 +56,7 @@ func (dc *dockerClient) provisionImage(baseImage, tag string, pkg Package) (imag
 	}
 
 	// Use the generated dockerfile to build the image.
-	imageId, e = dc.dockerHost.BuildImage(dc.dockerfile, dc.tag)
+	imageId, e = dc.dockerHost.BuildDockerfile(dc.dockerfile, &dockerclient.BuildImageOptions{Tag: dc.tag})
 	if e != nil {
 		return "", e
 	}
