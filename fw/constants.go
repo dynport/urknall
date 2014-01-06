@@ -7,6 +7,7 @@ const (
 	ProtocolTcp  = "tcp"
 	ProtocolUdp  = "udp"
 
-	PortHttp  = 80
-	PortHttps = 443
+	PortHttp    = 80
+	PortHttps   = 443
+	PortOpenVPN = 1194
 )
