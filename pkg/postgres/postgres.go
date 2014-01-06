@@ -6,30 +6,42 @@ import (
 	"github.com/dynport/urknall/utils"
 )
 
-const user = "postgres"
+func New(version string) *Package {
+	return &Package{Version: version}
+}
 
 type Package struct {
 	Version string `urknall:"default=9.3.2"`
+	DataDir string `urknall:"default=/data/postgres"`
+}
+
+func (p *Package) User() string {
+	return "postgres"
 }
 
 func (pkg *Package) Package(r *urknall.Runlist) {
 	r.Add(
-		cmd.InstallPackages("build-essential", "libaio1", "libssl-dev", "perl"),
-		cmd.DownloadAndExtract(pkg.url(), "/opt"),
+		cmd.InstallPackages("openssl", "libssl-dev", "flex", "zlib1g-dev", "libxslt1-dev", "libxml2-dev", "python-dev", "libreadline-dev", "bison"),
+		cmd.Mkdir("/opt/src/", "root", 0755),
+		cmd.DownloadAndExtract(pkg.url(), "/opt/src/"),
 		cmd.And(
 			"cd /opt/src/postgresql-{{ .Version }}",
-			"./configure --prefix=/opt/postgresql-{{ .Version }}",
+			"./configure --prefix="+pkg.InstallDir(),
 			"make",
 			"make install",
 		),
-		cmd.AddUser(user, true),
+		cmd.AddUser(pkg.User(), true),
 	)
 }
 
-func (pkg *Package) InitDbCommand(dataDir string) cmd.Command {
+func (p *Package) InstallDir() string {
+	return "/opt/postgresql-" + p.Version
+}
+
+func (pkg *Package) InitDbCommand() cmd.Command {
 	return cmd.And(
-		cmd.Mkdir(dataDir, user, 0755),
-		"su -l "+user+" -c '"+pkg.installDir()+"/bin/initdb -D "+dataDir+" -E utf8 --auth-local=trust'",
+		cmd.Mkdir(pkg.DataDir, pkg.User(), 0755),
+		"su -l "+pkg.User()+" -c '"+pkg.InstallDir()+"/bin/initdb -D "+pkg.DataDir+" -E utf8 --auth-local=trust'",
 	)
 }
 
@@ -60,11 +72,11 @@ func (user *User) CreateCommand() string {
 }
 
 func (pkg *Package) CreateDatabaseCommand(db *Database) string {
-	return `psql -U postgres -c "` + db.CreateCommand() + `"`
+	return pkg.InstallDir() + "/bin/" + `psql -U postgres -c "` + db.CreateCommand() + `"`
 }
 
 func (pkg *Package) CreateUserCommand(user *User) string {
-	return `psql -U postgres -c "` + user.CreateCommand() + `"`
+	return pkg.InstallDir() + "/bin/" + `psql -U postgres -c "` + user.CreateCommand() + `"`
 }
 
 func (pkg *Package) UpstartExecCommand() cmd.Command {
