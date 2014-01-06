@@ -12,6 +12,11 @@ type Package interface {
 	Package(rl *Runlist) // Add the package specific commands to the runlist.
 }
 
+func CompilePackage(pkg Package) (*Runlist, error) {
+	rl := &Runlist{pkg: pkg}
+	return rl, rl.compile()
+}
+
 type anonymousPackage struct {
 	cmds []interface{}
 }

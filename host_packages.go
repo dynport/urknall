@@ -5,8 +5,8 @@ import (
 	. "github.com/dynport/urknall/cmd"
 )
 
-func runlist(name string, pkg Package) *Runlist {
-	return &Runlist{name: name, pkg: pkg}
+func newRunlist(name string, pkg Package, host *Host) *Runlist {
+	return &Runlist{name: name, pkg: pkg, host: host}
 }
 
 func (h *Host) buildSystemRunlists() {

@@ -76,7 +76,7 @@ func (h *Host) AddPackage(name string, pkg Package) {
 	}
 
 	h.packageNames = append(h.packageNames, name)
-	h.userRunlists = append(h.userRunlists, &Runlist{name: name, pkg: pkg})
+	h.userRunlists = append(h.userRunlists, newRunlist(name, pkg, h))
 }
 
 // Add the given package with the given name to the host.
@@ -89,7 +89,7 @@ func (h *Host) addSystemPackage(name string, pkg Package) (e error) {
 	}
 
 	h.packageNames = append(h.packageNames, name)
-	h.systemRunlists = append(h.systemRunlists, &Runlist{name: name, pkg: pkg})
+	h.systemRunlists = append(h.systemRunlists, newRunlist(name, pkg, h))
 	return nil
 }
 
@@ -158,7 +158,7 @@ func (h *Host) precompileRunlists() (e error) {
 			return fmt.Errorf("pkg %q seems to be packaged already", runlist.name)
 		}
 
-		if e = runlist.compile(h); e != nil {
+		if e = runlist.compile(); e != nil {
 			return e
 		}
 	}
