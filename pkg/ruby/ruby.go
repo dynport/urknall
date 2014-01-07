@@ -20,6 +20,7 @@ func New(version string) *Package {
 type Package struct {
 	Version     string `urknall:"default=2.0.0-p247"`
 	WithBundler bool
+	Local       bool // install to /usr/local/bin
 }
 
 func (ruby *Package) Package(r *urknall.Runlist) {
@@ -48,6 +49,9 @@ func (ruby *Package) downloadURL() string {
 }
 
 func (ruby *Package) InstallPath() string {
+	if ruby.Local {
+		return "/usr/local"
+	}
 	return fmt.Sprintf("/opt/ruby-%s", ruby.Version)
 }
 
