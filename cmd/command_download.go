@@ -62,7 +62,7 @@ func (dc *DownloadCommand) Shell() string {
 
 	cmd := []string{}
 
-	cmd = append(cmd, fmt.Sprintf("which curl || { apt-get update && apt-get install -y curl; }"))
+	cmd = append(cmd, fmt.Sprintf("which curl > /dev/null || { apt-get update && apt-get install -y curl; }"))
 	cmd = append(cmd, fmt.Sprintf("mkdir -p %s", TMP_DOWNLOAD_DIR))
 	cmd = append(cmd, fmt.Sprintf("cd %s", TMP_DOWNLOAD_DIR))
 	cmd = append(cmd, fmt.Sprintf(`curl -SsfLO "%s"`, dc.Url))
@@ -78,18 +78,18 @@ func (dc *DownloadCommand) Shell() string {
 	}
 
 	if dc.Owner != "" && dc.Owner != "root" {
-		ifFile := fmt.Sprintf("{ [[ -f %s ]] && chown %s %s; }", destination, dc.Owner, destination)
-		ifInDir := fmt.Sprintf("{ [[ -d %s ]] && [[ -f %s/%s ]] && chown %s %s/%s; }", destination, destination, filename, dc.Owner, destination, filename)
-		ifDir := fmt.Sprintf("{ [[ -d %s ]] && chown -R %s %s; }", destination, dc.Owner, destination)
+		ifFile := fmt.Sprintf("{ if [ -f %s ]; then chown %s %s; fi; }", destination, dc.Owner, destination)
+		ifInDir := fmt.Sprintf("{ if [ -d %s && -f %s/%s ]; then chown %s %s/%s; fi; }", destination, destination, filename, dc.Owner, destination, filename)
+		ifDir := fmt.Sprintf("{ if [ -d %s ]; then chown -R %s %s; fi; }", destination, dc.Owner, destination)
 		err := `{ echo "Couldn't determine target" && exit 1; }`
 		cmd = append(cmd, fmt.Sprintf("{ %s; }", strings.Join([]string{ifFile, ifInDir, ifDir, err}, " || ")))
 	}
 
 	if dc.Permissions != 0 {
-		ifFile := fmt.Sprintf("{ [[ -f %s ]] && chmod %o %s; }", destination, dc.Permissions, destination)
-		ifInDir := fmt.Sprintf("{ [[ -d %s ]] && [[ -f %s/%s ]] && chmod %o %s/%s; }", destination, destination,
+		ifFile := fmt.Sprintf("{ if [ -f %s ]; then chmod %o %s; fi; }", destination, dc.Permissions, destination)
+		ifInDir := fmt.Sprintf("{ if [ -d %s && -f %s/%s ]; then chmod %o %s/%s; fi; }", destination, destination,
 			filename, dc.Permissions, destination, filename)
-		ifDir := fmt.Sprintf("{ [[ -d %s ]] && chmod %o %s; }", destination, dc.Permissions, destination)
+		ifDir := fmt.Sprintf("{ if [ -d %s ]; then chmod %o %s; fi; }", destination, dc.Permissions, destination)
 		err := `{ echo "Couldn't determine target" && exit 1; }`
 		cmd = append(cmd, fmt.Sprintf("{ %s; }", strings.Join([]string{ifFile, ifInDir, ifDir, err}, " || ")))
 	}
