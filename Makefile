@@ -1,7 +1,7 @@
 .PHONY: build check clean coverage default deps example help test
 
 ASSETS      := $(shell find assets -type f | grep -v ".go$$")
-EXTRA_DEPS  := github.com/dynport/dgtk/goassets github.com/smartystreets/goconvey
+EXTRA_DEPS  := github.com/dynport/dgtk/goassets github.com/smartystreets/goconvey code.google.com/p/go.tools/cmd/vet github.com/dynport/gocli
 DEPS        := $(shell go list ./... | xargs go list -f '{{join .Deps "\n"}}' | xargs go list -f '{{if not .Standard}}{{.ImportPath}}{{end}}' 2>/dev/null | sort | uniq | grep -v "github.com/dynport/urknall")
 IGN_PKGS    := github.com/dynport/urknall/assets github.com/dynport/urknall/pkg%
 ALL_PKGS    := $(shell go list ./...)
@@ -45,7 +45,7 @@ coverage-web:
 
 deps:
 	@for package in $(EXTRA_DEPS) $(DEPS); do \
-		go get -t -u $$package; \
+		go get -u $$package; \
 	done
 
 example: build
