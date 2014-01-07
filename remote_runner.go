@@ -39,16 +39,27 @@ func (runner *remoteTaskRunner) run() error {
 	if e != nil {
 		return e
 	}
-	go runner.forwardStream(logs, "stdout", stdout)
+	finishedMap := map[string]interface{}{
+		"stdout": true,
+		"stderr": true,
+	}
+	finishedChannel := make(chan string)
+	go runner.forwardStream(logs, "stdout", stdout, finishedChannel)
 
 	stderr, e := session.StderrPipe()
 	if e != nil {
 		return e
 	}
-	go runner.forwardStream(logs, "stderr", stderr)
+	go runner.forwardStream(logs, "stderr", stderr, finishedChannel)
 
 	e = session.Run(runner.cmd)
 	// Command was executed. Close the logging channel (thereby closing the back-channel of the logs).
+	for len(finishedMap) > 0 {
+		select {
+		case s := <-finishedChannel:
+			delete(finishedMap, s)
+		}
+	}
 	close(logs)
 
 	runner.writeChecksumFile(prefix, e)
@@ -93,7 +104,7 @@ func logError(e error) {
 	log.Printf("ERROR: %s", e.Error())
 }
 
-func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, r io.Reader) {
+func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, r io.Reader, finished chan string) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -101,6 +112,7 @@ func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, r
 		m.publish(stream)
 		logs <- time.Now().UTC().Format(time.RFC3339Nano) + "\t" + stream + "\t" + scanner.Text()
 	}
+	finished <- stream
 }
 
 func (runner *remoteTaskRunner) newLogWriter(path string, errors chan error) chan string {
