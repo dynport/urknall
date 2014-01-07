@@ -14,10 +14,10 @@ type Package struct {
 	Version            string `urknall:"default=1.4.4"`
 	HeadersMoreVersion string `urknall:"default=0.24"`
 	SyslogPatchVersion string `urknall:"default=1.3.14"`
+	Local              bool   // install to /usr/local/nginx
 }
 
 func (pkg *Package) Package(r *urknall.Runlist) {
-	//srcDir := "/opt/src/nginx-" + pkg.Version
 	syslogPatchPath := "/tmp/nginx_syslog_patch"
 	fileName := "syslog_{{ .SyslogPatchVersion }}.patch"
 	r.Add(
@@ -37,12 +37,19 @@ func (pkg *Package) Package(r *urknall.Runlist) {
 		),
 		cmd.And(
 			"cd /opt/src/nginx-{{ .Version }}",
-			"./configure --with-http_ssl_module --with-http_gzip_static_module --with-http_stub_status_module --with-http_spdy_module --add-module=/tmp/nginx_syslog_patch --add-module=/opt/src/headers-more-nginx-module-{{ .HeadersMoreVersion }} --prefix=/opt/nginx-{{ .Version }}",
+			"./configure --with-http_ssl_module --with-http_gzip_static_module --with-http_stub_status_module --with-http_spdy_module --add-module=/tmp/nginx_syslog_patch --add-module=/opt/src/headers-more-nginx-module-{{ .HeadersMoreVersion }} --prefix={{ .InstallPath }}",
 			"make",
 			"make install",
 		),
 		cmd.WriteFile("/etc/init/nginx.conf", utils.MustRenderTemplate(upstartScript, pkg), "root", 0644),
 	)
+}
+
+func (pkg *Package) InstallPath() string {
+	if pkg.Local {
+		return "/usr/local/nginx"
+	}
+	return "/opt/nginx-{{ .Version }}"
 }
 
 func (pkg *Package) WriteConfigCommand(b []byte) cmd.Command {
@@ -85,10 +92,6 @@ exec $DAEMON
 
 func (pkg *Package) url() string {
 	return "http://nginx.org/download/" + pkg.fileName()
-}
-
-func (pkg *Package) InstallPath() string {
-	return "/opt/nginx-" + pkg.Version
 }
 
 func (pkg *Package) fileName() string {
