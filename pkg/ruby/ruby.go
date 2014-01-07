@@ -7,7 +7,7 @@ package ruby
 import (
 	"fmt"
 	"github.com/dynport/urknall"
-	. "github.com/dynport/urknall/cmd"
+	"github.com/dynport/urknall/cmd"
 	"strings"
 )
 
@@ -24,15 +24,15 @@ type Package struct {
 
 func (ruby *Package) Package(r *urknall.Runlist) {
 	r.Add(
-		InstallPackages("curl", "build-essential",
+		cmd.InstallPackages("curl", "build-essential",
 			"libyaml-dev", "libxml2-dev", "libxslt1-dev",
 			"libreadline-dev", "libssl-dev", "zlib1g-dev"))
 
 	r.Add(
-		DownloadAndExtract(ruby.downloadURL(), "/opt/src"))
+		cmd.DownloadAndExtract(ruby.downloadURL(), "/opt/src"))
 
 	r.Add(
-		And("cd {{ .SourcePath }}",
+		cmd.And("cd {{ .SourcePath }}",
 			"./configure --disable-install-doc --prefix={{ .InstallPath }}",
 			"make",
 			"make install"))
