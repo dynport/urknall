@@ -33,8 +33,8 @@ func (dc *dockerClient) provisionImage(baseImage, tag string, pkg Package) (imag
 		dc.tag = tag
 	}
 
-	runlist:= newRunlist(tag, pkg, dc.host)
-	if e := runlist.compile(); e != nil {
+	runlist := newRunlist(tag, pkg, dc.host)
+	if e := runlist.compileWithBinaryPackages(); e != nil {
 		return "", e
 	}
 

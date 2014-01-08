@@ -29,6 +29,9 @@ type Host struct {
 
 	Docker *DockerSettings // Make the host a docker container carrier.
 
+	BuildHost               bool   // Whether this host should be used to build urknall binary packages.
+	BinaryPackageRepository string // Where should urknall binary packages be searched?
+
 	Firewall fw.Firewall // List of rules used for the firewall.
 	IPSets   []*fw.IPSet // List of ipsets for the firewall.
 
@@ -106,6 +109,14 @@ func (h *Host) Provision(opts *ProvisionOptions) (e error) {
 	return sc.provision()
 }
 
+func (h *Host) CreateUrknallImage(pkg BinaryPackage) (e error) {
+	if !h.BuildHost {
+		return fmt.Errorf("Host %q is not a build host.", h.Hostname)
+	}
+	sc := newSSHClient(h, nil)
+	return sc.buildBinaryPackage(pkg)
+}
+
 // Provision the given packages into a docker container image tagged with the given tag (the according registry will be
 // added automatically). The build will happen on this host, that must be a docker host with build capability.
 func (h *Host) CreateDockerImage(baseImage, tag string, pkg Package) (imageId string, e error) {
@@ -165,7 +176,7 @@ func (h *Host) precompileRunlists() (e error) {
 			return fmt.Errorf("pkg %q seems to be packaged already", runlist.name)
 		}
 
-		if e = runlist.compile(); e != nil {
+		if e = runlist.compileWithBinaryPackages(); e != nil {
 			return e
 		}
 	}

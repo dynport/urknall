@@ -12,9 +12,17 @@ type Package interface {
 	Package(rl *Runlist) // Add the package specific commands to the runlist.
 }
 
+type BinaryPackage interface {
+	Package
+	Name() string
+	PkgVersion() string
+	InstallPath() string
+	PackageDependencies() []string
+}
+
 func CompilePackage(pkg Package) (*Runlist, error) {
 	rl := &Runlist{pkg: pkg}
-	return rl, rl.compile()
+	return rl, rl.compileWithBinaryPackages()
 }
 
 type anonymousPackage struct {
