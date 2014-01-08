@@ -68,7 +68,7 @@ func (runner *remoteTaskRunner) run() error {
 	select {
 	case e := <-errors:
 		if e != nil {
-			log.Println("ERROR: %s", e.Error())
+			log.Printf("ERROR: %s", e.Error())
 		}
 	}
 	return e
