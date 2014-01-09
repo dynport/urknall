@@ -46,9 +46,9 @@ func TestAddFileForLogging(t *testing.T) {
 			Path:    "/tmp/foo",
 		}
 
-		Convey("Then the logging line should contain information on path and content", func() {
+		Convey("Then the logging line should contain information on path", func() {
 			v := fAct.Logging()
-			So(v, ShouldEqual, "[FILE   ] /tmp/foo << something")
+			So(v, ShouldEqual, "[FILE   ] /tmp/foo")
 		})
 	})
 
@@ -59,9 +59,9 @@ func TestAddFileForLogging(t *testing.T) {
 			Owner:   "gfrey",
 		}
 
-		Convey("Then the logging line should contain information on path and content", func() {
+		Convey("Then the logging line should contain information on path and owner", func() {
 			v := fAct.Logging()
-			So(v, ShouldEqual, "[FILE   ][CHOWN:gfrey] /tmp/foo << something")
+			So(v, ShouldEqual, "[FILE   ][CHOWN:gfrey] /tmp/foo")
 		})
 	})
 
@@ -72,21 +72,9 @@ func TestAddFileForLogging(t *testing.T) {
 			Permissions: 0644,
 		}
 
-		Convey("Then the logging line should contain information on path and content", func() {
+		Convey("Then the logging line should contain information on path and permissions", func() {
 			v := fAct.Logging()
-			So(v, ShouldEqual, "[FILE   ][CHMOD:0644] /tmp/foo << something")
-		})
-	})
-
-	Convey("Given a file action with long content", t, func() {
-		fAct := FileCommand{
-			Content: "123456789.123456789.123456789.123456789.123456789.123456789.",
-			Path:    "/tmp/foo",
-		}
-
-		Convey("Then the logging line should truncate the content to 50 characters", func() {
-			v := fAct.Logging()
-			So(v, ShouldEqual, "[FILE   ] /tmp/foo << 123456789.123456789.123456789.123456789.123456789.")
+			So(v, ShouldEqual, "[FILE   ][CHMOD:0644] /tmp/foo")
 		})
 	})
 
