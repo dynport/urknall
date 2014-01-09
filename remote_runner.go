@@ -94,7 +94,6 @@ func executeCommand(con *ssh.ClientConn, cmd string) error {
 	ses.Stderr = buf
 	e = ses.Run(cmd)
 	if e != nil {
-		logError(e)
 		return fmt.Errorf(e.Error() + ": " + buf.String())
 	}
 	return nil

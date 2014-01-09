@@ -20,9 +20,6 @@ type sshClient struct {
 	provisionOptions ProvisionOptions
 }
 
-// Directory checksums are stored in.
-const checksumRootDir = "/var/lib/urknall"
-
 func newSSHClient(host *Host, opts *ProvisionOptions) (client *sshClient) {
 	if opts == nil {
 		opts = &ProvisionOptions{}
@@ -39,13 +36,46 @@ func (sc *sshClient) provision() (e error) {
 		return e
 	}
 
+	if e = sc.prepareHost(); e != nil {
+		return e
+	}
+
 	return provisionRunlists(sc.host.runlists(), sc.provisionRunlist)
+}
+
+func (sc *sshClient) prepareHost() (e error) {
+	if !sc.host.isSudoRequired() { // nothing required to do if root is used directly
+		return nil
+	}
+
+	con, e := sc.client.Connection()
+	if e != nil {
+		return e
+	}
+
+	if e := executeCommand(con, fmt.Sprintf(`grep "^%s:" /etc/group | grep %s`, ukGROUP, sc.host.User)); e != nil {
+		// If user is missing the group, create group (if necessary), add user and restart ssh connection.
+		cmds := []string{
+			fmt.Sprintf(`{ grep -e '^%[1]s:' /etc/group > /dev/null || { groupadd %[1]s; }; }`, ukGROUP),
+			fmt.Sprintf(`{ [[ -d %[1]s ]] || { mkdir -p -m 2775 %[1]s && chgrp %[2]s %[1]s; }; }`, ukCACHEDIR, ukGROUP),
+			fmt.Sprintf("usermod -a -G %s %s", ukGROUP, sc.host.User),
+		}
+
+		if e := executeCommand(con, fmt.Sprintf(`sudo bash -c "%s"`, strings.Join(cmds, " && "))); e != nil {
+			return fmt.Errorf("failed to initiate user %q for provisioning: %s", sc.host.User, e)
+		}
+
+		// Restarting the connection is required to make sure the user's new group is added properly.
+		sc.client.Conn.Close()
+		sc.client.Conn = nil
+	}
+	return nil
 }
 
 func (sc *sshClient) provisionRunlist(rl *Runlist) (e error) {
 	tasks := sc.buildTasksForRunlist(rl)
 
-	checksumDir := fmt.Sprintf(checksumRootDir+"/%s", rl.name)
+	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", rl.name)
 
 	checksumHash, e := sc.buildChecksumHash(checksumDir)
 	if e != nil {
@@ -117,12 +147,11 @@ func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
 }
 
 func (sc *sshClient) buildChecksumHash(checksumDir string) (checksumMap map[string]struct{}, e error) {
-	// Make sure the directory exists. If not create it with group set to "sudo" and group bit set (all new files will
-	// inherit the directory's group). This allows for different users to create, modify and delete the contained
-	// checksum files.
-	createChecksumDirCmd := fmt.Sprintf(`if [ ! -d %[1]s ]; then mkdir -p %[1]s && chgrp sudo %[1]s && chmod g+ws %[1]s; fi`, checksumDir)
+	// Create checksum dir and set group bit (all new files will inherit the directory's group). This allows for
+	// different users (being part of that group) to create, modify and delete the contained checksum and log files.
+	createChecksumDirCmd := fmt.Sprintf("mkdir -m2775 -p %s", checksumDir)
 	if sc.host.isSudoRequired() {
-		createChecksumDirCmd = fmt.Sprintf(`sudo bash -c "%s"`, createChecksumDirCmd)
+		createChecksumDirCmd = fmt.Sprintf(`sudo %s`, createChecksumDirCmd)
 	}
 	r, e := sc.client.Execute(createChecksumDirCmd)
 	if e != nil {
