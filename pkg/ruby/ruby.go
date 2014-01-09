@@ -23,6 +23,18 @@ type Package struct {
 	Local       bool // install to /usr/local/bin
 }
 
+func (ruby *Package) PkgVersion() string {
+	return ruby.Version
+}
+
+func (ruby *Package) Name() string {
+	return "ruby"
+}
+
+func (ruby *Package) PackageDependencies() []string {
+	return []string{"libyaml-0-2", "libxml2", "libxslt1.1", "libreadline6", "libssl1.0.0", "zlib1g"}
+}
+
 func (ruby *Package) Package(r *urknall.Runlist) {
 	r.Add(
 		cmd.InstallPackages("curl", "build-essential",

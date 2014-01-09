@@ -32,7 +32,7 @@ func newSSHClient(host *Host, opts *ProvisionOptions) (client *sshClient) {
 }
 
 func (sc *sshClient) buildBinaryPackage(pkg BinaryPackage) (e error) {
-	name := pkg.Name() + "." + pkg.Version()
+	name := pkg.Name() + "." + pkg.PkgVersion()
 	compileRunlist := newRunlist(name+".build", pkg, sc.host)
 	// Don't use binary packages, as otherwise you'll be caugth in an awkward self reference trying to use a binary
 	// package to build the very binary package.
