@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"strconv"
 	"time"
 )
 
@@ -116,7 +115,6 @@ func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, r
 
 func (runner *remoteTaskRunner) newLogWriter(path string, errors chan error) chan string {
 	logs := make(chan string)
-	tmpPath := path + ".tmp." + strconv.FormatInt(time.Now().Unix(), 10)
 	go func() {
 		ses, e := runner.clientConn.NewSession()
 		if e != nil {
@@ -133,7 +131,7 @@ func (runner *remoteTaskRunner) newLogWriter(path string, errors chan error) cha
 		}
 
 		// Run command, writing everything coming from stdin to a file.
-		ses.Start("mkdir -p $(dirname " + tmpPath + ") && cat - > " + tmpPath + " && mv " + tmpPath + " " + path)
+		ses.Start("{ t=$(tempfile -m0660) || exit 1; } && cat - > $t && mv $t " + path + " && chgrp urknall " + path)
 
 		// Send all messages from logs to the stdin of the new session.
 		for log := range logs {
