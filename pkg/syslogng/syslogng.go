@@ -9,6 +9,8 @@ func New(version string) *Package {
 	return &Package{Version: version}
 }
 
+const restartCommand = "{ status syslog-ng | grep running && restart syslog-ng; } || start syslog-ng"
+
 type Package struct {
 	Version string `urknall:"default=3.5.1"`
 }
@@ -22,13 +24,17 @@ func (ng *Package) Package(r *urknall.Runlist) {
 		cmd.InstallPackages("build-essential", "libevtlog-dev", "pkg-config", "libglib2.0-dev"),
 		cmd.DownloadAndExtract(ng.url(), "/opt/src"),
 		cmd.And(
-			"cd /opt/src/syslog-ng-{{ .Version }}",
+			"cd {{ .InstallPath }}",
 			"./configure",
 			"make",
 			"make install",
 		),
 		cmd.WriteFile("/etc/init/syslog-ng.conf", UpstartScript, "root", 0644),
 	)
+}
+
+func (ng *Package) InstallPath() string {
+	return "/opt/src/syslog-ng-{{ .Version }}"
 }
 
 const UpstartScript = `# syslog-ng - system logging daemon
