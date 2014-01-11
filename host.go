@@ -58,6 +58,10 @@ func (h *Host) publicInterface() string {
 	return h.Interface
 }
 
+func (h *Host) Add(name string, cmd interface{}, cmds ...interface{}) {
+	h.AddCommands(name, cmd, cmds...)
+}
+
 func (h *Host) AddCommands(name string, cmd interface{}, cmds ...interface{}) {
 	cmdList := append([]interface{}{cmd}, cmds...)
 	h.AddPackage(name, NewPackage(cmdList...))
