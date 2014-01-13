@@ -49,7 +49,7 @@ func (pkg *Package) InstallPath() string {
 	if pkg.Local {
 		return "/usr/local/nginx"
 	}
-	return "/opt/nginx-{{ .Version }}"
+	return "/opt/nginx-" + pkg.Version
 }
 
 func (pkg *Package) WriteConfigCommand(b []byte) cmd.Command {
