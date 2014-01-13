@@ -44,25 +44,21 @@ func (sc *sshClient) provision() (e error) {
 }
 
 func (sc *sshClient) prepareHost() (e error) {
-	if !sc.host.isSudoRequired() { // nothing required to do if root is used directly
-		return nil
-	}
-
 	con, e := sc.client.Connection()
 	if e != nil {
 		return e
 	}
 
-	if e := executeCommand(con, fmt.Sprintf(`grep "^%s:" /etc/group | grep %s`, ukGROUP, sc.host.User)); e != nil {
+	if e := executeCommand(con, fmt.Sprintf(`grep "^%s:" /etc/group | grep %s`, ukGROUP, sc.host.user())); e != nil {
 		// If user is missing the group, create group (if necessary), add user and restart ssh connection.
 		cmds := []string{
 			fmt.Sprintf(`{ grep -e '^%[1]s:' /etc/group > /dev/null || { groupadd %[1]s; }; }`, ukGROUP),
 			fmt.Sprintf(`{ [[ -d %[1]s ]] || { mkdir -p -m 2775 %[1]s && chgrp %[2]s %[1]s; }; }`, ukCACHEDIR, ukGROUP),
-			fmt.Sprintf("usermod -a -G %s %s", ukGROUP, sc.host.User),
+			fmt.Sprintf("usermod -a -G %s %s", ukGROUP, sc.host.user()),
 		}
 
 		if e := executeCommand(con, fmt.Sprintf(`sudo bash -c "%s"`, strings.Join(cmds, " && "))); e != nil {
-			return fmt.Errorf("failed to initiate user %q for provisioning: %s", sc.host.User, e)
+			return fmt.Errorf("failed to initiate user %q for provisioning: %s", sc.host.user(), e)
 		}
 
 		// Restarting the connection is required to make sure the user's new group is added properly.
