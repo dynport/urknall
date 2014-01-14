@@ -29,6 +29,32 @@ func shouldBeError(actual interface{}, expected ...interface{}) string {
 	return ""
 }
 
+func TestValidationInput(t *testing.T) {
+	Convey("Given the validatePackage method requires a package as input", t, func() {
+		Convey("When a bool is given", func() {
+			val := true
+			Convey("Then the validation must fail", func() {
+				e := validatePackage(val)
+				So(e, shouldBeError, `value is not a package, but of type "bool"`)
+			})
+		})
+		Convey("When a int is given", func() {
+			val := 10
+			Convey("Then the validation must fail", func() {
+				e := validatePackage(val)
+				So(e, shouldBeError, `value is not a package, but of type "int"`)
+			})
+		})
+		Convey("When a string is given", func() {
+			val := "some string"
+			Convey("Then the validation must fail", func() {
+				e := validatePackage(val)
+				So(e, shouldBeError, `value is not a package, but of type "string"`)
+			})
+		})
+	})
+}
+
 func TestBoolValidationRequired(t *testing.T) {
 	Convey("Given a package with a bool field that is required", t, func() {
 		type pkg struct {

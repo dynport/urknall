@@ -49,6 +49,11 @@ func validatePackage(pkg interface{}) error {
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
+
+	if v.Kind() != reflect.Struct {
+		return fmt.Errorf(`value is not a package, but of type "%T"`, pkg)
+	}
+
 	for i := 0; i < v.NumField(); i++ {
 		e := validateField(v.Type().Field(i), v.Field(i))
 		if e != nil {
