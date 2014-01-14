@@ -21,7 +21,8 @@ var colorMapping = map[string]int{
 	statusExecFinished: colorExec,
 }
 
-// needs to be closed afterwards
+// Create a logging facility for urknall using urknall's default formatter.
+// Note that this resource must be closed afterwards!
 func OpenStdoutLogger() (io.Closer, error) {
 	logger := &stdoutLogger{}
 	logger.Formatter = logger.DefaultFormatter

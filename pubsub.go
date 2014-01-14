@@ -10,6 +10,7 @@ import (
 var pubSub = []*pubsub.PubSub{}
 var mutex = &sync.Mutex{}
 
+// Register your own instance of the PubSub type to handle logging yourself.
 func RegisterPubSub(ps *pubsub.PubSub) {
 	mutex.Lock()
 	pubSub = append(pubSub, ps)
@@ -36,6 +37,9 @@ const (
 	MessageRunlistsProvisionTask = "urknall.runlists.provision.task"
 )
 
+// Urknall uses the github.com/dynport/dgtk/pubsub package for logging (a publisher-subscriber pattern where defined
+// messages are sent to subscribers). This is the message type urknall will send out. If you handle logging yourself
+// this type provides the required information.
 type Message struct {
 	key string
 
@@ -61,10 +65,13 @@ type Message struct {
 	stack                  string
 }
 
+// Predicated to verify whether the given message was sent via stderr.
 func (message *Message) IsStderr() bool {
 	return message.stream == "stderr"
 }
 
+// IP of the host the message was generated on. Will return an empty string if no host is specified (for example for
+// urknall internal messages).
 func (message *Message) HostIP() string {
 	if message.host != nil {
 		return message.host.IP
@@ -72,6 +79,7 @@ func (message *Message) HostIP() string {
 	return ""
 }
 
+// Returns the name of the runlist that generated the message. Empty if no runlist specified.
 func (message *Message) RunlistName() string {
 	if message.runlist != nil {
 		return message.runlist.name
@@ -79,6 +87,7 @@ func (message *Message) RunlistName() string {
 	return ""
 }
 
+// The key is an identifier for the message type. It's a point seperated path towards the message source.
 func (message *Message) Key() string {
 	return message.key
 }

@@ -4,6 +4,7 @@ import (
 	"strings"
 )
 
+// Generate a Dockerfile from the commands collected on the runlist.
 func (rl *Runlist) Dockerfile(from string) (string, error) {
 	lines := []string{
 		"FROM " + from,

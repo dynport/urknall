@@ -11,6 +11,8 @@ import (
 // Please note that you need to set the primary interface (the one the host is accessible on) name, if that is not
 // "eth0". That should only be necessary on rare circumstances.
 //
+// A host is added a set of packages, that are provisioned on request.
+//
 //	TODO(gfrey): Add better support for interfaces and IPs.
 //	TODO(gfrey): Add handling and support for IPv6 (currently the firewall will block everything).
 type Host struct {
@@ -64,16 +66,23 @@ func (h *Host) publicInterface() string {
 	return h.Interface
 }
 
+// Alias for the AddCommands methods.
 func (h *Host) Add(name string, cmd interface{}, cmds ...interface{}) {
 	h.AddCommands(name, cmd, cmds...)
 }
 
+// Register the list of given commands (either of the cmd.Command type or as string) as a package (without
+// configuration) with the given name.
 func (h *Host) AddCommands(name string, cmd interface{}, cmds ...interface{}) {
 	cmdList := append([]interface{}{cmd}, cmds...)
 	h.AddPackage(name, NewPackage(cmdList...))
 }
 
 // Add the given package with the given name to the host.
+//
+// The name is used as reference during provisioning and allows for provisioning the very same package in different
+// configuration (with different version for example). Package names must be unique and the "uk." prefix is reserved for
+// urknall internal packages.
 func (h *Host) AddPackage(name string, pkg Package) {
 	if strings.HasPrefix(name, "uk.") {
 		panic(fmt.Sprintf(`package name prefix "uk." reserved (in %q)`, name))
@@ -103,12 +112,23 @@ func (h *Host) addSystemPackage(name string, pkg Package) (e error) {
 	return nil
 }
 
-// Provision the host.
+// Provision the host, i.e. execute all the commands contained in the packages registered with this host.
 func (h *Host) Provision(opts *ProvisionOptions) (e error) {
 	sc := newSSHClient(h, opts)
 	return sc.provision()
 }
 
+// Create a binary package from the given package. This is an optimization for packages that download, compile and
+// install sources. As compilation might take its time this step can be done once and the effort be reused. Keep in mind
+// that:
+//
+//	* Packages to be precompiled should only contain the steps necessary to compile and install the sources
+//	  (configuration will only be executed during the package creation).
+//	* Packages must implement the extend BinaryPackage interface.
+//	* There must be a binary package repository reachable and configured for all hosts that should use the binary
+//	  packages.
+//	* The host to build binary packages on must have the BuildHost flag set. This is to make sure that the side effects
+//	  (like installed compilers, extracted sources, etc) are known to the administration and don't happen by accident.
 func (h *Host) CreateUrknallImage(pkg BinaryPackage) (e error) {
 	if !h.BuildHost {
 		return fmt.Errorf("Host %q is not a build host.", h.Hostname)

@@ -21,7 +21,7 @@
     // make sure your ssh key(s) are loaded (ssh-add -l)
     host.Provision(nil)
 
-For a more complex configuration see e.g. [github.com/dynport/urknall/blob/master/urknall-example/rack_app.go](https://github.com/dynport/urknall/blob/master/urknall-example/rack_app.go)
+For a more complex configuration see e.g. [urknall-example/rack_app.go](https://github.com/dynport/urknall/blob/master/urknall-example/rack_app.go)
 
 ## Provisioner
 The main provisioner is using SSH to connect to the host in question and run the required actions. There is one other
@@ -30,18 +30,18 @@ provisioner though, that reuses the packages (collections of commands) and provi
 
 ## Hosts
 Hosts are the basic structure urknall works with. A host is a target if provisioned itself, but could also be the build
-environment for docker container images (and host those in a private registry).
+environment for docker container images (and host those in a private registry) or binary urknall packages.
 
 
 ## Packages
 Packages are the entities of urknall, that allow to have structure and modularity in the stuff provisioned to hosts. While
-it would be totally be possible to just write a list of commands to a host, that wouldn't be easy to manage, maintain
+it would be totally possible to just write a list of commands to a host, that wouldn't be easy to manage, maintain
 and reuse. Packages should be as small as possible (like providing the commands to set up one programm or service), but
 as large as necessary (there is no sense in putting each and every command into a separate package).
 
-Packages have two purposes: one the one hand they are the reusable container for configuration (what version of ruby
+Packages have two purposes: on the one hand they are the reusable container for configuration (what version of ruby
 should be installed for example), on the other hand they modify the internal datastructure `Runlist`. The latter is done
-implementing the `Compiler` interface. The required method `Compile` is given such a Runlist that can be filled with
+implementing the `Package` interface. The required method `Package` is given such a Runlist that can be filled with
 commands. During provisioning these commands are first compiled (taking the configuration of the package and host into
 account) and then executed. Albeit there is a cache, that will prevent commands from being executed, as long as all
 predecessor are unchanged (if a command needs to be exeucted as it changed compared to the previous run, all successors
@@ -64,8 +64,11 @@ There are some requirements though. All administrators must be in the sudoers gr
 configured to not
 ask for passwords. This can be done editing the sudoers file (use the `sudo visudo` command to get there). The following
 line should be modified:
+
 	%sudo ALL=(ALL:ALL) ALL
+
 to be like
+
 	%sudo ALL=(ALL:ALL) NOPASSWD:ALL
 
 

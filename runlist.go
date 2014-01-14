@@ -20,6 +20,8 @@ func (runlist *Runlist) Name() string {
 	return runlist.name
 }
 
+// Add commands (can also be given as string) or packages (commands will be extracted and added accordingly) to the
+// runlist.
 func (rl *Runlist) Add(first interface{}, others ...interface{}) {
 	all := append([]interface{}{first}, others...)
 	for _, c := range all {
@@ -38,6 +40,7 @@ func (rl *Runlist) Add(first interface{}, others ...interface{}) {
 	}
 }
 
+// Add the given package's commands to the runlist.
 func (rl *Runlist) AddPackage(p Package) {
 	r := &Runlist{pkg: p, host: rl.host}
 	e := validatePackage(p)
@@ -48,6 +51,7 @@ func (rl *Runlist) AddPackage(p Package) {
 	rl.commands = append(rl.commands, r.commands...)
 }
 
+// Add the given command to the runlist.
 func (rl *Runlist) AddCommand(c cmd.Command) {
 	if rl.pkg != nil {
 		if renderer, ok := c.(cmd.Renderer); ok {

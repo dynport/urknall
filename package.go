@@ -12,14 +12,17 @@ type Package interface {
 	Package(rl *Runlist) // Add the package specific commands to the runlist.
 }
 
+// If a package downloads and compiles code provisioning can be optimized by precompiling the sources and just extract
+// the results to the host. This requires a repository to store the binary packages.
 type BinaryPackage interface {
 	Package
-	Name() string
-	PkgVersion() string
-	InstallPath() string
-	PackageDependencies() []string
+	Name() string                  // Name of the package.
+	PkgVersion() string            // Version of the package installed.
+	InstallPath() string           // Path to install to.
+	PackageDependencies() []string // Dependent packages.
 }
 
+// Compile the given package and return the generated runlist.
 func CompilePackage(pkg Package) (*Runlist, error) {
 	rl := &Runlist{pkg: pkg}
 	return rl, rl.compileWithBinaryPackages()
@@ -40,6 +43,7 @@ func NewPackage(cmds ...interface{}) Package {
 	return &anonymousPackage{cmds: cmds}
 }
 
+// Initialize the given struct reading, interpreting and validating the 'urknall' annotations given with the type.
 func InitializePackage(pkg interface{}) error {
 	return validatePackage(pkg)
 }
