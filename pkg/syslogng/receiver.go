@@ -3,6 +3,7 @@ package syslogng
 import (
 	"github.com/dynport/urknall"
 	"github.com/dynport/urknall/cmd"
+	"github.com/dynport/urknall/pkg/syslog"
 )
 
 type Receiver struct {
@@ -13,7 +14,8 @@ type Receiver struct {
 func (p *Receiver) Package(r *urknall.Runlist) {
 	r.Add(
 		&Package{Version: p.Version},
-		cmd.WriteFile("/etc/syslog-ng.conf", receiver, "root", 0644),
+		cmd.WriteFile("/usr/local/etc/syslog-ng.conf", receiver, "root", 0644),
+		&syslog.CreateHourlySymlinks{},
 		restartCommand,
 	)
 }
