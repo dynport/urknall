@@ -48,8 +48,7 @@ stop on runlevel [06]
 
 env LD_LIBRARY_PATH=/usr/local/lib
 
-expect fork
 respawn
 
-exec syslog-ng --process-mode=background
+exec syslog-ng -F
 `
