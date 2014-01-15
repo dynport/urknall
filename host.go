@@ -21,7 +21,8 @@ type Host struct {
 	Interface string // Primary network interface of the host.
 	Timezone  string // Local Timezone to be set
 
-	Env []string // custom env settings to be used for all sessions
+	Tags []string
+	Env  []string // custom env settings to be used for all sessions
 
 	Paranoid bool // Make the firewall as restrictive as possible.
 	WithVPN  bool // Connect host to a VPN. Assumes "tun0" as interface.
