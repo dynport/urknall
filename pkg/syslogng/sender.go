@@ -13,7 +13,7 @@ type Sender struct {
 func (s *Sender) Package(r *urknall.Runlist) {
 	r.Add(
 		&Package{Version: s.Version},
-		cmd.WriteFile("/etc/syslog-ng.conf", sender, "root", 0644),
+		cmd.WriteFile("/usr/local/etc/syslog-ng.conf", sender, "root", 0644),
 		restartCommand,
 	)
 }
