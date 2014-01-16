@@ -16,6 +16,7 @@ type Target struct {
 	IPSet     string // IPSet used for matching.
 	Port      int    // Port packets must use to match.
 	Interface string // Interface the packet goes through.
+	NAT       string // NAT configuration (empty, "MASQ", or Interface's IP).
 }
 
 // A rule defines what is allowed to flow from some source to some destination. A description can be added to make the
@@ -39,7 +40,7 @@ type Rule struct {
 }
 
 // Method to create something digestable for IPtablesRestore (aka users might well ignore this).
-func (r *Rule) IPtablesRestore() (cmd string) {
+func (r *Rule) Filter() (cmd string) {
 	cfg := &iptConfig{rule: r, moduleConfig: map[string]iptModConfig{}}
 
 	if r.Source != nil {
@@ -50,7 +51,31 @@ func (r *Rule) IPtablesRestore() (cmd string) {
 		r.Destination.convert(cfg, "dest")
 	}
 
-	return cfg.String()
+	return cfg.FilterTableRule()
+}
+
+func (r *Rule) isNATRule() bool {
+	return r.Chain == "FORWARD" &&
+		((r.Source != nil && r.Source.NAT != "") ||
+			(r.Destination != nil && r.Destination.NAT != ""))
+}
+
+func (r *Rule) NAT() (cmd string) {
+	if !r.isNATRule() {
+		return ""
+	}
+
+	cfg := &iptConfig{rule: r, moduleConfig: map[string]iptModConfig{}}
+
+	if r.Source != nil {
+		r.Source.convert(cfg, "src")
+	}
+
+	if r.Destination != nil {
+		r.Destination.convert(cfg, "dest")
+	}
+
+	return cfg.NATTableRule()
 }
 
 func (r *Rule) IPsets() {
@@ -67,23 +92,24 @@ type iptConfig struct {
 	sourceIface string
 	destIface   string
 
+	sourceNAT string
+	destNAT   string
+
 	moduleConfig map[string]iptModConfig
 }
 
-func (cfg *iptConfig) String() (s string) {
-	if cfg.rule.Description != "" {
-		s = "# " + cfg.rule.Description + "\n"
-	}
-	s += "-A " + cfg.rule.Chain
-	if cfg.sourceIP != "" {
-		s += " --source " + cfg.sourceIP
-	}
+func (cfg *iptConfig) basicSettings(natRule bool) (s string) {
 	if cfg.rule.Protocol != "" {
 		s += " --protocol " + cfg.rule.Protocol
 	}
+	if cfg.sourceIP != "" {
+		s += " --source " + cfg.sourceIP
+	}
 	if cfg.sourceIface != "" {
 		if cfg.rule.Chain == "FORWARD" {
-			s += " --in-interface " + cfg.sourceIface
+			if !natRule || cfg.destNAT != "" {
+				s += " --in-interface " + cfg.sourceIface
+			}
 		} else {
 			s += " --out-interface " + cfg.sourceIface
 		}
@@ -93,11 +119,23 @@ func (cfg *iptConfig) String() (s string) {
 	}
 	if cfg.destIface != "" {
 		if cfg.rule.Chain == "FORWARD" {
-			s += " --out-interface " + cfg.destIface
+			if !natRule || cfg.sourceNAT != "" {
+				s += " --out-interface " + cfg.destIface
+			}
 		} else {
 			s += " --in-interface " + cfg.destIface
 		}
 	}
+	return s
+}
+
+func (cfg *iptConfig) FilterTableRule() (s string) {
+	if cfg.rule.Description != "" {
+		s = "# " + cfg.rule.Description + "\n"
+	}
+	s += "-A " + cfg.rule.Chain
+
+	s += cfg.basicSettings(false)
 
 	for module, modOptions := range cfg.moduleConfig {
 		s += " " + module
@@ -107,6 +145,34 @@ func (cfg *iptConfig) String() (s string) {
 	}
 
 	s += " -m state --state NEW -j ACCEPT\n"
+	return s
+}
+
+func (cfg *iptConfig) NATTableRule() (s string) {
+	if cfg.rule.Description != "" {
+		s = "# " + cfg.rule.Description + "\n"
+	}
+
+	switch {
+	case cfg.sourceNAT != "" && cfg.destNAT == "":
+		s += "-A POSTROUTING"
+	case cfg.sourceNAT == "" && cfg.destNAT != "":
+		s += "-A PREROUTING"
+	default:
+		panic("but you said NAT would be configured?!")
+	}
+
+	s += cfg.basicSettings(true)
+
+	switch {
+	case cfg.sourceNAT == "MASQ":
+		s += " -j MASQUERADE"
+	case cfg.sourceNAT != "":
+		s += " -j SNAT --to " + cfg.sourceNAT
+	case cfg.destNAT != "":
+		s += " -j DNAT --to " + cfg.destNAT
+	}
+
 	return s
 }
 
@@ -163,6 +229,19 @@ func (t *Target) convert(cfg *iptConfig, tType string) {
 			cfg.sourceIface = t.Interface
 		case "dest":
 			cfg.destIface = t.Interface
+		}
+	}
+
+	if t.NAT != "" {
+		switch tType {
+		case "src": // for input on the source the destination address can be modified.
+			cfg.destNAT = t.NAT
+		case "dest": // for output on the destination the source address can be modified.
+			cfg.sourceNAT = t.NAT
+		}
+
+		if cfg.sourceNAT != "" && cfg.destNAT != "" {
+			panic("only source or destination NAT allowed!")
 		}
 	}
 }
