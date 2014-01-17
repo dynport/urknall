@@ -40,63 +40,26 @@ func (p *Package) Package(r *urknall.Runlist) {
 		cmd.DownloadAndExtract(p.url(), "/opt/src/"),
 		cmd.Mkdir("{{ .InstallPath }}/sbin", "root", 0755),
 		"cd /opt/src/haproxy-{{ .Version }} && make TARGET=linux25 USER_STATIC_PCRE=1 && cp ./haproxy {{ .InstallPath }}/sbin/",
-		cmd.WriteFile("/etc/init.d/haproxy", initScript, "root", 0755),
+		cmd.WriteFile("/etc/init/haproxy.conf", initScript, "root", 0755),
 	)
 }
 
-const initScript = `#!/usr/bin/env bash
+const initScript = `description "Properly handle haproxy"
 
-### BEGIN INIT INFO
-# Provides:          Urknall provided this script to provide a service.
-# Required-Start:    $remote_fs $syslog
-# Required-Stop:     $remote_fs $syslog
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
-# Short-Description: Start daemon at boot time
-# Description:       Enable service provided by daemon.
-### END INIT INFO
+start on startup
 
-PID_PATH=/var/run/haproxy.pid
-BIN_PATH={{ .InstallPath }}/sbin/haproxy
+env PID_PATH=/var/run/haproxy.pid
+env BIN_PATH={{ .InstallPath }}/sbin/haproxy
 
-case $1 in
-  "status")
-    start-stop-daemon -p $PID_PATH --status
-    code=$?
-    case $code in
-      0)
-        echo "STATUS: running"
-        ;;
-      1)
-        echo "STATUS: NOT running (but pid exists)"
-        ;;
-      3)
-        echo "STATUS: NOT running"
-        ;;
-      4)
-        echo "STATUS: UNKNOWN"
-        ;;
-    esac
-    exit $code
-    ;;
-  "stop")
-    start-stop-daemon -p $PID_PATH --stop
-    ;;
-  "start")
-    $BIN_PATH -f /etc/haproxy.cfg -D -p $PID_PATH
-    ;;
+script
+exec /bin/bash <<EOF
+  $BIN_PATH -f /etc/haproxy.cfg -D -p $PID_PATH
 
-  "configtest")
-    $BIN_PATH -f /etc/haproxy.cfg -D -p $PID_PATH -c
-    ;;
+  trap "$BIN_PATH -f /etc/haproxy.cfg -p $PID_PATH -sf \\\$(cat $PID_PATH)" SIGHUP
+  trap "kill -TERM \\\$(cat $PID_PATH) && exit 0" SIGTERM SIGINT
 
-  "reload")
-    $BIN_PATH -f /etc/haproxy.cfg -D -p $PID_PATH -sf $(cat $PID_PATH)
-    ;;
-
-  *)
-    echo "ERROR: command $1 unknown. Support commands: status, start, stop"
-    exit 5
-    ;;
-esac
-`
+  while true; do # Iterate to keep job running.
+    sleep 1 # Don't sleep to long as signals will not be handled during sleep.
+  done
+EOF
+end script`
