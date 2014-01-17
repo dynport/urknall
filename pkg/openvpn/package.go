@@ -17,7 +17,13 @@ type Package struct {
 	Email    string `urknall:"required=true"`
 	Name     string `urknall:"required=true"`
 	Network  string `urknall:"required=true"`
+
+	PublicIp  string `urknall:"required=true"`
+
+	Routes []string
 }
+
+const packagePath = "/opt/package_openvpn_key"
 
 func (p *Package) Package(r *urknall.Runlist) {
 	if len(p.Country) != 2 {
@@ -37,7 +43,8 @@ func (p *Package) Package(r *urknall.Runlist) {
 		`bash -c "cd /etc/openvpn/easy-rsa && source ./vars && ./build-dh"`,
 		`bash -c "cd /etc/openvpn/easy-rsa/keys && cp -v {{ .Name }}.{crt,key} ca.crt dh1024.pem /etc/openvpn/"`,
 		cmd.WriteFile("/etc/openvpn/server.conf", server, "root", 0644),
-		cmd.WriteFile("/opt/package_openvpn_key", packageKey, "root", 0755),
+		cmd.WriteFile(packagePath, packageKey, "root", 0755),
+		"{ /etc/init.d/openvpn status && /etc/init.d/openvpn restart; } || /etc/init.d/openvpn start",
 	)
 }
 
@@ -51,6 +58,9 @@ dh dh1024.pem
 server {{ .Network }} 255.255.255.0
 ifconfig-pool-persist ipp.txt
 push "route {{ .Network }} 255.255.255.0"
+{{ range .Routes }}
+push "{{ . }}"
+{{ end }}
 keepalive 10 120
 comp-lzo
 persist-key
@@ -67,7 +77,7 @@ LOGIN=$1
 KEYS_DIR=/etc/openvpn/easy-rsa/keys
 LOGIN_DIR=$KEYS_DIR/$LOGIN.tblk
 CONFIG_PATH=$LOGIN_DIR/$LOGIN.conf
-PUBLIC_IP=$(ip add show eth0 | grep inet | awk '{ print $2 }' | cut -d "/" -f 1 | head -n 1)
+PUBLIC_IP={{ .PublicIp }}
 CRT_PATH=$KEYS_DIR/$LOGIN.crt
 KEY_PATH=$KEYS_DIR/$LOGIN.key
 
