@@ -88,6 +88,10 @@ func (h *Host) AddPackage(name string, pkg Package) {
 		panic(fmt.Sprintf(`package name prefix "uk." reserved (in %q)`, name))
 	}
 
+	if strings.Contains(name, " ") {
+		panic(fmt.Sprintf(`package names must not contain spaces (%q does)`, name))
+	}
+
 	for i := range h.packageNames {
 		if h.packageNames[i] == name {
 			panic(fmt.Sprintf("package with name %q exists already", name))
