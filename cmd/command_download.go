@@ -38,7 +38,7 @@ func (cmd *DownloadCommand) Validate() error {
 		return fmt.Errorf("Url must be set")
 	}
 	if cmd.Destination == "" {
-		return fmt.Errorf("Destination must be set")
+		return fmt.Errorf("Destination to download %q to must be set", cmd.Url)
 	}
 	return nil
 }
@@ -53,10 +53,6 @@ func (dc *DownloadCommand) Docker() string {
 }
 
 func (dc *DownloadCommand) Shell() string {
-	if dc.Url == "" {
-		panic("empty url given")
-	}
-
 	filename := path.Base(dc.Url)
 	destination := fmt.Sprintf("%s/%s", TMP_DOWNLOAD_DIR, filename)
 

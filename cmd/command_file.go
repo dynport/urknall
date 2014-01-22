@@ -34,6 +34,18 @@ func (cmd *FileCommand) Render(i interface{}) {
 	cmd.Content = utils.MustRenderTemplate(cmd.Content, i)
 }
 
+func (cmd *FileCommand) Validate() error {
+	if cmd.Path == "" {
+		return fmt.Errorf("no path given")
+	}
+
+	if cmd.Content == "" {
+		return fmt.Errorf("no content given for file %q", cmd.Path)
+	}
+
+	return nil
+}
+
 // Helper method to create a file at the given path with the given content, and with owner and permissions set
 // accordingly. The "Owner" and "Permissions" options are optional in the sense that they are ignored if set to go's
 // default value.
@@ -60,14 +72,6 @@ var b64 = base64.StdEncoding
 
 func (fc *FileCommand) Shell() string {
 	buf := &bytes.Buffer{}
-
-	if fc.Path == "" {
-		panic("no path given")
-	}
-
-	if fc.Content == "" {
-		panic("no content given")
-	}
 
 	// Zip the content.
 	zipper := gzip.NewWriter(buf)
