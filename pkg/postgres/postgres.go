@@ -21,7 +21,7 @@ func (p *Package) User() string {
 
 func (pkg *Package) Package(r *urknall.Runlist) {
 	r.Add(
-		cmd.InstallPackages("openssl", "libssl-dev", "flex", "zlib1g-dev", "libxslt1-dev", "libxml2-dev", "python-dev", "libreadline-dev", "bison"),
+		cmd.InstallPackages("build-essential", "openssl", "libssl-dev", "flex", "zlib1g-dev", "libxslt1-dev", "libxml2-dev", "python-dev", "libreadline-dev", "bison"),
 		cmd.Mkdir("/opt/src/", "root", 0755),
 		cmd.DownloadAndExtract(pkg.url(), "/opt/src/"),
 		cmd.And(
