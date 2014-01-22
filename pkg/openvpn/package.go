@@ -16,9 +16,10 @@ type Package struct {
 	Org      string `urknall:"required=true"`
 	Email    string `urknall:"required=true"`
 	Name     string `urknall:"required=true"`
-	Network  string `urknall:"required=true"`
+	Address  string `urknall:"required=true"`
+	Netmask  string `urknall:"required=true"`
 
-	PublicIp  string `urknall:"required=true"`
+	PublicIp string `urknall:"required=true"`
 
 	Routes []string
 }
@@ -55,9 +56,8 @@ ca ca.crt
 cert {{ .Name }}.crt
 key {{ .Name }}.key
 dh dh1024.pem
-server {{ .Network }} 255.255.255.0
+server {{ .Address }} {{ .Netmask }}
 ifconfig-pool-persist ipp.txt
-push "route {{ .Network }} 255.255.255.0"
 {{ range .Routes }}
 push "{{ . }}"
 {{ end }}
