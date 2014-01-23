@@ -107,7 +107,9 @@ func TestAddFileForShell(t *testing.T) {
 
 		Convey("When no path is set", func() {
 			Convey("Then the creation of the actual shell command must fail", func() {
-				So(func() { fAct.Shell() }, ShouldPanicWith, "no path given")
+				e := fAct.Validate()
+				So(e, ShouldNotBeNil)
+				So(e.Error(), ShouldEqual, "no path given")
 			})
 		})
 
@@ -115,7 +117,9 @@ func TestAddFileForShell(t *testing.T) {
 			fAct.Path = "/tmp/foo"
 			Convey("When no content is given", func() {
 				Convey("Then the creation of the actual shell command must fail", func() {
-					So(func() { fAct.Shell() }, ShouldPanicWith, "no content given")
+					e := fAct.Validate()
+					So(e, ShouldNotBeNil)
+					So(e.Error(), ShouldEqual, `no content given for file "/tmp/foo"`)
 				})
 			})
 
