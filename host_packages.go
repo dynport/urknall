@@ -32,10 +32,10 @@ func (h *Host) buildSystemRunlists() {
 		h.addSystemPackage("firewall",
 			h.newHostPackage(
 				cmd.InstallPackages("iptables", "ipset"),
-				cmd.WriteAsset("/etc/network/if-pre-up.d/iptables", "fw_upstart.sh", "root", 0744),
-				cmd.WriteAsset("/etc/iptables/ipsets", "fw_ipset.conf", "root", 0644),
-				cmd.WriteAsset("/etc/iptables/rules_ipv4", "fw_rules_ipv4.conf", "root", 0644),
-				cmd.WriteAsset("/etc/iptables/rules_ipv6", "fw_rules_ipv6.conf", "root", 0644),
+				cmd.WriteFile("/etc/network/if-pre-up.d/iptables", string(mustReadAsset("fw_upstart.sh")), "root", 0744),
+				cmd.WriteFile("/etc/iptables/ipsets", string(mustReadAsset("fw_ipset.conf")), "root", 0644),
+				cmd.WriteFile("/etc/iptables/rules_ipv4", string(mustReadAsset("fw_rules_ipv4.conf")), "root", 0644),
+				cmd.WriteFile("/etc/iptables/rules_ipv6", string(mustReadAsset("fw_rules_ipv6.conf")), "root", 0644),
 				"{ modprobe iptable_filter && modprobe iptable_nat; }; /bin/true", // here to make sure next command succeeds.
 				"IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables"))
 	}

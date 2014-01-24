@@ -9,7 +9,7 @@ PACKAGES    := $(filter-out $(IGN_PKGS),$(ALL_PKGS))
 
 default: build
 
-build: assets/assets.go
+build: assets.go
 	@go install $(PACKAGES)
 
 check:
@@ -17,7 +17,7 @@ check:
 	@which goassets > /dev/null || echo "go assets missing, call 'go get github.com/dynport/dgtk/goassets'"
 
 clean:
-	@rm -f assets/assets.go example/main
+	@rm -f assets.go example/main
 
 coverage: 
 	$(eval $@_TMP := $(shell mktemp -t coverage.XXX))
@@ -69,7 +69,7 @@ test: build
 	@go vet $(PACKAGES)
 	@go test $(PACKAGES)
 
-assets/assets.go: $(ASSETS)
+assets.go: $(ASSETS)
 	@rm -f $@
-	@goassets -path="assets/assets.go" ./assets > /dev/null 2>&1
+	@goassets -pkg=$$(go list -f "{{ .Name }}") -path="assets.go" ./assets > /dev/null 2>&1
 

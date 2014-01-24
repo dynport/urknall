@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"github.com/dynport/urknall/assets"
 	"github.com/dynport/urknall/utils"
 	"os"
 	"path/filepath"
@@ -51,17 +50,6 @@ func (cmd *FileCommand) Validate() error {
 // default value.
 func WriteFile(path string, content string, owner string, permissions os.FileMode) *FileCommand {
 	return &FileCommand{Path: path, Content: content, Owner: owner, Permissions: permissions}
-}
-
-// Helper method to write the asset with the given name to the location given, with owner and permissions set
-// accordingly. If no asset with the given name exists the function will panic! The "Owner" and "Permissions" options
-// are optional in the sense that they are ignored if set to go's default value.
-func WriteAsset(path, assetName, owner string, permissions os.FileMode) *FileCommand {
-	content, e := assets.Get(assetName)
-	if e != nil {
-		panic(e)
-	}
-	return WriteFile(path, string(content), owner, permissions)
 }
 
 func (fc *FileCommand) Docker() string {
