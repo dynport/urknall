@@ -19,26 +19,6 @@ func TestWriteFileConvenienceFunction(t *testing.T) {
 	})
 }
 
-func TestWriteAssetConvenienceFunction(t *testing.T) {
-	Convey("When the Asset function is called with an existing asset", t, func() {
-		fc := WriteAsset("some/path", "fw_upstart.sh", "owner", 0644)
-		Convey("Then a file command is created with the values set accordingly", func() {
-			So(fc, ShouldNotBeNil)
-			So(fc.Path, ShouldEqual, "some/path")
-			So(fc.Content, ShouldStartWith, "#!/bin/sh")
-			So(fc.Owner, ShouldEqual, "owner")
-			So(fc.Permissions, ShouldEqual, 0644)
-		})
-	})
-
-	Convey("When the Asset function is called with an unknown asset", t, func() {
-		f := func() { WriteAsset("some/path", "does.not.exist", "owner", 644) }
-		Convey("Then the function must panic", func() {
-			So(f, ShouldPanic)
-		})
-	})
-}
-
 func TestAddFileForLogging(t *testing.T) {
 	Convey("Given a basic file action with content being a single line", t, func() {
 		fAct := &FileCommand{
