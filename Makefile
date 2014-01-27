@@ -1,4 +1,4 @@
-.PHONY: build check clean coverage default deps example help test
+.PHONY: build check clean default deps example test vet
 
 ASSETS      := $(shell find assets -type f | grep -v ".go$$")
 EXTRA_DEPS  := github.com/dynport/dgtk/goassets github.com/smartystreets/goconvey code.google.com/p/go.tools/cmd/vet github.com/dynport/gocli
@@ -19,30 +19,6 @@ check:
 clean:
 	@rm -f assets.go example/main
 
-coverage: 
-	$(eval $@_TMP := $(shell mktemp -t coverage.XXX))
-	$(eval $@_COLLECT_TMP := $(shell mktemp -t coverage.XXX))
-	@echo "mode: set" > $($@_COLLECT_TMP)
-	@for package in $(PACKAGES); do \
-		go test -coverprofile=$($@_TMP) $$package && awk 'NR > 1' $($@_TMP) >> $($@_COLLECT_TMP); \
-		echo "\c" > $($@_TMP); \
-	done
-	@[ -s $($@_COLLECT_TMP) ] && go tool cover -func=$($@_COLLECT_TMP)
-	@rm -f $($@_TMP) $($@_COLLECT_TMP)
-
-coverage-web:
-	$(eval $@_TMP := $(shell mktemp -t coverage.XXX))
-	$(eval $@_COLLECT_TMP := $(shell mktemp -t coverage.XXX))
-	@echo "mode: set" > $($@_COLLECT_TMP)
-	@for package in $(PACKAGES); do \
-		go test -coverprofile=$($@_TMP) $$package && awk 'NR > 1' $($@_TMP) >> $($@_COLLECT_TMP); \
-		echo "\c" > $($@_TMP); \
-	done
-	@[ -s $($@_COLLECT_TMP) ] && go tool cover -html=$($@_COLLECT_TMP)
-	@rm -f $($@_TMP) $($@_COLLECT_TMP)
-
-
-
 deps:
 	@for package in $(EXTRA_DEPS) $(DEPS); do \
 		go get -u $$package; \
@@ -51,25 +27,13 @@ deps:
 example: build
 	@go run example/main.go
 
-help:
-	@echo "make [target] ..."
-	@echo "Targets:"
-	@echo "  build:    Build the library."
-	@echo "  clean:    Clean up all artifacts."
-	@echo ""
-	@echo "  check:    Verify all required tools are available."
-	@echo "  deps:     Get, install or update all dependencies."
-	@echo ""
-	@echo "  test:     Run the tests."
-	@echo "  coverage: Run the tests and print information on test coverage."
-	@echo ""
-	@echo "  help:     Print this message."
-
 test: build
-	@go vet $(PACKAGES)
 	@go test $(PACKAGES)
+
+vet: build
+	@go vet $(PACKAGES)
 
 assets.go: $(ASSETS)
 	@rm -f $@
-	@goassets -pkg=$$(go list -f "{{ .Name }}") -path="assets.go" ./assets > /dev/null 2>&1
+	@goassets assets > /dev/null 2>&1
 
