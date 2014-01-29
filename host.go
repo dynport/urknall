@@ -123,7 +123,7 @@ func (h *Host) Provision(opts *ProvisionOptions) (e error) {
 //	  packages.
 //	* The host to build binary packages on must have the BuildHost flag set. This is to make sure that the side effects
 //	  (like installed compilers, extracted sources, etc) are known to the administration and don't happen by accident.
-func (h *Host) CreateUrknallImage(pkg BinaryPackage) (e error) {
+func (h *Host) BuildBinaryPackage(pkg BinaryPackage) (e error) {
 	if !h.BuildHost {
 		return fmt.Errorf("Host %q is not a build host.", h.Hostname)
 	}
