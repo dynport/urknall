@@ -52,10 +52,6 @@ func WriteFile(path string, content string, owner string, permissions os.FileMod
 	return &FileCommand{Path: path, Content: content, Owner: owner, Permissions: permissions}
 }
 
-func (fc *FileCommand) Docker() string {
-	return "RUN " + fc.Shell()
-}
-
 var b64 = base64.StdEncoding
 
 func (fc *FileCommand) Shell() string {

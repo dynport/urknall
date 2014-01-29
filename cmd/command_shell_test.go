@@ -5,19 +5,6 @@ import (
 	"testing"
 )
 
-func TestCommandActionDocker(t *testing.T) {
-	Convey("Given a command", t, func() {
-		rawCmd := "do something"
-		Convey("When the command is converted for docker", func() {
-			c := &ShellCommand{Command: rawCmd}
-			v := c.Docker()
-			Convey("The value should be a valid dockerfile line", func() {
-				So(v, ShouldEqual, "RUN do something")
-			})
-		})
-	})
-}
-
 func TestCommandActionLogging(t *testing.T) {
 	Convey("Given a command", t, func() {
 		rawCmd := "do something"

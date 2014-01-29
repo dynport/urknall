@@ -59,21 +59,6 @@ func TestAddFileForLogging(t *testing.T) {
 	})
 
 }
-
-func TestAddFileForDocker(t *testing.T) {
-	Convey("Given a basic file action with content being a single line", t, func() {
-		fAct := FileCommand{
-			Content: "something",
-			Path:    "/tmp/foo",
-		}
-
-		Convey("Then the docker runfile should contain a simple command", func() {
-			v := fAct.Docker()
-			So(v, ShouldStartWith, "RUN")
-		})
-	})
-}
-
 func TestAddFileForShell(t *testing.T) {
 	rawContent := "something"
 	zippedContent := `H4sIAAAJbogA/yrOz00tycjMSwcAAAD//wEAAP//+zHaCQkAAAA=`

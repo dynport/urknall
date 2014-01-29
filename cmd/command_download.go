@@ -48,10 +48,6 @@ func (cmd *DownloadCommand) Render(i interface{}) {
 	cmd.Destination = utils.MustRenderTemplate(cmd.Destination, i)
 }
 
-func (dc *DownloadCommand) Docker() string {
-	return fmt.Sprintf("RUN %s", dc.Shell())
-}
-
 func (dc *DownloadCommand) Shell() string {
 	filename := path.Base(dc.Url)
 	destination := fmt.Sprintf("%s/%s", TMP_DOWNLOAD_DIR, filename)

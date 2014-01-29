@@ -250,10 +250,6 @@ func WaitForUnixSocket(path string, timeoutInSeconds int) *ShellCommand {
 	}
 }
 
-func (sc *ShellCommand) Docker() string {
-	return fmt.Sprintf("RUN %s", sc.Command)
-}
-
 func (sc *ShellCommand) Shell() string {
 	if sc.isExecutedAsUser() {
 		return fmt.Sprintf("su -l %s <<EOF_ZWO_ASUSER\n%s\nEOF_ZWO_ASUSER\n", sc.user, sc.Command)

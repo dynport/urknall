@@ -13,9 +13,6 @@ type customCommand struct {
 func (cc *customCommand) Shell() string {
 	return "cc: " + cc.Content
 }
-func (cc *customCommand) Docker() string {
-	return ""
-}
 func (cc *customCommand) Logging() string {
 	return ""
 }
