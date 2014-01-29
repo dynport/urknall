@@ -16,8 +16,8 @@ type Runlist struct {
 	host *Host   // this is just for logging
 }
 
-func (runlist *Runlist) Name() string {
-	return runlist.name
+func (rl *Runlist) Name() string {
+	return rl.name
 }
 
 // Add commands (can also be given as string) or packages (commands will be extracted and added accordingly) to the
