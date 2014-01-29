@@ -29,8 +29,6 @@ type Host struct {
 	Paranoid bool // Make the firewall as restrictive as possible.
 	WithVPN  bool // Connect host to a VPN. Assumes "tun0" as interface.
 
-	Docker *DockerSettings // Make the host a docker container carrier.
-
 	BuildHost               bool   // Whether this host should be used to build urknall binary packages.
 	BinaryPackageRepository string // Where should urknall binary packages be searched?
 
@@ -40,14 +38,6 @@ type Host struct {
 	packageNames   []string
 	userRunlists   []*Runlist
 	systemRunlists []*Runlist
-}
-
-// If the associated host should run (or build) docker containers this type can be used to configure docker.
-type DockerSettings struct {
-	Version          string // Docker version to run.
-	WithRegistry     bool   // Run an image on this host, that will provide a registry for docker images.
-	WithBuildSupport bool   // Configure the associated host so that building images is possible.
-	Registry         string // URL of the registry to use.
 }
 
 // Get the user used to access the host. If none is given the "root" account is as default.
@@ -139,40 +129,6 @@ func (h *Host) CreateUrknallImage(pkg BinaryPackage) (e error) {
 	}
 	sc := newSSHClient(h, nil)
 	return sc.buildBinaryPackage(pkg)
-}
-
-// Provision the given packages into a docker container image tagged with the given tag (the according registry will be
-// added automatically). The build will happen on this host, that must be a docker host with build capability.
-func (h *Host) CreateDockerImage(baseImage, tag string, pkg Package) (imageId string, e error) {
-	if !h.isDockerHost() {
-		return "", fmt.Errorf("host %s is not a docker host", h.Hostname)
-	}
-	dc, e := newDockerClient(h)
-	if e != nil {
-		return "", e
-	}
-	return dc.provisionImage(baseImage, tag, pkg)
-}
-
-// Get docker version that should be used. Will panic if the host has no docker enabled.
-func (h *Host) dockerVersion() string {
-	if h.Docker == nil {
-		panic("not a docker host")
-	}
-	if h.Docker.Version == "" {
-		return "0.7.0"
-	}
-	return h.Docker.Version
-}
-
-// Predicate to test whether docker must be installed.
-func (h *Host) isDockerHost() bool {
-	return h.Docker != nil
-}
-
-// Predicate to test whether the host should be used to build docker images.
-func (h *Host) isDockerBuildHost() bool {
-	return h.Docker != nil && h.Docker.WithBuildSupport
 }
 
 // Predicate to test whether sudo is required (user for the host is not "root").
