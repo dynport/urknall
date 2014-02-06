@@ -2,9 +2,10 @@ package haproxy
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/dynport/urknall"
 	"github.com/dynport/urknall/cmd"
-	"strings"
 )
 
 type Package struct {
@@ -46,7 +47,7 @@ func (p *Package) Package(r *urknall.Runlist) {
 
 const initScript = `description "Properly handle haproxy"
 
-start on startup
+start on (filesystem and net-device-up IFACE=lo)
 
 env PID_PATH=/var/run/haproxy.pid
 env BIN_PATH={{ .InstallPath }}/sbin/haproxy
