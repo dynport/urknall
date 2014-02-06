@@ -153,7 +153,7 @@ func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
 		sCmd = env + " " + sCmd
 	}
 	if sc.host.isSudoRequired() {
-		sCmd = fmt.Sprintf("sudo %s", sCmd)
+		sCmd = fmt.Sprintf("sudo -i %s", sCmd)
 	}
 
 	con, e := sc.client.Connection()
