@@ -25,6 +25,7 @@ func newSSHClient(host *Host, opts *ProvisionOptions) (client *sshClient) {
 		opts = &ProvisionOptions{}
 	}
 	c := gossh.New(host.IP, host.user())
+	c.Port = host.Port
 	if host.Password != "" {
 		c.SetPassword(host.Password)
 	}

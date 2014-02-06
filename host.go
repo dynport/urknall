@@ -19,6 +19,7 @@ type Host struct {
 	IP        string // Host's IP address used to provision the system.
 	User      string // User used to log in.
 	Password  string // SSH password to be used (besides ssh-agent)
+	Port      int    // SSH Port to be used
 	Hostname  string // Hostname used on the system.
 	Interface string // Primary network interface of the host.
 	Timezone  string // Local Timezone to be set
