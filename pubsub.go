@@ -1,10 +1,11 @@
 package urknall
 
 import (
-	"github.com/dynport/dgtk/pubsub"
-	"github.com/dynport/gossh"
 	"sync"
 	"time"
+
+	"github.com/dynport/dgtk/pubsub"
+	"github.com/dynport/gossh"
 )
 
 var pubSub = []*pubsub.PubSub{}
@@ -17,10 +18,13 @@ func RegisterPubSub(ps *pubsub.PubSub) {
 	mutex.Unlock()
 }
 
-func publish(i interface{}) {
+func publish(i interface{}) (e error) {
 	for _, ps := range pubSub {
-		ps.Publish(i)
+		if e = ps.Publish(i); e != nil {
+			return e
+		}
 	}
+	return nil
 }
 
 const (
@@ -108,5 +112,6 @@ func (message Message) publish(key string) {
 	} else {
 		message.duration = message.publishedAt.Sub(message.startedAt)
 	}
+
 	publish(&message)
 }

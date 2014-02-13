@@ -3,11 +3,12 @@ package urknall
 import (
 	"crypto/sha256"
 	"fmt"
-	"github.com/dynport/gossh"
-	"github.com/dynport/urknall/cmd"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/dynport/gossh"
+	"github.com/dynport/urknall/cmd"
 )
 
 type ProvisionOptions struct {
@@ -46,7 +47,7 @@ func (sc *sshClient) buildBinaryPackage(pkg BinaryPackage) (e error) {
 		return e
 	}
 
-	return provisionRunlists([]*Runlist{compileRunlist, packageRunlist}, sc.provisionRunlist)
+	return provisionRunlists([]*Runlist{compileRunlist, packageRunlist}, sc)
 }
 
 func (sc *sshClient) provision() (e error) {
@@ -58,7 +59,7 @@ func (sc *sshClient) provision() (e error) {
 		return e
 	}
 
-	return provisionRunlists(sc.host.runlists(), sc.provisionRunlist)
+	return provisionRunlists(sc.host.runlists(), sc)
 }
 
 func (sc *sshClient) prepareHost() (e error) {
@@ -86,14 +87,27 @@ func (sc *sshClient) prepareHost() (e error) {
 	return nil
 }
 
-func (sc *sshClient) provisionRunlist(rl *Runlist) (e error) {
+func (sc *sshClient) ProvisionRunlist(rl *Runlist, ct checksumTree) (e error) {
 	tasks := sc.buildTasksForRunlist(rl)
 
 	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", rl.name)
 
-	checksumHash, e := sc.buildChecksumHash(checksumDir)
-	if e != nil {
-		return fmt.Errorf("failed to build checksum hash: %s", e.Error())
+	var found bool
+	var checksumHash map[string]struct{}
+	if checksumHash, found = ct[rl.name]; !found {
+		ct[rl.name] = map[string]struct{}{}
+		checksumHash = ct[rl.name]
+
+		// Create checksum dir and set group bit (all new files will inherit the directory's group). This allows for
+		// different users (being part of that group) to create, modify and delete the contained checksum and log files.
+		createChecksumDirCmd := fmt.Sprintf("mkdir -m2775 -p %s", checksumDir)
+		if sc.host.isSudoRequired() {
+			createChecksumDirCmd = fmt.Sprintf(`sudo %s`, createChecksumDirCmd)
+		}
+		r, e := sc.client.Execute(createChecksumDirCmd)
+		if e != nil {
+			return fmt.Errorf(r.Stderr() + ": " + e.Error())
+		}
 	}
 
 	for i := range tasks {
@@ -164,37 +178,31 @@ func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
 	return runner.run()
 }
 
-func (sc *sshClient) buildChecksumHash(checksumDir string) (checksumMap map[string]struct{}, e error) {
-	// Create checksum dir and set group bit (all new files will inherit the directory's group). This allows for
-	// different users (being part of that group) to create, modify and delete the contained checksum and log files.
-	createChecksumDirCmd := fmt.Sprintf("mkdir -m2775 -p %s", checksumDir)
-	if sc.host.isSudoRequired() {
-		createChecksumDirCmd = fmt.Sprintf(`sudo %s`, createChecksumDirCmd)
-	}
-	r, e := sc.client.Execute(createChecksumDirCmd)
-	if e != nil {
-		return nil, fmt.Errorf(r.Stderr() + ": " + e.Error())
-	}
+func (sc *sshClient) BuildChecksumTree() (ct checksumTree, e error) {
+	ct = checksumTree{}
 
-	checksums := []string{}
-
-	rsp, e := sc.client.Execute(fmt.Sprintf(`for f in %s/*.done; do if [[ -f $f ]]; then echo -n "$f "; fi; done`, checksumDir))
+	rsp, e := sc.client.Execute(fmt.Sprintf(`[[ -d %[1]s ]] && find %[1]s -type f -name \*.done`, ukCACHEDIR))
 	if e != nil {
 		return nil, e
 	}
-	for _, checksumFile := range strings.Fields(rsp.Stdout()) {
-		checksum := strings.TrimSuffix(path.Base(checksumFile), ".done")
-		checksums = append(checksums, checksum)
+	for _, line := range strings.Split(rsp.Stdout(), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		pkgname := filepath.Dir(strings.TrimPrefix(line, ukCACHEDIR+"/"))
+		checksum := strings.TrimSuffix(filepath.Base(line), ".done")
+		if len(checksum) != 64 {
+			return nil, fmt.Errorf("invalid checksum %q found for package %q", checksum, pkgname)
+		}
+		if _, found := ct[pkgname]; !found {
+			ct[pkgname] = map[string]struct{}{}
+		}
+		ct[pkgname][checksum] = struct{}{}
 	}
 
-	checksumMap = make(map[string]struct{})
-	for i := range checksums {
-		if len(checksums[i]) != 64 {
-			return nil, fmt.Errorf("invalid checksum %q found in %q", checksums, checksumDir)
-		}
-		checksumMap[checksums[i]] = struct{}{}
-	}
-	return checksumMap, nil
+	return ct, nil
 }
 
 func (sc *sshClient) cleanUpRemainingCachedEntries(checksumDir string, checksumHash map[string]struct{}) (e error) {

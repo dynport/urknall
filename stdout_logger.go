@@ -1,13 +1,15 @@
 package urknall
 
 import (
+	"errors"
 	"fmt"
-	"github.com/dynport/dgtk/pubsub"
-	"github.com/dynport/gocli"
 	"io"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/dynport/dgtk/pubsub"
+	"github.com/dynport/gocli"
 )
 
 const (
@@ -20,6 +22,8 @@ var colorMapping = map[string]int{
 	statusCached:       colorCached,
 	statusExecFinished: colorExec,
 }
+
+var IgnoredMessagesError = errors.New("ignored published messages (subscriber buffer full)")
 
 // Create a logging facility for urknall using urknall's default formatter.
 // Note that this resource must be closed afterwards!
@@ -130,8 +134,12 @@ func (logger *stdoutLogger) Start() error {
 	return nil
 }
 
-func (logger *stdoutLogger) Close() error {
-	return logger.subscription.Close()
+func (logger *stdoutLogger) Close() (e error) {
+	e = logger.subscription.Close()
+	if d := logger.pubSub.Stats.Ignored(); e == nil && d > 0 {
+		return IgnoredMessagesError
+	}
+	return e
 }
 
 func init() {

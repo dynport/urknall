@@ -1,12 +1,24 @@
 package urknall
 
+type checksumTree map[string]map[string]struct{}
+
+type Provisioner interface {
+	ProvisionRunlist(*Runlist, checksumTree) error
+	BuildChecksumTree() (checksumTree, error)
+}
+
 // Provision the given list of runlists.
-func provisionRunlists(runLists []*Runlist, provisionFunc func(*Runlist) error) (e error) {
+func provisionRunlists(runLists []*Runlist, provisioner Provisioner) (e error) {
+	ct, e := provisioner.BuildChecksumTree()
+	if e != nil {
+		return e
+	}
+
 	for i := range runLists {
 		rl := runLists[i]
 		m := &Message{key: MessageRunlistsProvision, runlist: rl}
 		m.publish("started")
-		if e = provisionFunc(rl); e != nil {
+		if e = provisioner.ProvisionRunlist(rl, ct); e != nil {
 			m.publishError(e)
 			return e
 		}
