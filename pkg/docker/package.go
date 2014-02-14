@@ -35,7 +35,7 @@ start on runlevel [2345]
 stop on runlevel [!2345]
 {{ end }}
 
-exec /usr/local/bin/docker -d -D -H unix:///var/run/docker.sock -H tcp://{{ .NetworkInterface }}:4243 {{ with .DataDir }}-g={{ . }} 2>&1 | logger -i -t docker
+exec /usr/local/bin/docker -d -D -H unix:///var/run/docker.sock -H tcp://{{ .NetworkInterface }}:4243 {{ with .DataDir }}-g={{ . }}{{ end }} 2>&1 | logger -i -t docker
 `
 
 func (docker *Package) NetworkInterface() string {
