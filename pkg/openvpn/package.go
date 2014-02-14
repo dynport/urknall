@@ -10,21 +10,31 @@ func New() *Package {
 }
 
 type Package struct {
-	Country  string `urknall:"required=true"`
-	Province string `urknall:"required=true"`
-	City     string `urknall:"required=true"`
-	Org      string `urknall:"required=true"`
-	Email    string `urknall:"required=true"`
-	Name     string `urknall:"required=true"`
-	Address  string `urknall:"required=true"`
-	Netmask  string `urknall:"required=true"`
-
-	PublicIp string `urknall:"required=true"`
+	Country        string `urknall:"required=true"`
+	Province       string `urknall:"required=true"`
+	City           string `urknall:"required=true"`
+	Org            string `urknall:"required=true"`
+	Email          string `urknall:"required=true"`
+	Name           string `urknall:"required=true"`
+	Netmask        string `urknall:"required=true"`
+	Address        string `urknall:"default=10.19.0.0"`
+	CustomPublicIp string
+	Ec2            bool
 
 	Routes []string
 }
 
 const packagePath = "/opt/package_openvpn_key"
+
+func (p *Package) PublicIp() string {
+	if p.Ec2 {
+		return `$(ec2metadata --public-ipv4)`
+	} else if p.CustomPublicIp != "" {
+		return p.CustomPublicIp
+	} else {
+		panic("Either CustomPublicIp must be set or Ec2 enabled")
+	}
+}
 
 func (p *Package) Package(r *urknall.Runlist) {
 	if len(p.Country) != 2 {
