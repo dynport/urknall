@@ -10,7 +10,7 @@ func New(version string) *Package {
 }
 
 type Package struct {
-	Version string `urknall:"default=default:"3.2.1"`
+	Version string `urknall:"default="3.2.1"`
 }
 
 func (p *Package) Package(r *urknall.Runlist) {
