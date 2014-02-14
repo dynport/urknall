@@ -40,7 +40,7 @@ func (p *Package) url() string {
 }
 
 func (p *Package) InstallPath() string {
-	return "/opt/elasticsearch-{{ .Version }}"
+	return "/opt/elasticsearch-" + p.Version
 }
 
 const upstart = `
