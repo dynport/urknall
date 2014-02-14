@@ -78,7 +78,6 @@ stop on runlevel [!2345]
 env DAEMON={{ .InstallPath }}/sbin/nginx
 env PID=/var/run/nginx.pid
  
-expect fork
 respawn
 respawn limit 10 5
 #oom never
