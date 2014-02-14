@@ -12,7 +12,7 @@ func MustRenderTemplate(tmplString string, i interface{}) (rendered string) {
 	for j := 0; j < 8; j++ {
 		renderedCommand, e := RenderTemplate(tmplString, i)
 		if e != nil {
-			panic(fmt.Errorf("failed rendering template: %s", e.Error()))
+			panic(fmt.Errorf("failed rendering template: %s (%s)", e.Error(), tmplString))
 		}
 		if renderedCommand == tmplString {
 			return renderedCommand
