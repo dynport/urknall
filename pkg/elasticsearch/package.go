@@ -44,7 +44,12 @@ func (p *Package) InstallPath() string {
 }
 
 const upstart = `
-setuid elasticsearch
+{{ with .DataPath }}
+pre-start script
+	mkdir -p {{ . }}
+end script
+{{ end }}
+
 exec {{ .InstallPath }}/bin/elasticsearch -f
 `
 
