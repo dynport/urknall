@@ -15,6 +15,7 @@ type Package struct {
 	HeadersMoreVersion string `urknall:"default=0.24"`
 	SyslogPatchVersion string `urknall:"default=1.3.14"`
 	Local              bool   // install to /usr/local/nginx
+	Autostart          bool
 }
 
 func (pkg *Package) Package(r *urknall.Runlist) {
@@ -69,8 +70,10 @@ const upstartScript = `# nginx
 description "nginx http daemon"
 author "George Shammas <georgyo@gmail.com>"
  
+{{ if .Autostart }}
 start on (filesystem and net-device-up IFACE=lo)
 stop on runlevel [!2345]
+{{ end }}
  
 env DAEMON={{ .InstallPath }}/sbin/nginx
 env PID=/var/run/nginx.pid
