@@ -23,6 +23,9 @@ func (docker *Package) Package(r *urknall.Runlist) {
 		cmd.WriteFile("/root/.dockercfg", "auth = abcbdne\nemail = a", "root", 0644),
 		"ln -nfs /opt/docker-{{ .Version }} /usr/local/bin/docker",
 		cmd.WriteFile("/etc/init/docker.conf", upstart, "root", 0644),
+		cmd.And(
+			`sed -e 's;GRUB_CMDLINE_LINUX="";GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1";' -i /etc/default/grub`,
+			"update-grub"),
 	)
 	if docker.Autostart {
 		r.Add("{ status docker | grep running; } || start docker") // no restarts for now
