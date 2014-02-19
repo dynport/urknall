@@ -8,6 +8,7 @@ import (
 
 type Receiver struct {
 	Version  string `urknall:"default=3.5.1"`
+	LogsRoot string `urknall:"default=/var/log/hourly"`
 	AmqpHost string
 }
 
@@ -15,7 +16,7 @@ func (p *Receiver) Package(r *urknall.Runlist) {
 	r.Add(
 		&Package{Version: p.Version},
 		cmd.WriteFile("/usr/local/etc/syslog-ng.conf", receiver, "root", 0644),
-		&syslog.CreateHourlySymlinks{},
+		&syslog.CreateHourlySymlinks{Root: p.LogsRoot},
 		restartCommand,
 	)
 }
@@ -73,7 +74,7 @@ destination d_amqp {
 
 destination d_file {
   file(
-    "/var/log/hourly/$R_YEAR/$R_MONTH/$R_DAY/$R_YEAR-$R_MONTH-${R_DAY}T${R_HOUR}.log"
+    "{{ .LogsRoot }}/$R_YEAR/$R_MONTH/$R_DAY/$R_YEAR-$R_MONTH-${R_DAY}T${R_HOUR}.log"
     template("$S_ISODATE $HOST $PROGRAM.$PRIORITY[$PID]: $MSG\n")
     template_escape(no)
     perm( 0644 )
