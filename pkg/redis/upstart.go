@@ -9,6 +9,7 @@ type Upstart struct {
 	Name        string `urknall:"default=redis"`
 	RedisConfig string `urknall:"default=/etc/redis.conf"`
 	RedisDir    string `urknall:"required=true"`
+	Autostart   bool
 }
 
 func (u *Upstart) Package(r *urknall.Runlist) {
@@ -19,6 +20,9 @@ func (u *Upstart) Package(r *urknall.Runlist) {
 }
 
 const upstart = `
+{{ if .Autostart }}
+start on (local-filesystems and net-device-up IFACE!=lo)
+{{ end }}
 pre-start script
 	sysctl vm.overcommit_memory=1
 end script

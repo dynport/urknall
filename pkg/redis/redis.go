@@ -12,7 +12,8 @@ func New(version string) *Package {
 }
 
 type Package struct {
-	Version string `urknall:"default=2.8.3"`
+	Version   string `urknall:"default=2.8.3"`
+	Autostart bool
 }
 
 func (p *Package) InstallPath() string {
@@ -31,7 +32,7 @@ func (p *Package) Package(r *urknall.Runlist) {
 		),
 		cmd.Mkdir("/data/redis", "root", 0755),
 		&Config{},
-		&Upstart{RedisDir: p.InstallPath()},
+		&Upstart{RedisDir: p.InstallPath(), Autostart: p.Autostart},
 	)
 }
 
