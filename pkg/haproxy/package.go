@@ -19,7 +19,7 @@ func New(version string) *Package {
 }
 
 func (p *Package) url() string {
-	return "http://haproxy.1wt.eu/download/1.4/src/haproxy-1.4.24.tar.gz"
+	return "http://haproxy.1wt.eu/download/1.4/src/haproxy-" + p.Version + ".tar.gz"
 }
 
 func (p *Package) minorVersion() string {
@@ -56,8 +56,8 @@ script
 exec /bin/bash <<EOF
   $BIN_PATH -f /etc/haproxy.cfg -D -p $PID_PATH
 
-  trap "$BIN_PATH -f /etc/haproxy.cfg -p $PID_PATH -sf \\\$(cat $PID_PATH)" SIGHUP
-  trap "kill -TERM \\\$(cat $PID_PATH) && exit 0" SIGTERM SIGINT
+  trap "$BIN_PATH -f /etc/haproxy.cfg -p $PID_PATH -D -sf \$(cat $PID_PATH)" SIGHUP
+  trap "kill -TERM \$(cat $PID_PATH) && exit 0" SIGTERM SIGINT
 
   while true; do # Iterate to keep job running.
     sleep 1 # Don't sleep to long as signals will not be handled during sleep.
