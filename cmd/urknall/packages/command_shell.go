@@ -5,8 +5,6 @@ import (
 	"os"
 	"path"
 	"strings"
-
-	"github.com/dynport/urknall/utils"
 )
 
 // A shell command is just that: something that is executed in a shell on the host to be provisioned. There is quite a
@@ -23,7 +21,7 @@ type ShellCommand struct {
 }
 
 func (cmd *ShellCommand) Render(i interface{}) {
-	cmd.Command = utils.MustRenderTemplate(cmd.Command, i)
+	cmd.Command = MustRenderTemplate(cmd.Command, i)
 }
 
 // Convenience function to run a command as a certain user. Setting an empty user will do nothing, as the command is

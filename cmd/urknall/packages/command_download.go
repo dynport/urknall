@@ -5,8 +5,6 @@ import (
 	"os"
 	"path"
 	"strings"
-
-	"github.com/dynport/urknall/utils"
 )
 
 const TMP_DOWNLOAD_DIR = "/tmp/downloads"
@@ -45,8 +43,8 @@ func (cmd *DownloadCommand) Validate() error {
 }
 
 func (cmd *DownloadCommand) Render(i interface{}) {
-	cmd.Url = utils.MustRenderTemplate(cmd.Url, i)
-	cmd.Destination = utils.MustRenderTemplate(cmd.Destination, i)
+	cmd.Url = MustRenderTemplate(cmd.Url, i)
+	cmd.Destination = MustRenderTemplate(cmd.Destination, i)
 }
 
 func (dc *DownloadCommand) Shell() string {

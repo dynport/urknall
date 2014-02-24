@@ -1,10 +1,6 @@
 package main
 
-import (
-	"github.com/dynport/urknall"
-	"github.com/dynport/urknall/cmd"
-	"github.com/dynport/urknall/utils"
-)
+import "github.com/dynport/urknall"
 
 func NewPostgres(version string) *Postgres {
 	return &Postgres{Version: version}
@@ -38,9 +34,9 @@ func (p *Postgres) InstallDir() string {
 	return "/opt/postgresql-" + p.Version
 }
 
-func (pkg *Postgres) InitDbCommand() cmd.Command {
-	return cmd.And(
-		cmd.Mkdir(pkg.DataDir, pkg.User(), 0755),
+func (pkg *Postgres) InitDbCommand() Command {
+	return And(
+		Mkdir(pkg.DataDir, pkg.User(), 0755),
 		"su -l "+pkg.User()+" -c '"+pkg.InstallDir()+"/bin/initdb -D "+pkg.DataDir+" -E utf8 --auth-local=trust'",
 	)
 }
@@ -79,8 +75,8 @@ func (pkg *Postgres) CreateUserCommand(user *User) string {
 	return pkg.InstallDir() + "/bin/" + `psql -U postgres -c "` + user.CreateCommand() + `"`
 }
 
-func (pkg *Postgres) UpstartExecCommand() cmd.Command {
-	return cmd.WriteFile("/etc/init/postgres.conf", utils.MustRenderTemplate(postgresUpstart, pkg), "root", 0644)
+func (pkg *Postgres) UpstartExecCommand() Command {
+	return WriteFile("/etc/init/postgres.conf", MustRenderTemplate(postgresUpstart, pkg), "root", 0644)
 }
 
 const postgresUpstart = `
@@ -95,5 +91,23 @@ func (pkg *Postgres) url() string {
 }
 
 func (pkg *Postgres) installDir() string {
-	return utils.MustRenderTemplate("/opt/postgresql-{{ .Version }}", pkg)
+	return MustRenderTemplate("/opt/postgresql-{{ .Version }}", pkg)
+}
+
+type PostGis struct {
+	Version            string `urknall:"default=2.1.1"`
+	PostgresInstallDir string `urknall:"required=true"`
+}
+
+func (g *PostGis) url() string {
+	return "http://download.osgeo.org/postgis/source/postgis-{{ .Version }}.tar.gz"
+}
+
+func (g *PostGis) Package(r *urknall.Runlist) {
+	r.Add(
+		Mkdir("/opt/src", "root", 0755),
+		DownloadAndExtract(g.url(), "/opt/src/"),
+		InstallPackages("imagemagick", "libgeos-dev", "libproj-dev", "libgdal-dev"),
+		"cd /opt/src/postgis-{{ .Version }} && ./configure --with-pgconfig={{ .PostgresInstallDir }}/bin/pg_config --prefix=/opt/postgis-{{ .Version }} && make && make install",
+	)
 }
