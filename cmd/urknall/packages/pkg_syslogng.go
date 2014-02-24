@@ -72,7 +72,7 @@ type SyslogNgSender struct {
 
 func (s *SyslogNgSender) Package(r *urknall.Runlist) {
 	r.Add(
-		&Package{Version: s.Version},
+		&SyslogNg{Version: s.Version},
 		WriteFile("/usr/local/etc/syslog-ng.conf", syslogNgSender, "root", 0644),
 		syslogNgRestart,
 	)
