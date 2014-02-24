@@ -2,22 +2,20 @@ package main
 
 import "github.com/dynport/urknall"
 
-func New(version string) *Package {
-	return &Package{
-		Version: version,
-	}
+func NewRedis(version string) *Redis {
+	return &Redis{Version: version}
 }
 
-type Package struct {
+type Redis struct {
 	Version   string `urknall:"default=2.8.3"`
 	Autostart bool
 }
 
-func (p *Package) InstallPath() string {
+func (p *Redis) InstallPath() string {
 	return "/opt/redis-" + p.Version
 }
 
-func (p *Package) Package(r *urknall.Runlist) {
+func (p *Redis) Package(r *urknall.Runlist) {
 	r.Add(
 		InstallPackages("build-essential"),
 		Mkdir("/opt/src/", "root", 0755),
@@ -33,14 +31,14 @@ func (p *Package) Package(r *urknall.Runlist) {
 	)
 }
 
-func (p *Package) WriteConfig(config string) Command {
+func (p *Redis) WriteConfig(config string) Command {
 	if e := urknall.InitializePackage(p); e != nil {
 		panic(e.Error())
 	}
 	return WriteFile("/etc/redis.conf", config, "root", 0644)
 }
 
-func (p *Package) url() string {
+func (p *Redis) url() string {
 	return "http://download.redis.io/releases/redis-{{ .Version }}.tar.gz"
 }
 
