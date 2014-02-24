@@ -2,8 +2,9 @@ package urknall
 
 import (
 	"fmt"
-	"github.com/dynport/urknall/fw"
 	"strings"
+
+	"github.com/dynport/urknall/fw"
 )
 
 // The host type. Use the "NewHost" function to create the basic value.
