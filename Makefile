@@ -1,8 +1,9 @@
 .PHONY: build check clean default deps example test vet
 
 ASSETS      := $(shell find assets -type f | grep -v ".go$$")
+
 EXTRA_DEPS  := github.com/dynport/dgtk/goassets github.com/smartystreets/goconvey code.google.com/p/go.tools/cmd/vet github.com/dynport/gocli
-DEPS        := $(shell go list ./... | xargs go list -f '{{join .Deps "\n"}}' | xargs go list -f '{{if not .Standard}}{{.ImportPath}}{{end}}' 2>/dev/null | sort | uniq | grep -v "github.com/dynport/urknall")
+DEPS        := $(shell go list ./... | xargs go list -f '{{join .Deps "\n"}}' | grep -e "$github.com\|code.google.com\|launchpad.net" | sort | uniq | grep -v "github.com/dynport/urknall")
 IGN_PKGS    := github.com/dynport/urknall/assets
 ALL_PKGS    := $(shell go list ./...)
 PACKAGES    := $(filter-out $(IGN_PKGS),$(ALL_PKGS))
@@ -23,6 +24,7 @@ clean:
 
 deps:
 	@for package in $(EXTRA_DEPS) $(DEPS); do \
+		echo "Installing $$package"; \
 		go get -u $$package; \
 	done
 
