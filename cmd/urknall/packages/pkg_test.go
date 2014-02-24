@@ -17,6 +17,7 @@ func TestPackages(t *testing.T) {
 		&OpenVPN{},
 		&HAProxy{},
 		&Golang{},
+		&Jenkins{},
 	}
 	if len(packages) < 1 {
 		t.Errorf("expected > 0 packages, got %d", len(packages))
