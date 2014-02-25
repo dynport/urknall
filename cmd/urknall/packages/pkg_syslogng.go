@@ -60,7 +60,7 @@ func (p *SyslogNgReceiver) Package(r *urknall.Runlist) {
 	r.Add(
 		&SyslogNg{Version: p.Version},
 		WriteFile("/usr/local/etc/syslog-ng.conf", syslogReceiver, "root", 0644),
-		CreateHourlySymlinks{Root: p.LogsRoot},
+		&CreateHourlySymlinks{Root: p.LogsRoot},
 		syslogNgRestart,
 	)
 }
