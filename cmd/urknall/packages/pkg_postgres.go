@@ -41,12 +41,12 @@ func (pkg *Postgres) InitDbCommand() Command {
 	)
 }
 
-type Database struct {
+type PostgresDatabase struct {
 	Name  string
 	Owner string
 }
 
-func (db *Database) CreateCommand() string {
+func (db *PostgresDatabase) CreateCommand() string {
 	cmd := "CREATE DATABASE " + db.Name
 	if db.Owner != "" {
 		cmd += " OWNER=" + db.Owner
@@ -54,12 +54,12 @@ func (db *Database) CreateCommand() string {
 	return cmd
 }
 
-type User struct {
+type PostgresUser struct {
 	Name     string
 	Password string
 }
 
-func (user *User) CreateCommand() string {
+func (user *PostgresUser) CreateCommand() string {
 	cmd := "CREATE USER " + user.Name
 	if user.Password != "" {
 		cmd += " WITH PASSWORD '" + user.Password + "'"
@@ -67,11 +67,11 @@ func (user *User) CreateCommand() string {
 	return cmd
 }
 
-func (pkg *Postgres) CreateDatabaseCommand(db *Database) string {
+func (pkg *Postgres) CreateDatabaseCommand(db *PostgresDatabase) string {
 	return pkg.InstallDir() + "/bin/" + `psql -U postgres -c "` + db.CreateCommand() + `"`
 }
 
-func (pkg *Postgres) CreateUserCommand(user *User) string {
+func (pkg *Postgres) CreateUserCommand(user *PostgresUser) string {
 	return pkg.InstallDir() + "/bin/" + `psql -U postgres -c "` + user.CreateCommand() + `"`
 }
 
