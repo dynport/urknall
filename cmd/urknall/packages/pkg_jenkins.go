@@ -7,6 +7,7 @@ type Jenkins struct {
 	Version    string `urknall:"default=1.551"`
 	HeapSize   string `urknall:"default=512m"`
 	ListenAddr string `urknall:"default=127.0.0.1"`
+	ListenPort string `urknall:"default=8080"`
 }
 
 func (pkg *Jenkins) Package(r *urknall.Runlist) {
@@ -37,5 +38,5 @@ stop on runlevel [!$RUNLEVEL]
 env JENKINS_HOME=/data/jenkins
 env LANG=en_US.UTF-8
 
-exec /usr/bin/java -Xmx{{ .HeapSize }} -Xms{{ .HeapSize }} -jar /opt/jenkins.war --httpListenAddress={{ .ListenAddr }} 2>&1 | logger -i -t jenkins
+exec /usr/bin/java -Xmx{{ .HeapSize }} -Xms{{ .HeapSize }} -jar /opt/jenkins.war --httpPort={{ .ListenPort }} --httpListenAddress={{ .ListenAddr }} 1>&1 | logger -i -t jenkins
 `
