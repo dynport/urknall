@@ -1,8 +1,6 @@
 package main
 
-import (
-	"github.com/dynport/urknall"
-)
+import "github.com/dynport/urknall"
 
 type Limits struct {
 }
@@ -54,3 +52,27 @@ vm.swappiness=0
 {{ if .ShmMax }}kernel.shmmax={{ .ShmMax }}{{ end }}
 {{ if .ShmAll }}kernel.shmmax={{ .ShmAll }}{{ end }}
 `
+
+type Timezone struct {
+	Timezone string `urknall:"required"`
+}
+
+func (t *Timezone) Package(r *urknall.Runlist) {
+	r.Add(
+		WriteFile("/etc/timezone", t.Timezone, "root", 0644),
+		"dpkg-reconfigure --frontend noninteractive tzdata",
+	)
+}
+
+type Hostname struct {
+	Hostname string `urknall:"required"`
+}
+
+func (h *Hostname) Package(r *urknall.Runlist) {
+	r.Add(
+		"hostname localhost", // Set hostname to make sudo happy.
+		&FileCommand{Path: "/etc/hostname", Content: h.Hostname},
+		&FileCommand{Path: "/etc/hosts", Content: "127.0.0.1 {{ .Hostname }} localhost"},
+		"hostname -F /etc/hostname",
+	)
+}
