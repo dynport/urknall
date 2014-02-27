@@ -82,11 +82,13 @@ func (pkg *Package) CreateUserCommand(user *User) string {
 	return pkg.InstallDir() + "/bin/" + `psql -U postgres -c "` + user.CreateCommand() + `"`
 }
 
-func (pkg *Package) InstallContribModule(module string) string {
-	cmds := []string{
-		"cd /opt/src/postgresql-" + pkg.Version + "/contrib/" + module,
-		"make install",
-		fmt.Sprintf(`%s/bin/psql -U postgres -c "CREATE EXTENSION %s"`, pkg.InstallDir(), module),
+func (pkg *Package) InstallContribModules(database string, modules ...string) string {
+	cmds := []string{}
+	for _, module := range modules {
+		cmds = append(cmds,
+			"cd /opt/src/postgresql-"+pkg.Version+"/contrib/"+module,
+			"make install",
+			fmt.Sprintf(`%s/bin/psql -U postgres -d %s -c "CREATE EXTENSION %s"`, pkg.InstallDir(), database, module))
 	}
 
 	return strings.Join(cmds, " && ")
