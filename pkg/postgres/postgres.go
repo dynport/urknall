@@ -1,6 +1,9 @@
 package postgres
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/dynport/urknall"
 	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/utils"
@@ -77,6 +80,16 @@ func (pkg *Package) CreateDatabaseCommand(db *Database) string {
 
 func (pkg *Package) CreateUserCommand(user *User) string {
 	return pkg.InstallDir() + "/bin/" + `psql -U postgres -c "` + user.CreateCommand() + `"`
+}
+
+func (pkg *Package) InstallContribModule(module string) string {
+	cmds := []string{
+		"cd /opt/src/postgresql-" + pkg.Version + "/contrib/" + module,
+		"make install",
+		fmt.Sprintf(`%s/bin/psql -U postgres -c "CREATE EXTENSION %s"`, pkg.InstallDir(), module),
+	}
+
+	return strings.Join(cmds, " && ")
 }
 
 func (pkg *Package) UpstartExecCommand() cmd.Command {
