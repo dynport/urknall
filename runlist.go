@@ -2,9 +2,10 @@ package urknall
 
 import (
 	"fmt"
-	"github.com/dynport/urknall/cmd"
 	"log"
 	"runtime/debug"
+
+	"github.com/dynport/urknall/cmd"
 )
 
 // A runlist is a container for commands. Use the following methods to add new commands.
@@ -66,15 +67,7 @@ func (rl *Runlist) AddCommand(c cmd.Command) {
 	rl.commands = append(rl.commands, c)
 }
 
-func (rl *Runlist) compileWithBinaryPackages() (e error) {
-	return rl.compile(true)
-}
-
-func (rl *Runlist) compileWithoutBinaryPackages() (e error) {
-	return rl.compile(false)
-}
-
-func (rl *Runlist) compile(useBinaryPkg bool) (e error) {
+func (rl *Runlist) compile() (e error) {
 	m := &Message{runlist: rl, host: rl.host, key: MessageRunlistsPrecompile}
 	m.publish("started")
 	defer func() {
@@ -92,15 +85,6 @@ func (rl *Runlist) compile(useBinaryPkg bool) (e error) {
 		}
 	}()
 
-	if _, ok := rl.pkg.(BinaryPackage); ok && useBinaryPkg {
-		if rl.host.BinaryPackageRepository != "" {
-			m.publish(fmt.Sprintf("going to use a binary package from %q", rl.host.BinaryPackageRepository))
-			rl.installBinaryPackage()
-			m.publish("finished")
-			return nil
-		}
-		m.publish(fmt.Sprintf("package %q's binary not used, as no repository defined. Going to build.", rl.name))
-	}
 	if e = validatePackage(rl.pkg); e != nil {
 		return e
 	}
