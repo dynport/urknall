@@ -14,19 +14,13 @@ import (
 //
 //	TODO(gfrey): Add better support for interfaces and IPs.
 type Host struct {
-	IP        string // Host's IP address used to provision the system.
-	User      string // User used to log in.
-	Password  string // SSH password to be used (besides ssh-agent)
-	Port      int    // SSH Port to be used
-	Hostname  string // Hostname used on the system.
-	Interface string // Primary network interface of the host.
-	Timezone  string // Local Timezone to be set
+	IP       string // Host's IP address used to provision the system.
+	User     string // User used to log in.
+	Password string // SSH password to be used (besides ssh-agent)
+	Port     int    // SSH Port to be used
 
 	Tags []string
 	Env  []string // custom env settings to be used for all sessions
-
-	Paranoid bool // Make the firewall as restrictive as possible.
-	WithVPN  bool // Connect host to a VPN. Assumes "tun0" as interface.
 
 	packageNames []string
 	runlists     []*Runlist
@@ -38,14 +32,6 @@ func (h *Host) user() string {
 		return "root"
 	}
 	return h.User
-}
-
-// Get the host's primary interface. If none is given "eth0" is returned as default.
-func (h *Host) publicInterface() string {
-	if h.Interface == "" {
-		return "eth0"
-	}
-	return h.Interface
 }
 
 // Alias for the AddCommands methods.
