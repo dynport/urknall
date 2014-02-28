@@ -3,8 +3,6 @@ package urknall
 import (
 	"fmt"
 	"strings"
-
-	"github.com/dynport/urknall/fw"
 )
 
 // The host type. Use the "NewHost" function to create the basic value.
@@ -15,7 +13,6 @@ import (
 // A host is added a set of packages, that are provisioned on request.
 //
 //	TODO(gfrey): Add better support for interfaces and IPs.
-//	TODO(gfrey): Add handling and support for IPv6 (currently the firewall will block everything).
 type Host struct {
 	IP        string // Host's IP address used to provision the system.
 	User      string // User used to log in.
@@ -33,9 +30,6 @@ type Host struct {
 
 	BuildHost               bool   // Whether this host should be used to build urknall binary packages.
 	BinaryPackageRepository string // Where should urknall binary packages be searched?
-
-	Firewall fw.Firewall // List of rules used for the firewall.
-	IPSets   []*fw.IPSet // List of ipsets for the firewall.
 
 	packageNames   []string
 	userRunlists   []*Runlist

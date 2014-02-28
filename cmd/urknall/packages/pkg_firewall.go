@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"net"
+	"strconv"
 
 	"github.com/dynport/urknall"
 )
@@ -51,6 +53,36 @@ type FirewallIPSet struct {
 	Members  []net.IP // Initial set of members.
 }
 
+func (ips *FirewallIPSet) IPSetRestore() (cmd string) {
+	cmd = fmt.Sprintf("create %s %s family %s hashsize %d maxelem %d\n",
+		ips.Name, ips.Type, ips.family(), ips.hashsize(), ips.maxelem())
+	for idx := range ips.Members {
+		cmd += fmt.Sprintf("add %s %s\n", ips.Name, ips.Members[idx].String())
+	}
+	return cmd + "\n"
+}
+
+func (ips *FirewallIPSet) family() string {
+	if ips.Family == "" {
+		return "inet"
+	}
+	return ips.Family
+}
+
+func (i *FirewallIPSet) hashsize() int {
+	if i.HashSize == 0 {
+		return 1024
+	}
+	return i.HashSize
+}
+
+func (i *FirewallIPSet) maxelem() int {
+	if i.MaxElem == 0 {
+		return 65536
+	}
+	return i.MaxElem
+}
+
 // A rule defines what is allowed to flow from some source to some destination. A description can be added to make the
 // resulting scripts more readable.
 //
@@ -69,6 +101,213 @@ type FirewallRule struct {
 
 	Source      *FirewallTarget // The source of the packet.
 	Destination *FirewallTarget // The destination of the packet.
+}
+
+// Method to create something digestable for IPtablesRestore (aka users might well ignore this).
+func (r *FirewallRule) Filter() (cmd string) {
+	cfg := &iptConfig{rule: r, moduleConfig: map[string]iptModConfig{}}
+
+	if r.Source != nil {
+		r.Source.convert(cfg, "src")
+	}
+
+	if r.Destination != nil {
+		r.Destination.convert(cfg, "dest")
+	}
+
+	return cfg.FilterTableRule()
+}
+
+func (r *FirewallRule) isNATRule() bool {
+	return r.Chain == "FORWARD" &&
+		((r.Source != nil && r.Source.NAT != "") ||
+			(r.Destination != nil && r.Destination.NAT != ""))
+}
+
+func (r *FirewallRule) NAT() (cmd string) {
+	if !r.isNATRule() {
+		return ""
+	}
+
+	cfg := &iptConfig{rule: r, moduleConfig: map[string]iptModConfig{}}
+
+	if r.Source != nil {
+		r.Source.convert(cfg, "src")
+	}
+
+	if r.Destination != nil {
+		r.Destination.convert(cfg, "dest")
+	}
+
+	return cfg.NATTableRule()
+}
+
+func (r *FirewallRule) IPsets() {
+}
+
+type iptModConfig map[string]string
+
+type iptConfig struct {
+	rule *FirewallRule
+
+	sourceIP string
+	destIP   string
+
+	sourceIface string
+	destIface   string
+
+	sourceNAT string
+	destNAT   string
+
+	moduleConfig map[string]iptModConfig
+}
+
+func (cfg *iptConfig) basicSettings(natRule bool) (s string) {
+	if cfg.rule.Protocol != "" {
+		s += " --protocol " + cfg.rule.Protocol
+	}
+	if cfg.sourceIP != "" {
+		s += " --source " + cfg.sourceIP
+	}
+	if cfg.sourceIface != "" {
+		if cfg.rule.Chain == "FORWARD" {
+			if !natRule || cfg.destNAT != "" {
+				s += " --in-interface " + cfg.sourceIface
+			}
+		} else {
+			s += " --out-interface " + cfg.sourceIface
+		}
+	}
+	if cfg.destIP != "" {
+		s += " --destination " + cfg.destIP
+	}
+	if cfg.destIface != "" {
+		if cfg.rule.Chain == "FORWARD" {
+			if !natRule || cfg.sourceNAT != "" {
+				s += " --out-interface " + cfg.destIface
+			}
+		} else {
+			s += " --in-interface " + cfg.destIface
+		}
+	}
+	return s
+}
+
+func (cfg *iptConfig) FilterTableRule() (s string) {
+	if cfg.rule.Description != "" {
+		s = "# " + cfg.rule.Description + "\n"
+	}
+	s += "-A " + cfg.rule.Chain
+
+	s += cfg.basicSettings(false)
+
+	for module, modOptions := range cfg.moduleConfig {
+		s += " " + module
+		for option, value := range modOptions {
+			s += " " + option + " " + value
+		}
+	}
+
+	s += " -m state --state NEW -j ACCEPT\n"
+	return s
+}
+
+func (cfg *iptConfig) NATTableRule() (s string) {
+	if cfg.rule.Description != "" {
+		s = "# " + cfg.rule.Description + "\n"
+	}
+
+	switch {
+	case cfg.sourceNAT != "" && cfg.destNAT == "":
+		s += "-A POSTROUTING"
+	case cfg.sourceNAT == "" && cfg.destNAT != "":
+		s += "-A PREROUTING"
+	default:
+		panic("but you said NAT would be configured?!")
+	}
+
+	s += cfg.basicSettings(true)
+
+	switch {
+	case cfg.sourceNAT == "MASQ":
+		s += " -j MASQUERADE"
+	case cfg.sourceNAT != "":
+		s += " -j SNAT --to " + cfg.sourceNAT
+	case cfg.destNAT != "":
+		s += " -j DNAT --to " + cfg.destNAT
+	}
+
+	return s
+}
+
+func (t *FirewallTarget) convert(cfg *iptConfig, tType string) {
+	if t.Port != 0 {
+		if cfg.rule.Protocol == "" {
+			panic("port requires the protocol to be specified")
+		}
+
+		module := "-m " + cfg.rule.Protocol
+		if _, found := cfg.moduleConfig[module]; !found {
+			cfg.moduleConfig[module] = iptModConfig{}
+		}
+		switch tType {
+		case "src":
+			cfg.moduleConfig[module]["--source-port"] = strconv.Itoa(t.Port)
+		case "dest":
+			cfg.moduleConfig[module]["--destination-port"] = strconv.Itoa(t.Port)
+		}
+	}
+
+	if t.IP != nil {
+		switch tType {
+		case "src":
+			cfg.sourceIP = t.IP.String()
+		case "dest":
+			cfg.destIP = t.IP.String()
+		}
+	}
+
+	if t.IPSet != "" {
+		module := "-m set"
+		if _, found := cfg.moduleConfig[module]; !found {
+			cfg.moduleConfig[module] = iptModConfig{}
+		}
+		value := cfg.moduleConfig[module]["--match-set "+t.IPSet]
+		set := ""
+		switch tType {
+		case "src":
+			set = "src"
+		case "dest":
+			set = "dst"
+		}
+		if value != "" {
+			cfg.moduleConfig[module]["--match-set "+t.IPSet] = value + "," + set
+		} else {
+			cfg.moduleConfig[module]["--match-set "+t.IPSet] = set
+		}
+	}
+
+	if t.Interface != "" {
+		switch tType {
+		case "src":
+			cfg.sourceIface = t.Interface
+		case "dest":
+			cfg.destIface = t.Interface
+		}
+	}
+
+	if t.NAT != "" {
+		switch tType {
+		case "src": // for input on the source the destination address can be modified.
+			cfg.destNAT = t.NAT
+		case "dest": // for output on the destination the source address can be modified.
+			cfg.sourceNAT = t.NAT
+		}
+
+		if cfg.sourceNAT != "" && cfg.destNAT != "" {
+			panic("only source or destination NAT allowed!")
+		}
+	}
 }
 
 // The target of a rule. It can be specified either by IP or the name of an IPSet. Additional parameters are the port
