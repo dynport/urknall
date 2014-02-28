@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-	"strings"
+
+	"github.com/dynport/dgtk/tagparse"
 )
 
 // A "Package" is an entity that packs commands into a runlist, taking into account their own configuration.
@@ -99,35 +100,24 @@ type validationOptions struct {
 	max          int64
 }
 
+func splitter(input string) (key, value string, e error) {
+	switch input {
+	case "required":
+		return "required", "true", nil
+	default:
+		return "", "", fmt.Errorf("failed")
+	}
+}
+
 func parseFieldValidationString(field reflect.StructField) (opts *validationOptions, e error) {
 	opts = &validationOptions{}
-	tagString := field.Tag.Get("urknall")
 
-	fields := []string{}
-	idxStart := 0
-	sA := false
-	for i, c := range tagString {
-		if c == '\'' {
-			sA = !sA
-		}
-
-		if (c == ' ' || i+1 == len(tagString)) && !sA {
-			fields = append(fields, tagString[idxStart:i+1])
-			idxStart = i + 1
-		}
-	}
-	if sA {
-		return nil, fmt.Errorf("failed to parse tag due to erroneous quotes")
+	tagMap, e := tagparse.ParseCustom(field, "urknall", splitter)
+	if e != nil {
+		return nil, e
 	}
 
-	for fIdx := range fields {
-		kvList := strings.SplitN(fields[fIdx], "=", 2)
-		if len(kvList) != 2 {
-			return nil, fmt.Errorf("failed to parse annotation (value missing): %q", fields[fIdx])
-		}
-		key := strings.TrimSpace(kvList[0])
-		value := strings.Trim(kvList[1], " '")
-
+	for key, value := range tagMap {
 		switch key {
 		case "required":
 			switch field.Type.String() {

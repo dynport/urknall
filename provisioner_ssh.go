@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/dynport/gossh"
-	"github.com/dynport/urknall/cmd"
 )
 
 type ProvisionOptions struct {
@@ -207,12 +206,12 @@ func (sc *sshClient) cleanUpRemainingCachedEntries(checksumDir string, checksumH
 }
 
 type taskData struct {
-	command  cmd.Command // The command to be executed.
-	checksum string      // The checksum of the command.
+	command  Command // The command to be executed.
+	checksum string  // The checksum of the command.
 	runlist  *Runlist
 }
 
-func (data *taskData) Command() cmd.Command {
+func (data *taskData) Command() Command {
 	return data.command
 }
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/dynport/urknall"
-	"github.com/dynport/urknall/cmd"
 )
 
 func NewOpenVPN() *OpenVPN {
