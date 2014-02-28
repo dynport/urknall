@@ -35,14 +35,14 @@ func newSSHClient(host *Host, opts *ProvisionOptions) (client *sshClient) {
 
 func (sc *sshClient) buildBinaryPackage(pkg BinaryPackage) (e error) {
 	name := pkg.Name() + "." + pkg.PkgVersion()
-	compileRunlist := newRunlist(name+".build", pkg, sc.host)
+	compileRunlist := &Runlist{name: name + ".build", pkg: pkg, host: sc.host}
 	// Don't use binary packages, as otherwise you'll be caugth in an awkward self reference trying to use a binary
 	// package to build the very binary package.
 	if e = compileRunlist.compileWithoutBinaryPackages(); e != nil {
 		return e
 	}
 
-	packageRunlist := newRunlist(name+".package", pkg, sc.host)
+	packageRunlist := &Runlist{name: name + ".package", pkg: pkg, host: sc.host}
 	if e = packageRunlist.buildBinaryPackage(); e != nil {
 		return e
 	}
@@ -59,7 +59,7 @@ func (sc *sshClient) provision() (e error) {
 		return e
 	}
 
-	return provisionRunlists(sc.host.runlists(), sc)
+	return provisionRunlists(sc.host.runlists, sc)
 }
 
 func (sc *sshClient) prepareHost() (e error) {

@@ -31,9 +31,8 @@ type Host struct {
 	BuildHost               bool   // Whether this host should be used to build urknall binary packages.
 	BinaryPackageRepository string // Where should urknall binary packages be searched?
 
-	packageNames   []string
-	userRunlists   []*Runlist
-	systemRunlists []*Runlist
+	packageNames []string
+	runlists     []*Runlist
 }
 
 // Get the user used to access the host. If none is given the "root" account is as default.
@@ -85,21 +84,7 @@ func (h *Host) AddPackage(name string, pkg Package) {
 	}
 
 	h.packageNames = append(h.packageNames, name)
-	h.userRunlists = append(h.userRunlists, newRunlist(name, pkg, h))
-}
-
-// Add the given package with the given name to the host.
-func (h *Host) addSystemPackage(name string, pkg Package) (e error) {
-	name = "uk." + name
-	for i := range h.packageNames {
-		if h.packageNames[i] == name {
-			return fmt.Errorf("package with name %q exists already", name)
-		}
-	}
-
-	h.packageNames = append(h.packageNames, name)
-	h.systemRunlists = append(h.systemRunlists, newRunlist(name, pkg, h))
-	return nil
+	h.runlists = append(h.runlists, &Runlist{name: name, pkg: pkg, host: h})
 }
 
 // Provision the host, i.e. execute all the commands contained in the packages registered with this host.
@@ -135,19 +120,8 @@ func (h *Host) isSudoRequired() bool {
 	return false
 }
 
-func (h *Host) runlists() (r []*Runlist) {
-	if h.systemRunlists == nil {
-		h.buildSystemRunlists()
-	}
-
-	r = make([]*Runlist, 0, len(h.systemRunlists)+len(h.userRunlists))
-	r = append(r, h.systemRunlists...)
-	r = append(r, h.userRunlists...)
-	return r
-}
-
 func (h *Host) precompileRunlists() (e error) {
-	for _, runlist := range h.runlists() {
+	for _, runlist := range h.runlists {
 		if len(runlist.commands) > 0 {
 			return fmt.Errorf("pkg %q seems to be packaged already", runlist.name)
 		}
