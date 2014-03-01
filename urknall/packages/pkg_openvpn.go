@@ -181,7 +181,7 @@ type OpenVpnMasquerade struct {
 
 func (*OpenVpnMasquerade) Package(r *urknall.Runlist) {
 	r.Add(
-		cmd.WriteFile("/etc/network/if-pre-up.d/iptables", ipUp, "root", 0744),
+		WriteFile("/etc/network/if-pre-up.d/iptables", ipUp, "root", 0744),
 		"IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables",
 	)
 }
