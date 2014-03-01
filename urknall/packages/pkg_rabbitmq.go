@@ -7,7 +7,7 @@ func NewRabbitMQ(version string) *RabbitMQ {
 }
 
 type RabbitMQ struct {
-	Version string `urknall:"default="3.2.1"`
+	Version string `urknall:"default=3.2.1"`
 }
 
 func (p *RabbitMQ) Package(r *urknall.Runlist) {
