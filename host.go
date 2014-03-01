@@ -5,28 +5,21 @@ import (
 	"strings"
 )
 
-// The host type. Use the "NewHost" function to create the basic value.
-//
-// Please note that you need to set the primary interface (the one the host is accessible on) name, if that is not
-// "eth0". That should only be necessary on rare circumstances.
-//
-// A host is added a set of packages, that are provisioned on request.
-//
-//	TODO(gfrey): Add better support for interfaces and IPs.
+// The host type, used to describe a host and define everything that should be provisioned on it.
 type Host struct {
 	IP       string // Host's IP address used to provision the system.
 	User     string // User used to log in.
 	Password string // SSH password to be used (besides ssh-agent)
 	Port     int    // SSH Port to be used
 
-	Tags []string
-	Env  []string // custom env settings to be used for all sessions
+	Tags []string // Tags can be used to trigger certain actions (this is used for the role concept for example).
+	Env  []string // Custom environment settings to be used for all sessions.
 
 	packageNames []string
 	runlists     []*Runlist
 }
 
-// Get the user used to access the host. If none is given the "root" account is as default.
+// Get the user used to access the host. If none is given the "root" account is used as default.
 func (h *Host) user() string {
 	if h.User == "" {
 		return "root"

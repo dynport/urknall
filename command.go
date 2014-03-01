@@ -2,18 +2,22 @@ package urknall
 
 import "github.com/dynport/urknall/utils"
 
-// The Command interface must be implemented by the different command types. It is used to run the command in different
-// contexts, i.e. either shell, docker, or logging. The last one comes in handy if a command's underlying actions are
-// rather lengthy or cryptic, but the intent is described easily (like writing assets or files for example).
+// The Command interface is used to have specialized commands that are used for execution and logging (the latter is
+// useful to hide the gory details of more complex commands).
 type Command interface {
 	Shell() string   // Used for executing the action in a shell (locally or via ssh).
 	Logging() string // Get string used for logging.
 }
 
+// Interface that allows for rendering template content into a structure. Implement this interface for commands that
+// should have the ability for templating. For example the ShellCommand provided by `urknall init` implements this,
+// allowing for substitution of a package's values in the command.
 type Renderer interface {
 	Render(i interface{})
 }
 
+// Interface used for types that will validate its state. An error is returned if the state is invalid. Implement this
+// on commands to verify validity.
 type Validator interface {
 	Validate() error
 }
