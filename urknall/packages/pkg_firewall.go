@@ -388,7 +388,8 @@ COMMIT
 COMMIT
 `
 
-const fwIpset = `{{ range .IPSets }}{{ .IPSetRestore }}{{ end }}`
+const fwIpset = `# IPSet configuration
+{{ range .IPSets }}{{ .IPSetRestore }}{{ end }}`
 const firewallUpstart = `#!/bin/sh
 set -e
 
