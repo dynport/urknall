@@ -35,15 +35,14 @@ func (h *Host) user() string {
 }
 
 // Alias for the AddCommands methods.
-func (h *Host) Add(name string, cmd interface{}, cmds ...interface{}) {
-	h.AddCommands(name, cmd, cmds...)
+func (h *Host) Add(name string, cmds ...interface{}) {
+	h.AddCommands(name, cmds...)
 }
 
 // Register the list of given commands (either of the cmd.Command type or as string) as a package (without
 // configuration) with the given name.
-func (h *Host) AddCommands(name string, cmd interface{}, cmds ...interface{}) {
-	cmdList := append([]interface{}{cmd}, cmds...)
-	h.AddPackage(name, NewPackage(cmdList...))
+func (h *Host) AddCommands(name string, cmds ...interface{}) {
+	h.AddPackage(name, NewPackage(cmds...))
 }
 
 // Add the given package with the given name to the host.
