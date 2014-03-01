@@ -73,7 +73,7 @@ func (rl *Runlist) compile() (e error) {
 			var ok bool
 			e, ok = r.(error)
 			if !ok {
-				e = fmt.Errorf("failed to precompile package: %v %q", rl.name, r)
+				e = fmt.Errorf("failed to precompile package %q: %s", rl.name, r)
 			}
 			m.error_ = e
 			m.stack = string(debug.Stack())
