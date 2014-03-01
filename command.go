@@ -10,10 +10,6 @@ type Command interface {
 	Logging() string // Get string used for logging.
 }
 
-type DockerCommand interface {
-	Docker() string // Used for executing the action in a docker context.
-}
-
 type Renderer interface {
 	Render(i interface{})
 }
