@@ -1,7 +1,3 @@
-// The Ruby package is used to provision ruby on a host.
-//
-// Ruby will be downloaded, extracted, configured, built, and installed to `/opt/ruby-{{ .Version }}`. If the `Bundle`
-// flag is set, bundler will be installed.
 package main
 
 import (
@@ -15,6 +11,10 @@ func NewRuby(version string) *Ruby {
 	return &Ruby{Version: version}
 }
 
+// The Ruby package is used to provision ruby on a host.
+//
+// Ruby will be downloaded, extracted, configured, built, and installed to `/opt/ruby-{{ .Version }}`. If the `Bundle`
+// flag is set, bundler will be installed.
 type Ruby struct {
 	Version     string `urknall:"default=2.0.0-p247"`
 	WithBundler bool
