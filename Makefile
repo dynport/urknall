@@ -1,26 +1,15 @@
-.PHONY: build check clean default deps example test vet
+.PHONY: deps test vet
 
-ASSETS      := $(shell find assets -type f | grep -v ".go$$")
+ASSETS      := $(shell find urknall/packages -type f | grep -v ".go$$")
 
 EXTRA_DEPS  := github.com/dynport/dgtk/goassets github.com/smartystreets/goconvey github.com/jacobsa/oglematchers
 DEPS        := $(shell go list ./... | xargs go list -f '{{join .Deps "\n"}}' | grep -e "$github.com\|code.google.com\|launchpad.net" | sort | uniq | grep -v "github.com/dynport/urknall")
-IGN_PKGS    := github.com/dynport/urknall/assets
+IGN_PKGS    := github.com/dynport/urknall/urknall/packages
 ALL_PKGS    := $(shell go list ./...)
 PACKAGES    := $(filter-out $(IGN_PKGS),$(ALL_PKGS))
-IGN_TEST_PKGS := github.com/dynport/urknall/pkg/%
-TEST_PKGS   := $(filter-out $(IGN_TEST_PKGS),$(PACKAGES))
 
-default: build
-
-build: assets.go
-	@go install $(PACKAGES)
-
-check:
-	@which go > /dev/null || echo "go not installed"
-	@which goassets > /dev/null || echo "go assets missing, call 'go get github.com/dynport/dgtk/goassets'"
-
-clean:
-	@rm -f assets.go example/main
+${GOPATH}/bin/urknall: urknall/assets.go urknall/*.go
+	go install github.com/dynport/urknall/urknall
 
 deps:
 	@for package in $(EXTRA_DEPS) $(DEPS); do \
@@ -28,16 +17,13 @@ deps:
 		go get -u $$package; \
 	done
 
-example: build
-	@go run example/main.go
+test:
+	@go test $(PACKAGES)
 
-test: build
-	@go test $(TEST_PKGS)
-
-vet: build
+vet:
 	@go vet $(PACKAGES)
 
-assets.go: $(ASSETS)
-	@rm -f $@
-	@goassets assets > /dev/null 2>&1
+urknall/assets.go: $(ASSETS)
+	rm -f $@
+	cd urknall && goassets assets > /dev/null 2>&1
 
