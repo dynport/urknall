@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	l, _ := urknall.OpenStdoutLogger()
+	l := urknall.OpenStdoutLogger()
 	defer l.Close()
 	host := urknall.Host{IP: "127.0.0.1", User: "root"}
 	e := host.Provision(nil)
