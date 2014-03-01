@@ -27,14 +27,12 @@ var IgnoredMessagesError = errors.New("ignored published messages (subscriber bu
 
 // Create a logging facility for urknall using urknall's default formatter.
 // Note that this resource must be closed afterwards!
-func OpenStdoutLogger() (io.Closer, error) {
+func OpenStdoutLogger() io.Closer {
 	logger := &stdoutLogger{}
 	logger.Formatter = logger.DefaultFormatter
-	e := logger.Start()
-	if e != nil {
-		return nil, e
-	}
-	return logger, nil
+	// Ignore the error from Start. It would only be triggered if the formatter wouldn't be set.
+	_ = logger.Start()
+	return logger
 }
 
 type stdoutLogger struct {
