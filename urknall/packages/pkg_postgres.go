@@ -1,6 +1,9 @@
 package main
 
-import "github.com/dynport/urknall"
+import (
+	"github.com/dynport/urknall"
+	"github.com/dynport/urknall/utils"
+)
 
 func NewPostgres(version string) *Postgres {
 	return &Postgres{Version: version}
@@ -76,7 +79,7 @@ func (pkg *Postgres) CreateUserCommand(user *PostgresUser) string {
 }
 
 func (pkg *Postgres) UpstartExecCommand() Command {
-	return WriteFile("/etc/init/postgres.conf", MustRenderTemplate(postgresUpstart, pkg), "root", 0644)
+	return WriteFile("/etc/init/postgres.conf", utils.MustRenderTemplate(postgresUpstart, pkg), "root", 0644)
 }
 
 const postgresUpstart = `
@@ -91,7 +94,7 @@ func (pkg *Postgres) url() string {
 }
 
 func (pkg *Postgres) installDir() string {
-	return MustRenderTemplate("/opt/postgresql-{{ .Version }}", pkg)
+	return utils.MustRenderTemplate("/opt/postgresql-{{ .Version }}", pkg)
 }
 
 type PostGis struct {

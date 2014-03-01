@@ -1,6 +1,9 @@
 package main
 
-import "github.com/dynport/urknall"
+import (
+	"github.com/dynport/urknall"
+	"github.com/dynport/urknall/utils"
+)
 
 func NewNginx(version string) *Nginx {
 	return &Nginx{Version: version}
@@ -38,7 +41,7 @@ func (pkg *Nginx) Package(r *urknall.Runlist) {
 			"make",
 			"make install",
 		),
-		WriteFile("/etc/init/nginx.conf", MustRenderTemplate(upstartScript, pkg), "root", 0644),
+		WriteFile("/etc/init/nginx.conf", utils.MustRenderTemplate(upstartScript, pkg), "root", 0644),
 	)
 }
 
@@ -58,7 +61,7 @@ func (pkg *Nginx) BinPath() string {
 }
 
 func (pkg *Nginx) ReloadCommand() string {
-	return MustRenderTemplate("{{ . }} -t && {{ . }} -s reload", pkg.BinPath())
+	return utils.MustRenderTemplate("{{ . }} -t && {{ . }} -s reload", pkg.BinPath())
 }
 
 const upstartScript = `# nginx

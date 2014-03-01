@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/dynport/urknall/utils"
 )
 
 // The "FileCommand" is used to write files to the host being provisioned. The go templating mechanism (see
@@ -28,8 +30,8 @@ type FileCommand struct {
 }
 
 func (cmd *FileCommand) Render(i interface{}) {
-	cmd.Path = MustRenderTemplate(cmd.Path, i)
-	cmd.Content = MustRenderTemplate(cmd.Content, i)
+	cmd.Path = utils.MustRenderTemplate(cmd.Path, i)
+	cmd.Content = utils.MustRenderTemplate(cmd.Content, i)
 }
 
 func (cmd *FileCommand) Validate() error {
