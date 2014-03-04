@@ -41,7 +41,22 @@ func (sc *sshClient) provision() (e error) {
 		return e
 	}
 
-	return provisionRunlists(sc.host.runlists, sc)
+	ct, e := sc.BuildChecksumTree()
+	if e != nil {
+		return e
+	}
+
+	for i := range sc.host.runlists {
+		rl := sc.host.runlists[i]
+		m := &Message{key: MessageRunlistsProvision, runlist: rl}
+		m.publish("started")
+		if e = sc.ProvisionRunlist(rl, ct); e != nil {
+			m.publishError(e)
+			return e
+		}
+		m.publish("finished")
+	}
+	return nil
 }
 
 func (sc *sshClient) prepareHost() (e error) {
