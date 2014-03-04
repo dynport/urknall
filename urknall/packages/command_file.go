@@ -18,10 +18,6 @@ import (
 // have dynamic content (based on the package's configuration) for the file content and at the same time store it in
 // an asset (which is generated at compile time). Please note that the underlying actions will panic if either no path
 // or content are given.
-//
-// BUG(gfrey): It's currently not possible to write files larger than 32k, as the underlying go.crypto/ssh package has a
-// hard limit to this size. Fixing should be possible by adding a data channel to the "Command" interfaces methods
-// output, that is connected to stdin of the SSH session.
 type FileCommand struct {
 	Path        string      // Path to the file to create.
 	Content     string      // Content of the file to create.

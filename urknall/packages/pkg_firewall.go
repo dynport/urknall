@@ -313,9 +313,6 @@ func (t *FirewallTarget) convert(cfg *iptConfig, tType string) {
 // The target of a rule. It can be specified either by IP or the name of an IPSet. Additional parameters are the port
 // and interface used. It's totally valid to only specify a subset (or even none) of the fields. For example IP and
 // IPSet must not be given for the host the rule is applied on.
-//
-// TODO(gfrey): There currently is no validation the referenced IPSet exists. This should be added on provisioning to
-// make sure iptables setup won't fail.
 type FirewallTarget struct {
 	IP        net.IP // IP of the target.
 	IPSet     string // IPSet used for matching.
