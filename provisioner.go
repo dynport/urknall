@@ -10,6 +10,8 @@ import (
 	"github.com/dynport/gossh"
 )
 
+type checksumTree map[string]map[string]struct{}
+
 type ProvisionOptions struct {
 	DryRun bool
 }
