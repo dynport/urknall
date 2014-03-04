@@ -12,7 +12,9 @@ import (
 
 type checksumTree map[string]map[string]struct{}
 
+// Options for the provisioner. Use nil, if nothing required.
 type ProvisionOptions struct {
+	// Verify which commands would be executed and which are cached.
 	DryRun bool
 }
 

@@ -27,7 +27,4 @@
 // command hasn't been executed yet, or one of the predecessors changed, it will be run. This is a simple but very
 // effective caching mechanism. Additionally urknall has the possibility to display which commands would actually be
 // executed, i.e. a dry run.
-//
-// Using `urknall init` will add a set of commands to a new project. These include types implementing the `Command`
-// interface. These help to simplify writing certain sorts of commands, like writing files on the remote machine.
 package urknall
