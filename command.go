@@ -12,13 +12,13 @@ type Command interface {
 // Interface that allows for rendering template content into a structure. Implement this interface for commands that
 // should have the ability for templating. For example the ShellCommand provided by `urknall init` implements this,
 // allowing for substitution of a package's values in the command.
-type Renderer interface {
+type CommandRenderer interface {
 	Render(i interface{})
 }
 
 // Interface used for types that will validate its state. An error is returned if the state is invalid. Implement this
 // on commands to verify validity.
-type Validator interface {
+type CommandValidator interface {
 	Validate() error
 }
 

@@ -49,10 +49,10 @@ func (rl *Runlist) AddPackage(p Package) {
 // Add the given command to the runlist.
 func (rl *Runlist) AddCommand(c Command) {
 	if rl.pkg != nil {
-		if renderer, ok := c.(Renderer); ok {
+		if renderer, ok := c.(CommandRenderer); ok {
 			renderer.Render(rl.pkg)
 		}
-		if validator, ok := c.(Validator); ok {
+		if validator, ok := c.(CommandValidator); ok {
 			if e := validator.Validate(); e != nil {
 				panic(e.Error())
 			}
