@@ -17,18 +17,17 @@ type Runlist struct {
 
 // Add commands (can also be given as string) or packages (commands will be extracted and added accordingly) to the
 // runlist.
-func (rl *Runlist) Add(first interface{}, others ...interface{}) {
-	all := append([]interface{}{first}, others...)
-	for _, c := range all {
+func (rl *Runlist) Add(cmds ...interface{}) {
+	for _, c := range cmds {
 		switch t := c.(type) {
 		case string:
 			// No explicit expansion required as the function is called recursively with a ShellCommand type, that has
 			// explicitly renders the template.
-			rl.AddCommand(&stringCommand{cmd: t})
+			rl.addCommand(&stringCommand{cmd: t})
 		case Command:
-			rl.AddCommand(t)
+			rl.addCommand(t)
 		case Package:
-			rl.AddPackage(t)
+			rl.addPackage(t)
 		default:
 			panic(fmt.Sprintf("type %T not supported!", t))
 		}
@@ -36,7 +35,7 @@ func (rl *Runlist) Add(first interface{}, others ...interface{}) {
 }
 
 // Add the given package's commands to the runlist.
-func (rl *Runlist) AddPackage(p Package) {
+func (rl *Runlist) addPackage(p Package) {
 	r := &Runlist{pkg: p, host: rl.host}
 	e := validatePackage(p)
 	if e != nil {
@@ -47,7 +46,7 @@ func (rl *Runlist) AddPackage(p Package) {
 }
 
 // Add the given command to the runlist.
-func (rl *Runlist) AddCommand(c Command) {
+func (rl *Runlist) addCommand(c Command) {
 	if rl.pkg != nil {
 		if renderer, ok := c.(CommandRenderer); ok {
 			renderer.Render(rl.pkg)
