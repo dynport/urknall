@@ -34,7 +34,7 @@ func (anon *anonymousPackage) Package(rl *Runlist) {
 }
 
 // Create a package from a set of commands.
-func NewPackage(cmds ...interface{}) Package {
+func newPackage(cmds ...interface{}) Package {
 	return &anonymousPackage{cmds: cmds}
 }
 

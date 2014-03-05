@@ -64,7 +64,7 @@ func (h *Host) Add(name string, sth interface{}) {
 
 	switch val := sth.(type) {
 	case string:
-		h.add(NewPackage(val))
+		h.add(newPackage(val))
 	case Package:
 		h.add(val)
 	case MultiPackage:
