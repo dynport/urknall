@@ -96,7 +96,16 @@ func (h *Host) add(pkg Package) {
 }
 
 // Provision the host, i.e. execute all the commands contained in the packages registered with this host.
-func (h *Host) Provision(opts *ProvisionOptions) (e error) {
+func (h *Host) Provision() (e error) {
+	return h.provision(nil)
+}
+
+// Dryrun on all the commands that would be executed when the host would be provisioned.
+func (h *Host) ProvisionDryRun() (e error) {
+	return h.provision(&provisionOptions{DryRun: true})
+}
+
+func (h *Host) provision(opts *provisionOptions) (e error) {
 	sc := newSSHClient(h, opts)
 	return sc.provision()
 }

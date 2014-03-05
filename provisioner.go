@@ -13,7 +13,7 @@ import (
 type checksumTree map[string]map[string]struct{}
 
 // Options for the provisioner. Use nil, if nothing required.
-type ProvisionOptions struct {
+type provisionOptions struct {
 	// Verify which commands would be executed and which are cached.
 	DryRun bool
 }
@@ -21,19 +21,19 @@ type ProvisionOptions struct {
 type sshClient struct {
 	client           *gossh.Client
 	host             *Host
-	provisionOptions ProvisionOptions
+	provisionOptions *provisionOptions
 }
 
-func newSSHClient(host *Host, opts *ProvisionOptions) (client *sshClient) {
+func newSSHClient(host *Host, opts *provisionOptions) (client *sshClient) {
 	if opts == nil {
-		opts = &ProvisionOptions{}
+		opts = &provisionOptions{}
 	}
 	c := gossh.New(host.IP, host.user())
 	c.Port = host.Port
 	if host.Password != "" {
 		c.SetPassword(host.Password)
 	}
-	return &sshClient{host: host, client: c, provisionOptions: *opts}
+	return &sshClient{host: host, client: c, provisionOptions: opts}
 }
 
 func (sc *sshClient) provision() (e error) {
