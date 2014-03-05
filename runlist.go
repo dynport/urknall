@@ -15,10 +15,6 @@ type Runlist struct {
 	host *Host   // this is just for logging
 }
 
-func (rl *Runlist) Name() string {
-	return rl.name
-}
-
 // Add commands (can also be given as string) or packages (commands will be extracted and added accordingly) to the
 // runlist.
 func (rl *Runlist) Add(first interface{}, others ...interface{}) {
