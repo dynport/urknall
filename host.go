@@ -2,8 +2,36 @@ package urknall
 
 import (
 	"fmt"
+	"log"
 	"strings"
 )
+
+type rlStack struct {
+	data []string
+	size int
+}
+
+func (s *rlStack) Push(val string) {
+	switch {
+	case s.size < len(s.data):
+		s.data[s.size] = val
+	default:
+		s.data = append(s.data, val)
+	}
+	s.size += 1
+}
+
+func (s *rlStack) Pop() string {
+	if s.size > 0 {
+		s.size -= 1
+		return s.data[s.size]
+	}
+	return ""
+}
+
+func (s *rlStack) String() string {
+	return strings.Join(s.data[:s.size], ".")
+}
 
 // The host type, used to describe a host and define everything that should be provisioned on it.
 type Host struct {
@@ -17,6 +45,8 @@ type Host struct {
 
 	packageNames []string
 	runlists     []*Runlist
+
+	rlStack rlStack
 }
 
 // Get the user used to access the host. If none is given the "root" account is used as default.
@@ -27,22 +57,30 @@ func (h *Host) user() string {
 	return h.User
 }
 
-// Alias for the AddCommands methods.
-func (h *Host) Add(name string, cmds ...interface{}) {
-	h.AddCommands(name, cmds...)
-}
+// Add a new top level runlist ....
+func (h *Host) Add(name string, sth interface{}) {
+	h.rlStack.Push(name)
+	defer h.rlStack.Pop()
 
-// Register the list of given commands (either of the cmd.Command type or as string) as a package (without
-// configuration) with the given name.
-func (h *Host) AddCommands(name string, cmds ...interface{}) {
-	h.AddPackage(name, NewPackage(cmds...))
+	switch val := sth.(type) {
+	case string:
+		h.add(NewPackage(val))
+	case Package:
+		h.add(val)
+	case MultiPackage:
+		val.Apply(h)
+	default:
+		log.Printf("unknown type: %T", val)
+	}
 }
 
 // Add the given package with the given name to the host.
 //
 // The name is used as reference during provisioning and allows for provisioning the very same package in different
 // configuration (with different version for example). Package names must be unique.
-func (h *Host) AddPackage(name string, pkg Package) {
+func (h *Host) add(pkg Package) {
+	name := h.rlStack.String()
+
 	if strings.Contains(name, " ") {
 		panic(fmt.Sprintf(`package names must not contain spaces (%q does)`, name))
 	}

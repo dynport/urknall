@@ -8,6 +8,10 @@ import (
 	"github.com/dynport/dgtk/tagparse"
 )
 
+type MultiPackage interface {
+	Apply(host *Host)
+}
+
 // A "Package" is an entity that packs commands into a runlist, taking into account their own configuration.
 type Package interface {
 	Package(rl *Runlist) // Add the package specific commands to the runlist.
