@@ -163,19 +163,11 @@ func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
 		return nil
 	}
 
-	sCmd := fmt.Sprintf("bash <<EOF_RUNTASK\nset -xe\n%s\nEOF_RUNTASK\n", task.command.Shell())
-	for _, env := range sc.host.Env {
-		sCmd = env + " " + sCmd
-	}
-	if sc.host.isSudoRequired() {
-		sCmd = fmt.Sprintf("sudo -i %s", sCmd)
-	}
-
 	con, e := sc.client.Connection()
 	if e != nil {
 		return e
 	}
-	runner := &remoteTaskRunner{clientConn: con, cmd: sCmd, task: task, host: sc.host, dir: checksumDir}
+	runner := &remoteTaskRunner{clientConn: con, task: task, host: sc.host, dir: checksumDir}
 	return runner.run()
 }
 

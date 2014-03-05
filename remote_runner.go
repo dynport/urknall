@@ -3,21 +3,30 @@ package urknall
 import (
 	"bufio"
 	"bytes"
-	"code.google.com/p/go.crypto/ssh"
 	"fmt"
 	"io"
 	"log"
+	"strings"
 	"time"
+
+	"code.google.com/p/go.crypto/ssh"
 )
 
 type remoteTaskRunner struct {
-	cmd        string
 	dir        string
 	task       *taskData
 	host       *Host
 	clientConn *ssh.ClientConn
 
 	started time.Time
+}
+
+func (runner *remoteTaskRunner) baseCommand() string {
+	cmd := strings.Join(runner.host.Env, " ") + " bash -s -x -e"
+	if runner.host.isSudoRequired() {
+		cmd = "sudo " + cmd
+	}
+	return cmd
 }
 
 func (runner *remoteTaskRunner) run() error {
@@ -51,7 +60,25 @@ func (runner *remoteTaskRunner) run() error {
 	}
 	go runner.forwardStream(logs, "stderr", stderr, finishedChannel)
 
-	e = session.Run(runner.cmd)
+	stdin, e := session.StdinPipe()
+	if e != nil {
+		return e
+	}
+
+	e = session.Start(runner.baseCommand())
+
+	cmd := runner.task.Command().Shell()
+	if n, e := io.WriteString(stdin, cmd); e != nil {
+		return e
+	} else if n != len(cmd) {
+		return fmt.Errorf("failed to write complete string")
+	}
+	stdin.Close()
+
+	if e = session.Wait(); e != nil {
+		return e
+	}
+
 	// Command was executed. Close the logging channel (thereby closing the back-channel of the logs).
 	for len(finishedMap) > 0 {
 		select {
