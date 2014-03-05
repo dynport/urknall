@@ -67,7 +67,7 @@ func (h *Host) Add(name string, sth interface{}) {
 		h.add(newPackage(val))
 	case Package:
 		h.add(val)
-	case MultiPackage:
+	case Role:
 		val.Apply(h)
 	default:
 		log.Printf("unknown type: %T", val)

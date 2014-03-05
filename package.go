@@ -8,7 +8,7 @@ import (
 	"github.com/dynport/dgtk/tagparse"
 )
 
-type MultiPackage interface {
+type Role interface {
 	Apply(host *Host)
 }
 
