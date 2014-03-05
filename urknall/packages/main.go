@@ -10,7 +10,7 @@ func main() {
 	l := urknall.OpenStdoutLogger()
 	defer l.Close()
 	host := urknall.Host{IP: "127.0.0.1", User: "root"}
-	e := host.Provision(nil)
+	e := host.Provision()
 	if e != nil {
 		log.Fatal(e)
 	}

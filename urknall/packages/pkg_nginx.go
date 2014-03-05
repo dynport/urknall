@@ -52,7 +52,7 @@ func (pkg *Nginx) InstallPath() string {
 	return "/opt/nginx-" + pkg.Version
 }
 
-func (pkg *Nginx) WriteConfigCommand(b []byte) Command {
+func (pkg *Nginx) WriteConfigCommand(b []byte) urknall.Command {
 	return WriteFile(pkg.InstallPath()+"/conf/nginx.conf", string(b), "root", 0644)
 }
 

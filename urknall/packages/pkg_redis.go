@@ -31,7 +31,7 @@ func (p *Redis) Package(r *urknall.Runlist) {
 	)
 }
 
-func (p *Redis) WriteConfig(config string) Command {
+func (p *Redis) WriteConfig(config string) urknall.Command {
 	if e := urknall.InitializePackage(p); e != nil {
 		panic(e.Error())
 	}
