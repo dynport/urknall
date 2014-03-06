@@ -79,8 +79,8 @@ func (h *Host) ProvisionDryRun() (e error) {
 }
 
 func (h *Host) provision(opts *provisionOptions) (e error) {
-	sc := newSSHClient(h, opts)
-	return sc.provision()
+	prov := newProvisioner(h, opts)
+	return prov.provision()
 }
 
 // Predicate to test whether sudo is required (user for the host is not "root").

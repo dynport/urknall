@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/dynport/gossh"
 )
@@ -18,13 +17,13 @@ type provisionOptions struct {
 	DryRun bool
 }
 
-type sshClient struct {
-	client           *gossh.Client
+type provisioner struct {
+	sshClient        *gossh.Client
 	host             *Host
 	provisionOptions *provisionOptions
 }
 
-func newSSHClient(host *Host, opts *provisionOptions) (client *sshClient) {
+func newProvisioner(host *Host, opts *provisionOptions) (prov *provisioner) {
 	if opts == nil {
 		opts = &provisionOptions{}
 	}
@@ -33,28 +32,28 @@ func newSSHClient(host *Host, opts *provisionOptions) (client *sshClient) {
 	if host.Password != "" {
 		c.SetPassword(host.Password)
 	}
-	return &sshClient{host: host, client: c, provisionOptions: opts}
+	return &provisioner{host: host, sshClient: c, provisionOptions: opts}
 }
 
-func (sc *sshClient) provision() (e error) {
-	if e = sc.host.precompileRunlists(); e != nil {
+func (prov *provisioner) provision() (e error) {
+	if e = prov.host.precompileRunlists(); e != nil {
 		return e
 	}
 
-	if e = sc.prepareHost(); e != nil {
+	if e = prov.prepareHost(); e != nil {
 		return e
 	}
 
-	ct, e := sc.BuildChecksumTree()
+	ct, e := prov.BuildChecksumTree()
 	if e != nil {
 		return e
 	}
 
-	for i := range sc.host.runlists {
-		rl := sc.host.runlists[i]
+	for i := range prov.host.runlists {
+		rl := prov.host.runlists[i]
 		m := &Message{key: MessageRunlistsProvision, runlist: rl}
 		m.publish("started")
-		if e = sc.ProvisionRunlist(rl, ct); e != nil {
+		if e = prov.ProvisionRunlist(rl, ct); e != nil {
 			m.publishError(e)
 			return e
 		}
@@ -63,33 +62,33 @@ func (sc *sshClient) provision() (e error) {
 	return nil
 }
 
-func (sc *sshClient) prepareHost() (e error) {
-	con, e := sc.client.Connection()
+func (prov *provisioner) prepareHost() (e error) {
+	con, e := prov.sshClient.Connection()
 	if e != nil {
 		return e
 	}
 
-	if e := executeCommand(con, fmt.Sprintf(`grep "^%s:" /etc/group | grep %s`, ukGROUP, sc.host.user())); e != nil {
+	if e := executeCommand(con, fmt.Sprintf(`grep "^%s:" /etc/group | grep %s`, ukGROUP, prov.host.user())); e != nil {
 		// If user is missing the group, create group (if necessary), add user and restart ssh connection.
 		cmds := []string{
 			fmt.Sprintf(`{ grep -e '^%[1]s:' /etc/group > /dev/null || { groupadd %[1]s; }; }`, ukGROUP),
 			fmt.Sprintf(`{ [[ -d %[1]s ]] || { mkdir -p -m 2775 %[1]s && chgrp %[2]s %[1]s; }; }`, ukCACHEDIR, ukGROUP),
-			fmt.Sprintf("usermod -a -G %s %s", ukGROUP, sc.host.user()),
+			fmt.Sprintf("usermod -a -G %s %s", ukGROUP, prov.host.user()),
 		}
 
 		if e := executeCommand(con, fmt.Sprintf(`sudo bash -c "%s"`, strings.Join(cmds, " && "))); e != nil {
-			return fmt.Errorf("failed to initiate user %q for provisioning: %s", sc.host.user(), e)
+			return fmt.Errorf("failed to initiate user %q for provisioning: %s", prov.host.user(), e)
 		}
 
 		// Restarting the connection is required to make sure the user's new group is added properly.
-		sc.client.Conn.Close()
-		sc.client.Conn = nil
+		prov.sshClient.Conn.Close()
+		prov.sshClient.Conn = nil
 	}
 	return nil
 }
 
-func (sc *sshClient) ProvisionRunlist(rl *Runlist, ct checksumTree) (e error) {
-	tasks := sc.buildTasksForRunlist(rl)
+func (prov *provisioner) ProvisionRunlist(rl *Runlist, ct checksumTree) (e error) {
+	tasks := prov.buildTasksForRunlist(rl)
 
 	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", rl.name)
 
@@ -102,10 +101,10 @@ func (sc *sshClient) ProvisionRunlist(rl *Runlist, ct checksumTree) (e error) {
 		// Create checksum dir and set group bit (all new files will inherit the directory's group). This allows for
 		// different users (being part of that group) to create, modify and delete the contained checksum and log files.
 		createChecksumDirCmd := fmt.Sprintf("mkdir -m2775 -p %s", checksumDir)
-		if sc.host.isSudoRequired() {
+		if prov.host.isSudoRequired() {
 			createChecksumDirCmd = fmt.Sprintf(`sudo %s`, createChecksumDirCmd)
 		}
-		r, e := sc.client.Execute(createChecksumDirCmd)
+		r, e := prov.sshClient.Execute(createChecksumDirCmd)
 		if e != nil {
 			return fmt.Errorf(r.Stderr() + ": " + e.Error())
 		}
@@ -114,7 +113,7 @@ func (sc *sshClient) ProvisionRunlist(rl *Runlist, ct checksumTree) (e error) {
 	for i := range tasks {
 		task := tasks[i]
 		logMsg := task.command.Logging()
-		m := &Message{key: MessageRunlistsProvisionTask, task: task, message: logMsg, host: sc.host, runlist: rl}
+		m := &Message{key: MessageRunlistsProvisionTask, task: task, message: logMsg, host: prov.host, runlist: rl}
 		if _, found := checksumHash[task.checksum]; found { // Task is cached.
 			m.execStatus = statusCached
 			m.publish("finished")
@@ -123,14 +122,14 @@ func (sc *sshClient) ProvisionRunlist(rl *Runlist, ct checksumTree) (e error) {
 		}
 
 		if len(checksumHash) > 0 { // All remaining checksums are invalid, as something changed.
-			if e = sc.cleanUpRemainingCachedEntries(checksumDir, checksumHash); e != nil {
+			if e = prov.cleanUpRemainingCachedEntries(checksumDir, checksumHash); e != nil {
 				return e
 			}
 			checksumHash = make(map[string]struct{})
 		}
 		m.execStatus = statusExecStart
 		m.publish("started")
-		e = sc.runTask(task, checksumDir)
+		e = prov.runTask(task, checksumDir)
 		m.error_ = e
 		m.execStatus = statusExecFinished
 		m.publish("finished")
@@ -142,39 +141,23 @@ func (sc *sshClient) ProvisionRunlist(rl *Runlist, ct checksumTree) (e error) {
 	return nil
 }
 
-func newDebugWriter(host *Host, task *taskData) func(i ...interface{}) {
-	started := time.Now()
-	return func(i ...interface{}) {
-		parts := strings.SplitN(fmt.Sprint(i...), "\t", 3)
-		if len(parts) == 3 {
-			stream, line := parts[1], parts[2]
-			var runlist *Runlist = nil
-			if task != nil {
-				runlist = task.runlist
-			}
-			m := &Message{key: "task.io", host: host, stream: stream, task: task, line: line, runlist: runlist, totalRuntime: time.Now().Sub(started)}
-			m.publish(stream)
-		}
-	}
-}
-
-func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
-	if sc.provisionOptions.DryRun {
+func (prov *provisioner) runTask(task *taskData, checksumDir string) (e error) {
+	if prov.provisionOptions.DryRun {
 		return nil
 	}
 
-	con, e := sc.client.Connection()
+	con, e := prov.sshClient.Connection()
 	if e != nil {
 		return e
 	}
-	runner := &remoteTaskRunner{clientConn: con, task: task, host: sc.host, dir: checksumDir}
+	runner := &remoteTaskRunner{clientConn: con, task: task, host: prov.host, dir: checksumDir}
 	return runner.run()
 }
 
-func (sc *sshClient) BuildChecksumTree() (ct checksumTree, e error) {
+func (prov *provisioner) BuildChecksumTree() (ct checksumTree, e error) {
 	ct = checksumTree{}
 
-	rsp, e := sc.client.Execute(fmt.Sprintf(`[[ -d %[1]s ]] && find %[1]s -type f -name \*.done`, ukCACHEDIR))
+	rsp, e := prov.sshClient.Execute(fmt.Sprintf(`[[ -d %[1]s ]] && find %[1]s -type f -name \*.done`, ukCACHEDIR))
 	if e != nil {
 		return nil, e
 	}
@@ -198,18 +181,18 @@ func (sc *sshClient) BuildChecksumTree() (ct checksumTree, e error) {
 	return ct, nil
 }
 
-func (sc *sshClient) cleanUpRemainingCachedEntries(checksumDir string, checksumHash map[string]struct{}) (e error) {
+func (prov *provisioner) cleanUpRemainingCachedEntries(checksumDir string, checksumHash map[string]struct{}) (e error) {
 	invalidCacheEntries := make([]string, 0, len(checksumHash))
 	for k, _ := range checksumHash {
 		invalidCacheEntries = append(invalidCacheEntries, fmt.Sprintf("%s.done", k))
 	}
-	if sc.provisionOptions.DryRun {
-		(&Message{key: MessageCleanupCacheEntries, invalidatedCachentries: invalidCacheEntries, host: sc.host}).publish(".dryrun")
+	if prov.provisionOptions.DryRun {
+		(&Message{key: MessageCleanupCacheEntries, invalidatedCachentries: invalidCacheEntries, host: prov.host}).publish(".dryrun")
 	} else {
 		cmd := fmt.Sprintf("cd %s && rm -f *.failed %s", checksumDir, strings.Join(invalidCacheEntries, " "))
-		m := &Message{command: cmd, host: sc.host, key: MessageUrknallInternal}
+		m := &Message{command: cmd, host: prov.host, key: MessageUrknallInternal}
 		m.publish("started")
-		result, _ := sc.client.Execute(cmd)
+		result, _ := prov.sshClient.Execute(cmd)
 		m.sshResult = result
 		m.publish("finished")
 	}
@@ -226,7 +209,7 @@ func (data *taskData) Command() Command {
 	return data.command
 }
 
-func (sc *sshClient) buildTasksForRunlist(rl *Runlist) (tasks []*taskData) {
+func (prov *provisioner) buildTasksForRunlist(rl *Runlist) (tasks []*taskData) {
 	tasks = make([]*taskData, 0, len(rl.commands))
 
 	cmdHash := sha256.New()
