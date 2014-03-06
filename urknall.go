@@ -54,6 +54,7 @@ func ProvisionMulti(hosts ...*Host) (elist []error) {
 	}
 
 	wg.Wait()
+	close(eChannel)
 
 	for e := range eChannel {
 		elist = append(elist, e)
