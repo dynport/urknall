@@ -2,6 +2,7 @@ package urknall
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 )
 
@@ -37,12 +38,17 @@ func (h *Host) Add(name string, sth interface{}) {
 	switch val := sth.(type) {
 	case string:
 		h.add(newPackage(val))
+	case Command:
+		h.add(newPackage(val))
 	case Package:
 		h.add(val)
 	case Role:
 		val.Apply(h)
 	default:
-		panic(fmt.Sprintf("unknown something given to host.Add: %T", val))
+		if reflect.ValueOf(val).Kind() != reflect.Ptr {
+			panic(fmt.Sprintf("value %T not a pointer (see http://golang.org/doc/faq#different_method_sets)", val))
+		}
+		panic(fmt.Sprintf("invalid type (doesn't implement Command, Package, or Role interface): %T", val))
 	}
 }
 
