@@ -29,11 +29,7 @@
 // executed, i.e. a dry run.
 package urknall
 
-import (
-	"sync"
-
-	"github.com/dynport/urknall"
-)
+import "sync"
 
 func Provision(host *Host) (e error) {
 	prov := newProvisioner(host, nil)
@@ -46,7 +42,7 @@ func ProvisionMulti(hosts ...*Host) (elist []error) {
 	eChannel := make(chan error, len(hosts))
 	for _, host := range hosts {
 		wg.Add(1)
-		go func(wg *sync.WaitGroup, eChannel chan<- error, host *urknall.Host) {
+		go func(wg *sync.WaitGroup, eChannel chan<- error, host *Host) {
 			defer wg.Done()
 
 			prov := newProvisioner(host, nil)
@@ -67,6 +63,6 @@ func ProvisionMulti(hosts ...*Host) (elist []error) {
 }
 
 func ProvisionDryRun(host *Host) (e error) {
-	prov := newProvisioner(h, &provisionOptions{DryRun: true})
+	prov := newProvisioner(host, &provisionOptions{DryRun: true})
 	return prov.provision()
 }
