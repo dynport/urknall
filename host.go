@@ -2,7 +2,6 @@ package urknall
 
 import (
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -43,7 +42,7 @@ func (h *Host) Add(name string, sth interface{}) {
 	case Role:
 		val.Apply(h)
 	default:
-		log.Printf("unknown type: %T", val)
+		panic(fmt.Sprintf("unknown something given to host.Add: %T", val))
 	}
 }
 
