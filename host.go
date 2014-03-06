@@ -68,21 +68,6 @@ func (h *Host) add(pkg Package) {
 	h.runlists = append(h.runlists, &Runlist{name: name, pkg: pkg, host: h})
 }
 
-// Provision the host, i.e. execute all the commands contained in the packages registered with this host.
-func (h *Host) Provision() (e error) {
-	return h.provision(nil)
-}
-
-// Dryrun on all the commands that would be executed when the host would be provisioned.
-func (h *Host) ProvisionDryRun() (e error) {
-	return h.provision(&provisionOptions{DryRun: true})
-}
-
-func (h *Host) provision(opts *provisionOptions) (e error) {
-	prov := newProvisioner(h, opts)
-	return prov.provision()
-}
-
 // Predicate to test whether sudo is required (user for the host is not "root").
 func (h *Host) isSudoRequired() bool {
 	if h.User != "" && h.User != "root" {
