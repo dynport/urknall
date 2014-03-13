@@ -8,6 +8,7 @@ import (
 
 	"github.com/dynport/gossh"
 	"github.com/dynport/urknall/cmd"
+	"github.com/dynport/urknall/pubsub"
 )
 
 type checksumTree map[string]map[string]struct{}
@@ -52,13 +53,13 @@ func (prov *provisioner) provision() (e error) {
 
 	for i := range prov.host.runlists {
 		rl := prov.host.runlists[i]
-		m := &Message{key: MessageRunlistsProvision, runlist: rl}
-		m.publish("started")
+		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvision, RunlistName: rl.name}
+		m.Publish("started")
 		if e = prov.ProvisionRunlist(rl, ct); e != nil {
-			m.publishError(e)
+			m.PublishError(e)
 			return e
 		}
-		m.publish("finished")
+		m.Publish("finished")
 	}
 	return nil
 }
@@ -114,10 +115,10 @@ func (prov *provisioner) ProvisionRunlist(rl *Runlist, ct checksumTree) (e error
 	for i := range tasks {
 		task := tasks[i]
 		logMsg := task.command.Logging()
-		m := &Message{key: MessageRunlistsProvisionTask, task: task, message: logMsg, host: prov.host, runlist: rl}
+		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvisionTask, Task: task.Command().Logging(), Message: logMsg, HostIP: prov.host.IP, RunlistName: rl.name}
 		if _, found := checksumHash[task.checksum]; found { // Task is cached.
-			m.execStatus = statusCached
-			m.publish("finished")
+			m.ExecStatus = pubsub.StatusCached
+			m.Publish("finished")
 			delete(checksumHash, task.checksum) // Delete checksums of cached tasks from hash.
 			continue
 		}
@@ -128,12 +129,12 @@ func (prov *provisioner) ProvisionRunlist(rl *Runlist, ct checksumTree) (e error
 			}
 			checksumHash = make(map[string]struct{})
 		}
-		m.execStatus = statusExecStart
-		m.publish("started")
+		m.ExecStatus = pubsub.StatusExecStart
+		m.Publish("started")
 		e = prov.runTask(task, checksumDir)
-		m.error_ = e
-		m.execStatus = statusExecFinished
-		m.publish("finished")
+		m.Error_ = e
+		m.ExecStatus = pubsub.StatusExecFinished
+		m.Publish("finished")
 		if e != nil {
 			return e
 		}
@@ -188,14 +189,14 @@ func (prov *provisioner) cleanUpRemainingCachedEntries(checksumDir string, check
 		invalidCacheEntries = append(invalidCacheEntries, fmt.Sprintf("%s.done", k))
 	}
 	if prov.provisionOptions.DryRun {
-		(&Message{key: MessageCleanupCacheEntries, invalidatedCachentries: invalidCacheEntries, host: prov.host}).publish(".dryrun")
+		(&pubsub.Message{Key: pubsub.MessageCleanupCacheEntries, InvalidatedCachentries: invalidCacheEntries, HostIP: prov.host.IP}).Publish(".dryrun")
 	} else {
 		cmd := fmt.Sprintf("cd %s && rm -f *.failed %s", checksumDir, strings.Join(invalidCacheEntries, " "))
-		m := &Message{command: cmd, host: prov.host, key: MessageUrknallInternal}
-		m.publish("started")
+		m := &pubsub.Message{Command: cmd, HostIP: prov.host.IP, Key: pubsub.MessageUrknallInternal}
+		m.Publish("started")
 		result, _ := prov.sshClient.Execute(cmd)
-		m.sshResult = result
-		m.publish("finished")
+		m.SshResult = result
+		m.Publish("finished")
 	}
 	return nil
 }

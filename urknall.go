@@ -29,7 +29,18 @@
 // executed, i.e. a dry run.
 package urknall
 
-import "sync"
+import (
+	"io"
+	"sync"
+
+	"github.com/dynport/urknall/pubsub"
+)
+
+// Create a logging facility for urknall using urknall's default formatter.
+// Note that this resource must be closed afterwards!
+func OpenStdoutLogger() io.Closer {
+	return pubsub.OpenStdoutLogger()
+}
 
 func Provision(host *Host) (e error) {
 	prov := newProvisioner(host, nil)

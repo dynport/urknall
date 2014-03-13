@@ -6,6 +6,7 @@ import (
 	"runtime/debug"
 
 	"github.com/dynport/urknall/cmd"
+	"github.com/dynport/urknall/pubsub"
 )
 
 // A runlist is a container for commands. Use the following methods to add new commands.
@@ -63,8 +64,8 @@ func (rl *Runlist) addCommand(c cmd.Command) {
 }
 
 func (rl *Runlist) compile() (e error) {
-	m := &Message{runlist: rl, host: rl.host, key: MessageRunlistsPrecompile}
-	m.publish("started")
+	m := &pubsub.Message{RunlistName: rl.name, HostIP: rl.host.IP, Key: pubsub.MessageRunlistsPrecompile}
+	m.Publish("started")
 	defer func() {
 		if r := recover(); r != nil {
 			var ok bool
@@ -72,9 +73,9 @@ func (rl *Runlist) compile() (e error) {
 			if !ok {
 				e = fmt.Errorf("failed to precompile package %q: %s", rl.name, r)
 			}
-			m.error_ = e
-			m.stack = string(debug.Stack())
-			m.publish("panic")
+			m.Error_ = e
+			m.Stack = string(debug.Stack())
+			m.Publish("panic")
 			log.Printf("ERROR: %s", r)
 			log.Print(string(debug.Stack()))
 		}
@@ -84,6 +85,6 @@ func (rl *Runlist) compile() (e error) {
 		return e
 	}
 	rl.pkg.Package(rl)
-	m.publish("finished")
+	m.Publish("finished")
 	return nil
 }

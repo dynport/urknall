@@ -1,4 +1,4 @@
-package urknall
+package pubsub
 
 import (
 	"errors"
@@ -19,8 +19,8 @@ const (
 )
 
 var colorMapping = map[string]int{
-	statusCached:       colorCached,
-	statusExecFinished: colorExec,
+	StatusCached:       colorCached,
+	StatusExecFinished: colorExec,
 }
 
 var IgnoredMessagesError = errors.New("ignored published messages (subscriber buffer full)")
@@ -52,8 +52,8 @@ func (logger *stdoutLogger) Started() time.Time {
 }
 
 func (logger *stdoutLogger) formatCommandOuput(message *Message) string {
-	prefix := fmt.Sprintf("[%s][%s][%s]", formatIp(message.HostIP()), formatRunlistName(message.RunlistName()), formatDuration(logger.sinceStarted()))
-	line := message.line
+	prefix := fmt.Sprintf("[%s][%s][%s]", formatIp(message.HostIP), formatRunlistName(message.RunlistName), formatDuration(logger.sinceStarted()))
+	line := message.Line
 	if message.IsStderr() {
 		line = gocli.Red(line)
 	}
@@ -69,21 +69,21 @@ type formatter func(urknallMessage *Message) string
 func (logger *stdoutLogger) DefaultFormatter(message *Message) string {
 	ignoreKeys := []string{MessageRunlistsPrecompile, MessageCleanupCacheEntries, MessageRunlistsProvision, MessageUrknallInternal}
 	for _, k := range ignoreKeys {
-		if strings.HasPrefix(message.Key(), k) {
+		if strings.HasPrefix(message.Key, k) {
 			return ""
 		}
 	}
-	if len(message.line) > 0 {
+	if len(message.Line) > 0 {
 		return logger.formatCommandOuput(message)
 	}
-	ip := message.HostIP()
-	runlistName := message.RunlistName()
+	ip := message.HostIP
+	runlistName := message.RunlistName
 	payload := ""
-	if message.task != nil {
-		payload = message.task.Command().Logging()
+	if message.Task != "" {
+		payload = message.Task
 	}
-	execStatus := fmt.Sprintf("%-8s", message.execStatus)
-	if color := colorMapping[message.execStatus]; color > 0 {
+	execStatus := fmt.Sprintf("%-8s", message.ExecStatus)
+	if color := colorMapping[message.ExecStatus]; color > 0 {
 		execStatus = gocli.Colorize(color, execStatus)
 	}
 	parts := []string{
