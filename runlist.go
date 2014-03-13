@@ -2,8 +2,6 @@ package urknall
 
 import (
 	"fmt"
-	"log"
-	"runtime/debug"
 
 	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/pubsub"
@@ -64,20 +62,12 @@ func (rl *Runlist) addCommand(c cmd.Command) {
 }
 
 func (rl *Runlist) compile() (e error) {
-	m := &pubsub.Message{RunlistName: rl.name, HostIP: rl.host.IP, Key: pubsub.MessageRunlistsPrecompile}
+	m := message(pubsub.MessageRunlistsPrecompile, rl.host, rl)
 	m.Publish("started")
 	defer func() {
 		if r := recover(); r != nil {
-			var ok bool
-			e, ok = r.(error)
-			if !ok {
-				e = fmt.Errorf("failed to precompile package %q: %s", rl.name, r)
-			}
-			m.Error_ = e
-			m.Stack = string(debug.Stack())
-			m.Publish("panic")
-			log.Printf("ERROR: %s", r)
-			log.Print(string(debug.Stack()))
+			e = fmt.Errorf("failed to precompile package %q: %s", rl.name, r)
+			m.PublishPanic(e)
 		}
 	}()
 

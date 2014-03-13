@@ -1,6 +1,7 @@
 package pubsub
 
 import (
+	"runtime"
 	"sync"
 	"time"
 
@@ -41,33 +42,35 @@ const (
 	MessageRunlistsProvisionTask = "urknall.runlists.provision.task"
 )
 
-// Urknall uses the github.com/dynport/dgtk/pubsub package for logging (a publisher-subscriber pattern where defined
-// messages are sent to subscribers). This is the message type urknall will send out. If you handle logging yourself
-// this type provides the required information.
+// Urknall uses the http://github.com/dynport/dgtk/pubsub package for logging (a publisher-subscriber pattern where
+// defined messages are sent to subscribers). This is the message type urknall will send out. If you handle logging
+// yourself this type provides the required information. Please note that this message is sent in different context's
+// and not all fields will be set all the time.
 type Message struct {
-	Key string
+	Key string // Key the message is sent with.
 
-	DryRun     bool
-	ExecStatus string
-	Cached     bool
-	Message    string
+	ExecStatus string // Urknall status (executed or cached).
+	Message    string // The message to be logged.
 
-	HostIP      string
-	Task        string
-	RunlistName string
+	HostIP string // IP of the host a command is run.
 
-	PublishedAt time.Time
-	StartedAt   time.Time
+	RunlistName  string // Name of the runlist currently being executed.
+	TaskChecksum string // Hash of an runlist action.
 
-	Duration               time.Duration
-	TotalRuntime           time.Duration
-	SshResult              *gossh.Result
-	Line                   string
-	Stream                 string
-	Command                string
-	InvalidatedCachentries []string
-	Error_                 error
-	Stack                  string
+	PublishedAt  time.Time     // When was the message published.
+	StartedAt    time.Time     // When was the message created.
+	Duration     time.Duration // How long did the action take (delta from message creation and publishing).
+	TotalRuntime time.Duration // Timeframe of the action (might be larger than the message's).
+
+	SshResult *gossh.Result // Result of an ssh call.
+
+	Stream string // Stream a line appeared on.
+	Line   string // Line that appeared on a stream.
+
+	InvalidatedCacheEntries []string // List of invalidated cache entries (urknall caching).
+
+	Error error  // Error that occured.
+	Stack string // The stack trace in case of a panic.
 }
 
 // Predicated to verify whether the given message was sent via stderr.
@@ -76,8 +79,19 @@ func (message *Message) IsStderr() bool {
 }
 
 func (message Message) PublishError(e error) {
-	message.Error_ = e
+	message.Error = e
 	message.Publish("error")
+}
+
+func (message *Message) PublishPanic(e error) {
+	var buf []byte
+	for read, size := 1024, 1024; read == size; read = runtime.Stack(buf, false) {
+		buf = make([]byte, 2*size)
+	}
+
+	message.Stack = string(buf)
+	message.Error = e
+	message.Publish("panic")
 }
 
 func (message Message) Publish(key string) {

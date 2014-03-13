@@ -53,7 +53,7 @@ func (prov *provisioner) provision() (e error) {
 
 	for i := range prov.host.runlists {
 		rl := prov.host.runlists[i]
-		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvision, RunlistName: rl.name}
+		m := message(pubsub.MessageRunlistsProvision, prov.host, rl)
 		m.Publish("started")
 		if e = prov.ProvisionRunlist(rl, ct); e != nil {
 			m.PublishError(e)
@@ -114,8 +114,9 @@ func (prov *provisioner) ProvisionRunlist(rl *Runlist, ct checksumTree) (e error
 
 	for i := range tasks {
 		task := tasks[i]
-		logMsg := task.command.Logging()
-		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvisionTask, Task: task.Command().Logging(), Message: logMsg, HostIP: prov.host.IP, RunlistName: rl.name}
+		m := message(pubsub.MessageRunlistsProvisionTask, prov.host, rl)
+		m.TaskChecksum = task.checksum
+		m.Message = task.command.Logging()
 		if _, found := checksumHash[task.checksum]; found { // Task is cached.
 			m.ExecStatus = pubsub.StatusCached
 			m.Publish("finished")
@@ -132,12 +133,12 @@ func (prov *provisioner) ProvisionRunlist(rl *Runlist, ct checksumTree) (e error
 		m.ExecStatus = pubsub.StatusExecStart
 		m.Publish("started")
 		e = prov.runTask(task, checksumDir)
-		m.Error_ = e
-		m.ExecStatus = pubsub.StatusExecFinished
-		m.Publish("finished")
 		if e != nil {
+			m.PublishError(e)
 			return e
 		}
+		m.ExecStatus = pubsub.StatusExecFinished
+		m.Publish("finished")
 	}
 
 	return nil
@@ -189,10 +190,13 @@ func (prov *provisioner) cleanUpRemainingCachedEntries(checksumDir string, check
 		invalidCacheEntries = append(invalidCacheEntries, fmt.Sprintf("%s.done", k))
 	}
 	if prov.provisionOptions.DryRun {
-		(&pubsub.Message{Key: pubsub.MessageCleanupCacheEntries, InvalidatedCachentries: invalidCacheEntries, HostIP: prov.host.IP}).Publish(".dryrun")
+		m := message(pubsub.MessageCleanupCacheEntries, prov.host, nil)
+		m.InvalidatedCacheEntries = invalidCacheEntries
+		m.Publish("dryrun")
 	} else {
 		cmd := fmt.Sprintf("cd %s && rm -f *.failed %s", checksumDir, strings.Join(invalidCacheEntries, " "))
-		m := &pubsub.Message{Command: cmd, HostIP: prov.host.IP, Key: pubsub.MessageUrknallInternal}
+		m := message(pubsub.MessageUrknallInternal, prov.host, nil)
+		m.Message = cmd
 		m.Publish("started")
 		result, _ := prov.sshClient.Execute(cmd)
 		m.SshResult = result

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"code.google.com/p/go.crypto/ssh"
-	"github.com/dynport/urknall/pubsub"
 )
 
 type remoteTaskRunner struct {
@@ -131,10 +130,15 @@ func logError(e error) {
 }
 
 func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, r io.Reader, finished chan string) {
+	m := message("task.io", runner.host, runner.task.runlist)
+	m.Message = runner.task.Command().Logging()
+	m.Stream = stream
+
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		line := scanner.Text()
-		m := &pubsub.Message{Key: "task.io", HostIP: runner.host.IP, Stream: stream, Task: runner.task.Command().Logging(), Line: line, RunlistName: runner.task.runlist.name, TotalRuntime: time.Since(runner.started)}
+		m.Line = line
+		m.TotalRuntime = time.Since(runner.started)
 		m.Publish(stream)
 		logs <- time.Now().UTC().Format(time.RFC3339Nano) + "\t" + stream + "\t" + scanner.Text()
 	}

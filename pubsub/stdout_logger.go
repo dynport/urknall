@@ -79,8 +79,8 @@ func (logger *stdoutLogger) DefaultFormatter(message *Message) string {
 	ip := message.HostIP
 	runlistName := message.RunlistName
 	payload := ""
-	if message.Task != "" {
-		payload = message.Task
+	if message.Message != "" {
+		payload = message.Message
 	}
 	execStatus := fmt.Sprintf("%-8s", message.ExecStatus)
 	if color := colorMapping[message.ExecStatus]; color > 0 {
