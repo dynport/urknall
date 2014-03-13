@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/dynport/gossh"
+	"github.com/dynport/urknall/cmd"
 )
 
 type checksumTree map[string]map[string]struct{}
@@ -200,12 +201,12 @@ func (prov *provisioner) cleanUpRemainingCachedEntries(checksumDir string, check
 }
 
 type taskData struct {
-	command  Command // The command to be executed.
-	checksum string  // The checksum of the command.
+	command  cmd.Command // The command to be executed.
+	checksum string      // The checksum of the command.
 	runlist  *Runlist
 }
 
-func (data *taskData) Command() Command {
+func (data *taskData) Command() cmd.Command {
 	return data.command
 }
 

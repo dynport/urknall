@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"log"
 	"runtime/debug"
+
+	"github.com/dynport/urknall/cmd"
 )
 
 // A runlist is a container for commands. Use the following methods to add new commands.
 type Runlist struct {
-	commands []Command
+	commands []cmd.Command
 
 	name string  // Name of the compilable.
 	pkg  Package // only used for rendering templates
@@ -24,7 +26,7 @@ func (rl *Runlist) Add(cmds ...interface{}) {
 			// No explicit expansion required as the function is called recursively with a ShellCommand type, that has
 			// explicitly renders the template.
 			rl.addCommand(&stringCommand{cmd: t})
-		case Command:
+		case cmd.Command:
 			rl.addCommand(t)
 		case Package:
 			rl.addPackage(t)
@@ -46,12 +48,12 @@ func (rl *Runlist) addPackage(p Package) {
 }
 
 // Add the given command to the runlist.
-func (rl *Runlist) addCommand(c Command) {
+func (rl *Runlist) addCommand(c cmd.Command) {
 	if rl.pkg != nil {
-		if renderer, ok := c.(CommandRenderer); ok {
+		if renderer, ok := c.(cmd.Renderer); ok {
 			renderer.Render(rl.pkg)
 		}
-		if validator, ok := c.(CommandValidator); ok {
+		if validator, ok := c.(cmd.Validator); ok {
 			if e := validator.Validate(); e != nil {
 				panic(e.Error())
 			}

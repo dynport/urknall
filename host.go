@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/dynport/urknall/cmd"
 )
 
 // The host type, used to describe a host and define everything that should be provisioned on it.
@@ -38,7 +40,7 @@ func (h *Host) Add(name string, sth interface{}) {
 	switch val := sth.(type) {
 	case string:
 		h.add(newPackage(val))
-	case Command:
+	case cmd.Command:
 		h.add(newPackage(val))
 	case Package:
 		h.add(val)

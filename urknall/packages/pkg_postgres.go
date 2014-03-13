@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/dynport/urknall"
+	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/utils"
 )
 
@@ -37,7 +38,7 @@ func (p *Postgres) InstallDir() string {
 	return "/opt/postgresql-" + p.Version
 }
 
-func (pkg *Postgres) InitDbCommand() urknall.Command {
+func (pkg *Postgres) InitDbCommand() cmd.Command {
 	return And(
 		Mkdir(pkg.DataDir, pkg.User(), 0755),
 		"su -l "+pkg.User()+" -c '"+pkg.InstallDir()+"/bin/initdb -D "+pkg.DataDir+" -E utf8 --auth-local=trust'",
@@ -78,7 +79,7 @@ func (pkg *Postgres) CreateUserCommand(user *PostgresUser) string {
 	return pkg.InstallDir() + "/bin/" + `psql -U postgres -c "` + user.CreateCommand() + `"`
 }
 
-func (pkg *Postgres) UpstartExecCommand() urknall.Command {
+func (pkg *Postgres) UpstartExecCommand() cmd.Command {
 	return WriteFile("/etc/init/postgres.conf", utils.MustRenderTemplate(postgresUpstart, pkg), "root", 0644)
 }
 

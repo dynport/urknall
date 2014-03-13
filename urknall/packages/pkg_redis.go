@@ -1,6 +1,9 @@
 package main
 
-import "github.com/dynport/urknall"
+import (
+	"github.com/dynport/urknall"
+	"github.com/dynport/urknall/cmd"
+)
 
 func NewRedis(version string) *Redis {
 	return &Redis{Version: version}
@@ -31,7 +34,7 @@ func (p *Redis) Package(r *urknall.Runlist) {
 	)
 }
 
-func (p *Redis) WriteConfig(config string) urknall.Command {
+func (p *Redis) WriteConfig(config string) cmd.Command {
 	if e := urknall.InitializePackage(p); e != nil {
 		panic(e.Error())
 	}

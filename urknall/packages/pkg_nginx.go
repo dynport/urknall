@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/dynport/urknall"
+	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/utils"
 )
 
@@ -52,7 +53,7 @@ func (pkg *Nginx) InstallPath() string {
 	return "/opt/nginx-" + pkg.Version
 }
 
-func (pkg *Nginx) WriteConfigCommand(b []byte) urknall.Command {
+func (pkg *Nginx) WriteConfigCommand(b []byte) cmd.Command {
 	return WriteFile(pkg.InstallPath()+"/conf/nginx.conf", string(b), "root", 0644)
 }
 
