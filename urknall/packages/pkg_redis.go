@@ -35,9 +35,6 @@ func (p *Redis) Package(r *urknall.Runlist) {
 }
 
 func (p *Redis) WriteConfig(config string) cmd.Command {
-	if e := urknall.InitializePackage(p); e != nil {
-		panic(e.Error())
-	}
 	return WriteFile("/etc/redis.conf", config, "root", 0644)
 }
 

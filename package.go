@@ -38,11 +38,6 @@ func NewPackage(cmds ...interface{}) Package {
 	return &anonymousPackage{cmds: cmds}
 }
 
-// Initialize the given struct reading, interpreting and validating the 'urknall' annotations given with the type.
-func InitializePackage(pkg interface{}) error {
-	return validatePackage(pkg)
-}
-
 func validatePackage(pkg interface{}) error {
 	v := reflect.ValueOf(pkg)
 	if v.Kind() == reflect.Ptr {
