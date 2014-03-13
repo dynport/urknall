@@ -39,9 +39,9 @@ func (h *Host) Add(name string, sth interface{}) {
 
 	switch val := sth.(type) {
 	case string:
-		h.add(newPackage(val))
+		h.add(NewPackage(val))
 	case cmd.Command:
-		h.add(newPackage(val))
+		h.add(NewPackage(val))
 	case Package:
 		h.add(val)
 	case Role:
