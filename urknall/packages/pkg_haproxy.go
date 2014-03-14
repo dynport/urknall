@@ -51,13 +51,23 @@ env BIN_PATH={{ .InstallPath }}/sbin/haproxy
 
 script
 exec /bin/bash <<EOF
-  $BIN_PATH -f /etc/haproxy.cfg -D -p $PID_PATH
 
-  trap "$BIN_PATH -f /etc/haproxy.cfg -p $PID_PATH -D -sf \$(cat $PID_PATH)" SIGHUP
-  trap "kill -TERM \$(cat $PID_PATH) && exit 0" SIGTERM SIGINT
+reload() {
+  $BIN_PATH -f /etc/haproxy.cfg -p $PID_PATH -D -sf \$(cat $PID_PATH)
+}
 
-  while true; do # Iterate to keep job running.
-    sleep 1 # Don't sleep to long as signals will not be handled during sleep.
-  done
+stop() {
+  kill -TERM \$(cat $PID_PATH)
+  exit 0
+}
+
+trap 'reload' SIGHUP
+trap 'stop' SIGTERM SIGINT
+
+$BIN_PATH -f /etc/haproxy.cfg -D -p $PID_PATH
+
+while true; do # Iterate to keep job running.
+  sleep 1 # Don't sleep to long as signals will not be handled during sleep.
+done
 EOF
 end script`
