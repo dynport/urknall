@@ -16,7 +16,7 @@ type remoteTaskRunner struct {
 	dir        string
 	task       *taskData
 	host       *Host
-	clientConn *ssh.ClientConn
+	clientConn *ssh.Client
 
 	started time.Time
 }
@@ -110,7 +110,7 @@ func (runner *remoteTaskRunner) writeChecksumFile(prefix string, e error) {
 	_ = executeCommand(runner.clientConn, cmd)
 }
 
-func executeCommand(con *ssh.ClientConn, cmd string) error {
+func executeCommand(con *ssh.Client, cmd string) error {
 	ses, e := con.NewSession()
 	if e != nil {
 		return e
