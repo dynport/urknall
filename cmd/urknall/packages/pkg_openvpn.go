@@ -153,7 +153,7 @@ export PKCS11_PIN=1234
 
 func (u *OpenVpnUser) Package(r *urknall.Runlist) {
 	r.Add(
-		addUser,
+		addVpnUser,
 		openVpnPackagePath+" "+u.Login,
 	)
 }
@@ -164,7 +164,7 @@ type OpenVpnUser struct {
 	Email string `urknall:"required=true"`
 }
 
-const addUser = `bash -xe <<EOF
+const addVpnUser = `bash -xe <<EOF
 cd /etc/openvpn/easy-rsa
 source ./vars
 export KEY_EMAIL="{{ .Email }}"
