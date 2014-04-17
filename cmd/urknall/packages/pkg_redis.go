@@ -107,7 +107,7 @@ type RedisUpstart struct {
 
 func (u *RedisUpstart) Package(r *urknall.Runlist) {
 	r.Add(
-		WriteFile("/etc/init/{{ .Name }}.conf", upstart, "root", 0644),
+		WriteFile("/etc/init/{{ .Name }}.conf", redisUpstart, "root", 0644),
 	)
 	return
 }
