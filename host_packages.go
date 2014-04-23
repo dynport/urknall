@@ -8,7 +8,7 @@ func newRunlist(name string, pkg Packager, host *Host) *Package {
 	return &Package{name: name, pkg: pkg, host: host}
 }
 
-func (h *Host) buildSystemRunlists() {
+func (h *PackageList) buildSystemRunlists() {
 	if h.Hostname != "" {
 		h.addSystemPackage("hostname",
 			h.newHostPackage(
@@ -45,8 +45,8 @@ type hostPackage struct {
 	cmds []interface{}
 }
 
-func (h *Host) newHostPackage(cmds ...interface{}) *hostPackage {
-	return &hostPackage{Host: h, cmds: cmds}
+func (h *PackageList) newHostPackage(cmds ...interface{}) *hostPackage {
+	return &hostPackage{Host: nil, cmds: cmds}
 }
 
 func (h *hostPackage) Interface() string {

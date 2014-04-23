@@ -2,7 +2,6 @@ package urknall
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/dynport/urknall/fw"
 )
@@ -37,9 +36,6 @@ type Host struct {
 	Firewall fw.Firewall // List of rules used for the firewall.
 	IPSets   []*fw.IPSet // List of ipsets for the firewall.
 
-	packageNames   []string
-	userRunlists   []*Package
-	systemRunlists []*Package
 }
 
 // Get the user used to access the host. If none is given the "root" account is as default.
@@ -58,61 +54,11 @@ func (h *Host) publicInterface() string {
 	return h.Interface
 }
 
-// Alias for the AddCommands methods.
-func (h *Host) Add(name string, cmd interface{}, cmds ...interface{}) {
-	h.AddCommands(name, cmd, cmds...)
-}
-
-// Register the list of given commands (either of the cmd.Command type or as string) as a package (without
-// configuration) with the given name.
-func (h *Host) AddCommands(name string, cmd interface{}, cmds ...interface{}) {
-	cmdList := append([]interface{}{cmd}, cmds...)
-	h.AddPackage(name, NewPackage(cmdList...))
-}
-
-// Add the given package with the given name to the host.
-//
-// The name is used as reference during provisioning and allows for provisioning the very same package in different
-// configuration (with different version for example). Package names must be unique and the "uk." prefix is reserved for
-// urknall internal packages.
-func (h *Host) AddPackage(name string, pkg Packager) {
-	if strings.HasPrefix(name, "uk.") {
-		panic(fmt.Sprintf(`package name prefix "uk." reserved (in %q)`, name))
-	}
-
-	if strings.Contains(name, " ") {
-		panic(fmt.Sprintf(`package names must not contain spaces (%q does)`, name))
-	}
-
-	for i := range h.packageNames {
-		if h.packageNames[i] == name {
-			panic(fmt.Sprintf("package with name %q exists already", name))
-		}
-	}
-
-	h.packageNames = append(h.packageNames, name)
-	h.userRunlists = append(h.userRunlists, newRunlist(name, pkg, h))
-}
-
-// Add the given package with the given name to the host.
-func (h *Host) addSystemPackage(name string, pkg Packager) (e error) {
-	name = "uk." + name
-	for i := range h.packageNames {
-		if h.packageNames[i] == name {
-			return fmt.Errorf("package with name %q exists already", name)
-		}
-	}
-
-	h.packageNames = append(h.packageNames, name)
-	h.systemRunlists = append(h.systemRunlists, newRunlist(name, pkg, h))
-	return nil
-}
-
 // Provision the host, i.e. execute all the commands contained in the packages registered with this host.
-func (h *Host) Provision(opts *ProvisionOptions) (e error) {
-	sc := newSSHClient(h, opts)
-	return sc.provision()
-}
+//func (h *Host) Provision(opts *ProvisionOptions) (e error) {
+//	sc := newSSHClient(h, opts)
+//	return sc.provision()
+//}
 
 // Create a binary package from the given package. This is an optimization for packages that download, compile and
 // install sources. As compilation might take its time this step can be done once and the effort be reused. Keep in mind
@@ -141,7 +87,7 @@ func (h *Host) isSudoRequired() bool {
 	return false
 }
 
-func (h *Host) runlists() (r []*Package) {
+func (h *PackageList) runlists() (r []*Package) {
 	if h.systemRunlists == nil {
 		h.buildSystemRunlists()
 	}
@@ -152,7 +98,7 @@ func (h *Host) runlists() (r []*Package) {
 	return r
 }
 
-func (h *Host) precompileRunlists() (e error) {
+func (h *PackageList) precompileRunlists() (e error) {
 	for _, runlist := range h.runlists() {
 		if len(runlist.commands) > 0 {
 			return fmt.Errorf("pkg %q seems to be packaged already", runlist.name)

@@ -30,18 +30,20 @@ func main() {
 		IP: os.Args[1],
 	}
 
+	list := &urknall.PackageList{}
+
 	// upgrade all system packages
-	host.AddCommands("package_upgrade", cmd.UpdatePackages())
+	list.AddCommands("package_upgrade", cmd.UpdatePackages())
 
 	// use some standard packages
 	nx := nginx.New("1.4.4")
-	host.AddPackage("ruby", nx)
+	list.AddPackage("ruby", nx)
 
 	rb := ruby.New("2.0.0-p353")
-	host.AddPackage("nginx", rb)
+	list.AddPackage("nginx", rb)
 
 	// install some custom system commands
-	host.AddCommands("packages", cmd.InstallPackages("ngrep", "dnsutils", "whois"))
+	list.AddCommands("packages", cmd.InstallPackages("ngrep", "dnsutils", "whois"))
 
 	// firewall setup: allow inbound http and https (currently ssh (22) is also allowed by default)
 	host.Firewall = fw.Firewall{
@@ -60,7 +62,7 @@ func main() {
 	}
 
 	// install a custom packag (must implement urknall.Package)
-	host.AddPackage("app", &App{
+	list.AddPackage("app", &App{
 		RubyInstallPath:  rb.InstallPath(),
 		NginxInstallPath: nx.InstallPath(),
 		SocketPath:       "/tmp/rack.socket",
@@ -69,7 +71,7 @@ func main() {
 	)
 
 	// provision the host
-	e = host.Provision(nil)
+	e = urknall.Provision(host, list)
 	if e != nil {
 		log.Fatal(e.Error())
 	}

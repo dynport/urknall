@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+
 	"github.com/dynport/urknall"
 	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/pkg/nginx"
@@ -13,15 +15,20 @@ func provisionHost() {
 		User:     "root",
 	}
 
+	list := &urknall.PackageList{}
+
 	// run commands, "upgrade" is the name which is used to cache execution
-	host.AddCommands("upgrade", "apt-get update", "apt-get upgrade -y")
+	list.AddCommands("upgrade", "apt-get update", "apt-get upgrade -y")
 
 	// write files
-	host.AddCommands("marker", cmd.WriteFile("/tmp/installed.txt", "OK", "root", 0644))
+	list.AddCommands("marker", cmd.WriteFile("/tmp/installed.txt", "OK", "root", 0644))
 
 	// install packages (implementing urknall.Package)
-	host.AddPackage("nginx", nginx.New("1.4.4"))
+	list.AddPackage("nginx", nginx.New("1.4.4"))
 
-    // provision host with ssh and no extra options
-	host.Provision(nil)
+	// provision host with ssh and no extra options
+
+	if e := urknall.Provision(host, list); e != nil {
+		log.Fatal(e)
+	}
 }

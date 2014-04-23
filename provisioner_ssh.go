@@ -50,18 +50,6 @@ func (sc *sshClient) buildBinaryPackage(pkg BinaryPackage) (e error) {
 	return provisionRunlists([]*Package{compileRunlist, packageRunlist}, sc)
 }
 
-func (sc *sshClient) provision() (e error) {
-	if e = sc.host.precompileRunlists(); e != nil {
-		return e
-	}
-
-	if e = sc.prepareHost(); e != nil {
-		return e
-	}
-
-	return provisionRunlists(sc.host.runlists(), sc)
-}
-
 func (sc *sshClient) prepareHost() (e error) {
 	con, e := sc.client.Connection()
 	if e != nil {
