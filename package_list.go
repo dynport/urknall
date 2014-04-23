@@ -3,22 +3,13 @@ package urknall
 import (
 	"fmt"
 	"strings"
-
-	"github.com/dynport/urknall/fw"
 )
 
 type PackageList struct {
 	Items []*PackageListItem
 
-	// BEGIN: temporary
-	Hostname string
-	Timezone string
-	Firewall fw.Firewall
-	// END: temporary
-
-	packageNames   []string
-	userRunlists   []*Package
-	systemRunlists []*Package
+	packageNames []string
+	userRunlists []*Package
 }
 
 type PackageListItem struct {
@@ -36,7 +27,6 @@ func (list *PackageList) addSystemPackage(name string, pkg Packager) (e error) {
 	}
 
 	list.packageNames = append(list.packageNames, name)
-	list.systemRunlists = append(list.systemRunlists, newRunlist(name, pkg, nil))
 	return nil
 }
 

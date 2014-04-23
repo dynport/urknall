@@ -5,9 +5,6 @@ func Provision(host *Host, list *PackageList) error {
 }
 
 func ProvisionWithOptions(host *Host, list *PackageList, opts *ProvisionOptions) error {
-	list.Hostname = host.Hostname
-	list.Timezone = host.Timezone
-
 	client := newSSHClient(host, opts)
 	e := list.precompileRunlists()
 	if e != nil {

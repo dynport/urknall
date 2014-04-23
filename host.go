@@ -88,12 +88,7 @@ func (h *Host) isSudoRequired() bool {
 }
 
 func (h *PackageList) runlists() (r []*Package) {
-	if h.systemRunlists == nil {
-		h.buildSystemRunlists()
-	}
-
-	r = make([]*Package, 0, len(h.systemRunlists)+len(h.userRunlists))
-	r = append(r, h.systemRunlists...)
+	r = make([]*Package, 0, len(h.userRunlists))
 	r = append(r, h.userRunlists...)
 	return r
 }
