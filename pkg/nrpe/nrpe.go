@@ -16,7 +16,7 @@ type Package struct {
 	AllowedHosts string
 }
 
-func (nrpe *Package) Package(r *urknall.Runlist) {
+func (nrpe *Package) Package(r *urknall.Package) {
 	r.Add(
 		cmd.AddUser("nagios", true),
 		cmd.Mkdir("/var/run/nagios", "nagios", 0755),

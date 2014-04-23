@@ -47,7 +47,7 @@ func (sc *sshClient) buildBinaryPackage(pkg BinaryPackage) (e error) {
 		return e
 	}
 
-	return provisionRunlists([]*Runlist{compileRunlist, packageRunlist}, sc)
+	return provisionRunlists([]*Package{compileRunlist, packageRunlist}, sc)
 }
 
 func (sc *sshClient) provision() (e error) {
@@ -87,7 +87,7 @@ func (sc *sshClient) prepareHost() (e error) {
 	return nil
 }
 
-func (sc *sshClient) ProvisionRunlist(rl *Runlist, ct checksumTree) (e error) {
+func (sc *sshClient) ProvisionRunlist(rl *Package, ct checksumTree) (e error) {
 	tasks := sc.buildTasksForRunlist(rl)
 
 	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", rl.name)
@@ -147,7 +147,7 @@ func newDebugWriter(host *Host, task *taskData) func(i ...interface{}) {
 		parts := strings.SplitN(fmt.Sprint(i...), "\t", 3)
 		if len(parts) == 3 {
 			stream, line := parts[1], parts[2]
-			var runlist *Runlist = nil
+			var runlist *Package = nil
 			if task != nil {
 				runlist = task.runlist
 			}
@@ -226,14 +226,14 @@ func (sc *sshClient) cleanUpRemainingCachedEntries(checksumDir string, checksumH
 type taskData struct {
 	command  cmd.Command // The command to be executed.
 	checksum string      // The checksum of the command.
-	runlist  *Runlist
+	runlist  *Package
 }
 
 func (data *taskData) Command() cmd.Command {
 	return data.command
 }
 
-func (sc *sshClient) buildTasksForRunlist(rl *Runlist) (tasks []*taskData) {
+func (sc *sshClient) buildTasksForRunlist(rl *Package) (tasks []*taskData) {
 	tasks = make([]*taskData, 0, len(rl.commands))
 
 	cmdHash := sha256.New()

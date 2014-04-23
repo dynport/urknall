@@ -22,7 +22,7 @@ func (p *Package) User() string {
 	return "postgres"
 }
 
-func (pkg *Package) Package(r *urknall.Runlist) {
+func (pkg *Package) Package(r *urknall.Package) {
 	r.Add(
 		cmd.InstallPackages("build-essential", "openssl", "libssl-dev", "flex", "zlib1g-dev", "libxslt1-dev", "libxml2-dev", "python-dev", "libreadline-dev", "bison"),
 		cmd.Mkdir("/opt/src/", "root", 0755),

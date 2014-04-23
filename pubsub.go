@@ -53,7 +53,7 @@ type Message struct {
 	message    string
 	host       *Host
 	task       *taskData
-	runlist    *Runlist
+	runlist    *Package
 
 	publishedAt time.Time
 	startedAt   time.Time

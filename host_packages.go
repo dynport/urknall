@@ -4,8 +4,8 @@ import (
 	"github.com/dynport/urknall/cmd"
 )
 
-func newRunlist(name string, pkg Packager, host *Host) *Runlist {
-	return &Runlist{name: name, pkg: pkg, host: host}
+func newRunlist(name string, pkg Packager, host *Host) *Package {
+	return &Package{name: name, pkg: pkg, host: host}
 }
 
 func (h *Host) buildSystemRunlists() {
@@ -53,7 +53,7 @@ func (h *hostPackage) Interface() string {
 	return h.publicInterface()
 }
 
-func (hp *hostPackage) Package(rl *Runlist) {
+func (hp *hostPackage) Package(rl *Package) {
 	for i := range hp.cmds {
 		rl.Add(hp.cmds[i])
 	}

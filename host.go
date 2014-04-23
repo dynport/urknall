@@ -38,8 +38,8 @@ type Host struct {
 	IPSets   []*fw.IPSet // List of ipsets for the firewall.
 
 	packageNames   []string
-	userRunlists   []*Runlist
-	systemRunlists []*Runlist
+	userRunlists   []*Package
+	systemRunlists []*Package
 }
 
 // Get the user used to access the host. If none is given the "root" account is as default.
@@ -141,12 +141,12 @@ func (h *Host) isSudoRequired() bool {
 	return false
 }
 
-func (h *Host) runlists() (r []*Runlist) {
+func (h *Host) runlists() (r []*Package) {
 	if h.systemRunlists == nil {
 		h.buildSystemRunlists()
 	}
 
-	r = make([]*Runlist, 0, len(h.systemRunlists)+len(h.userRunlists))
+	r = make([]*Package, 0, len(h.systemRunlists)+len(h.userRunlists))
 	r = append(r, h.systemRunlists...)
 	r = append(r, h.userRunlists...)
 	return r

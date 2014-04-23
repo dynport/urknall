@@ -2,14 +2,15 @@ package main
 
 import (
 	"bytes"
+	"log"
+	"os"
+	"text/template"
+
 	"github.com/dynport/urknall"
 	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/fw"
 	"github.com/dynport/urknall/pkg/nginx"
 	"github.com/dynport/urknall/pkg/ruby"
-	"log"
-	"os"
-	"text/template"
 )
 
 func main() {
@@ -82,7 +83,7 @@ type App struct {
 }
 
 // all commands of packages accept go templates and can access the attributes of the package
-func (app *App) Package(r *urknall.Runlist) {
+func (app *App) Package(r *urknall.Package) {
 	r.Add(
 		"{{ .RubyInstallPath }}/bin/gem install puma --no-ri --no-rdoc", // is executed as plain bash command
 		cmd.Mkdir("/app", "root", 0755),

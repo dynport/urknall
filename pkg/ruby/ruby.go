@@ -6,9 +6,10 @@ package ruby
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/dynport/urknall"
 	"github.com/dynport/urknall/cmd"
-	"strings"
 )
 
 func New(version string) *Package {
@@ -35,7 +36,7 @@ func (ruby *Package) PackageDependencies() []string {
 	return []string{"libyaml-0-2", "libxml2", "libxslt1.1", "libreadline6", "libssl1.0.0", "zlib1g"}
 }
 
-func (ruby *Package) Package(r *urknall.Runlist) {
+func (ruby *Package) Package(r *urknall.Package) {
 	r.Add(
 		cmd.InstallPackages("curl", "build-essential",
 			"libyaml-dev", "libxml2-dev", "libxslt1-dev",

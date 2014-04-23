@@ -4,16 +4,17 @@ import (
 	"archive/tar"
 	"bytes"
 	"fmt"
-	"github.com/dynport/urknall/cmd"
 	"io"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/dynport/urknall/cmd"
 )
 
 // Generate a Dockerfile from the commands collected on the runlist.
-func (rl *Runlist) DockerArchive(from string, w io.Writer) (e error) {
+func (rl *Package) DockerArchive(from string, w io.Writer) (e error) {
 	tw := tar.NewWriter(w)
 	defer tw.Close()
 

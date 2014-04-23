@@ -9,7 +9,7 @@ import (
 
 // A "Package" is an entity that packs commands into a runlist, taking into account their own configuration.
 type Packager interface {
-	Package(rl *Runlist) // Add the package specific commands to the runlist.
+	Package(rl *Package) // Add the package specific commands to the runlist.
 }
 
 // If a package downloads and compiles code provisioning can be optimized by precompiling the sources and just extract
@@ -23,8 +23,8 @@ type BinaryPackage interface {
 }
 
 // Compile the given package and return the generated runlist.
-func CompilePackage(pkg Packager) (*Runlist, error) {
-	rl := &Runlist{pkg: pkg}
+func CompilePackage(pkg Packager) (*Package, error) {
+	rl := &Package{pkg: pkg}
 	return rl, rl.compileWithBinaryPackages()
 }
 
@@ -32,7 +32,7 @@ type anonymousPackage struct {
 	cmds []interface{}
 }
 
-func (anon *anonymousPackage) Package(rl *Runlist) {
+func (anon *anonymousPackage) Package(rl *Package) {
 	for i := range anon.cmds {
 		rl.Add(anon.cmds[i])
 	}

@@ -14,7 +14,7 @@ type Nginx struct {
 	Autostart          bool
 }
 
-func (pkg *Nginx) Package(r *urknall.Runlist) {
+func (pkg *Nginx) Package(r *urknall.Package) {
 	syslogPatchPath := "/tmp/nginx_syslog_patch"
 	fileName := "syslog_{{ .SyslogPatchVersion }}.patch"
 	r.Add(

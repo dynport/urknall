@@ -8,7 +8,7 @@ import (
 type Limits struct {
 }
 
-func (limits *Limits) Package(r *urknall.Runlist) {
+func (limits *Limits) Package(r *urknall.Package) {
 	r.Add(
 		cmd.WriteFile("/etc/security/limits.conf", limitsTpl, "root", 0644),
 		"ulimit -a",
@@ -26,7 +26,7 @@ type Sysctl struct {
 	ShmAll string
 }
 
-func (sysctl *Sysctl) Package(r *urknall.Runlist) {
+func (sysctl *Sysctl) Package(r *urknall.Package) {
 	r.Add(
 		cmd.WriteFile("/etc/sysctl.conf", sysctlTpl, "root", 0644),
 		"sysctl -p",

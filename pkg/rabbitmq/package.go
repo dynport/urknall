@@ -13,7 +13,7 @@ type Package struct {
 	Version string `urknall:"default="3.2.1"`
 }
 
-func (p *Package) Package(r *urknall.Runlist) {
+func (p *Package) Package(r *urknall.Package) {
 	r.Add(
 		cmd.InstallPackages("erlang-nox", "erlang-reltool", "erlang-dev"),
 		cmd.Mkdir("/opt/src/", "root", 0755),

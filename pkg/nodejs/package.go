@@ -9,7 +9,7 @@ type Package struct {
 	Version string `urknall:"default=v0.11.11"`
 }
 
-func (pkg *Package) Package(r *urknall.Runlist) {
+func (pkg *Package) Package(r *urknall.Package) {
 	r.Add(
 		cmd.Mkdir("/opt/src", "root", 0755),
 		cmd.And(

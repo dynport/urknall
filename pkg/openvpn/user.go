@@ -4,7 +4,7 @@ import (
 	"github.com/dynport/urknall"
 )
 
-func (u *User) Package(r *urknall.Runlist) {
+func (u *User) Package(r *urknall.Package) {
 	r.Add(
 		addUser,
 		packagePath+" "+u.Login,

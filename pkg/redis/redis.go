@@ -20,7 +20,7 @@ func (p *Package) InstallPath() string {
 	return "/opt/redis-" + p.Version
 }
 
-func (p *Package) Package(r *urknall.Runlist) {
+func (p *Package) Package(r *urknall.Package) {
 	r.Add(
 		cmd.InstallPackages("build-essential"),
 		cmd.Mkdir("/opt/src/", "root", 0755),

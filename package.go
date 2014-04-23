@@ -9,7 +9,7 @@ import (
 )
 
 // A runlist is a container for commands. Use the following methods to add new commands.
-type Runlist struct {
+type Package struct {
 	commands []cmd.Command
 
 	name string   // Name of the compilable.
@@ -17,13 +17,13 @@ type Runlist struct {
 	host *Host    // this is just for logging
 }
 
-func (rl *Runlist) Name() string {
+func (rl *Package) Name() string {
 	return rl.name
 }
 
 // Add commands (can also be given as string) or packages (commands will be extracted and added accordingly) to the
 // runlist.
-func (rl *Runlist) Add(first interface{}, others ...interface{}) {
+func (rl *Package) Add(first interface{}, others ...interface{}) {
 	all := append([]interface{}{first}, others...)
 	for _, c := range all {
 		switch t := c.(type) {
@@ -42,8 +42,8 @@ func (rl *Runlist) Add(first interface{}, others ...interface{}) {
 }
 
 // Add the given package's commands to the runlist.
-func (rl *Runlist) AddPackage(p Packager) {
-	r := &Runlist{pkg: p, host: rl.host}
+func (rl *Package) AddPackage(p Packager) {
+	r := &Package{pkg: p, host: rl.host}
 	e := validatePackage(p)
 	if e != nil {
 		panic(e.Error())
@@ -53,7 +53,7 @@ func (rl *Runlist) AddPackage(p Packager) {
 }
 
 // Add the given command to the runlist.
-func (rl *Runlist) AddCommand(c cmd.Command) {
+func (rl *Package) AddCommand(c cmd.Command) {
 	if rl.pkg != nil {
 		if renderer, ok := c.(cmd.Renderer); ok {
 			renderer.Render(rl.pkg)
@@ -67,15 +67,15 @@ func (rl *Runlist) AddCommand(c cmd.Command) {
 	rl.commands = append(rl.commands, c)
 }
 
-func (rl *Runlist) compileWithBinaryPackages() (e error) {
+func (rl *Package) compileWithBinaryPackages() (e error) {
 	return rl.compile(true)
 }
 
-func (rl *Runlist) compileWithoutBinaryPackages() (e error) {
+func (rl *Package) compileWithoutBinaryPackages() (e error) {
 	return rl.compile(false)
 }
 
-func (rl *Runlist) compile(useBinaryPkg bool) (e error) {
+func (rl *Package) compile(useBinaryPkg bool) (e error) {
 	m := &Message{runlist: rl, host: rl.host, key: MessageRunlistsPrecompile}
 	m.publish("started")
 	defer func() {

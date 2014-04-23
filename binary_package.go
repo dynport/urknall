@@ -2,11 +2,12 @@ package urknall
 
 import (
 	"fmt"
-	"github.com/dynport/urknall/cmd"
 	"strings"
+
+	"github.com/dynport/urknall/cmd"
 )
 
-func (rl *Runlist) installBinaryPackage() {
+func (rl *Package) installBinaryPackage() {
 	bpkg := rl.pkg.(BinaryPackage)
 	// Download package and checksum.
 	repo := rl.host.BinaryPackageRepository
@@ -31,7 +32,7 @@ func (rl *Runlist) installBinaryPackage() {
 	)
 }
 
-func (rl *Runlist) buildBinaryPackage() (e error) {
+func (rl *Package) buildBinaryPackage() (e error) {
 	repo := rl.host.BinaryPackageRepository
 
 	bpkg := rl.pkg.(BinaryPackage)

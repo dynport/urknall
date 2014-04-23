@@ -5,7 +5,7 @@ import "github.com/dynport/urknall"
 type Limits struct {
 }
 
-func (limits *Limits) Package(r *urknall.Runlist) {
+func (limits *Limits) Package(r *urknall.Package) {
 	r.Add(
 		WriteFile("/etc/security/limits.conf", limitsTpl, "root", 0644),
 		"ulimit -a",
@@ -23,7 +23,7 @@ type SysCtl struct {
 	ShmAll string
 }
 
-func (sysctl *SysCtl) Package(r *urknall.Runlist) {
+func (sysctl *SysCtl) Package(r *urknall.Package) {
 	r.Add(
 		WriteFile("/etc/sysctl.conf", sysctlTpl, "root", 0644),
 		"sysctl -p",
@@ -57,7 +57,7 @@ type Timezone struct {
 	Timezone string `urknall:"required"`
 }
 
-func (t *Timezone) Package(r *urknall.Runlist) {
+func (t *Timezone) Package(r *urknall.Package) {
 	r.Add(
 		WriteFile("/etc/timezone", t.Timezone, "root", 0644),
 		"dpkg-reconfigure --frontend noninteractive tzdata",
@@ -68,7 +68,7 @@ type Hostname struct {
 	Hostname string `urknall:"required"`
 }
 
-func (h *Hostname) Package(r *urknall.Runlist) {
+func (h *Hostname) Package(r *urknall.Package) {
 	r.Add(
 		"hostname localhost", // Set hostname to make sudo happy.
 		&FileCommand{Path: "/etc/hostname", Content: h.Hostname},

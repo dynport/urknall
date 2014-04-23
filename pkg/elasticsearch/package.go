@@ -23,7 +23,7 @@ type Package struct {
 	NodeName       string
 }
 
-func (p *Package) Package(r *urknall.Runlist) {
+func (p *Package) Package(r *urknall.Package) {
 	r.Add(
 		cmd.InstallPackages("openjdk-6-jdk"),
 		cmd.DownloadAndExtract(p.url(), "/opt/"),

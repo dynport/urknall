@@ -12,7 +12,7 @@ type Receiver struct {
 	AmqpHost string
 }
 
-func (p *Receiver) Package(r *urknall.Runlist) {
+func (p *Receiver) Package(r *urknall.Package) {
 	r.Add(
 		&Package{Version: p.Version},
 		cmd.WriteFile("/usr/local/etc/syslog-ng.conf", receiver, "root", 0644),

@@ -11,7 +11,7 @@ type Config struct {
 	SyslogIdent string `urknall:"default=redis"`
 }
 
-func (c *Config) Package(r *urknall.Runlist) {
+func (c *Config) Package(r *urknall.Package) {
 	r.Add(
 		cmd.WriteFile(c.Path, cfg, "root", 0644),
 	)

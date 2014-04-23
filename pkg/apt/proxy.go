@@ -9,7 +9,7 @@ type Proxy struct {
 	Address string `urknall:"required=true"`
 }
 
-func (proxy *Proxy) Package(r *urknall.Runlist) {
+func (proxy *Proxy) Package(r *urknall.Package) {
 	r.Add(
 		cmd.WriteFile("/etc/apt/apt.conf.d/01proxy", `Acquire::http { Proxy "http://{{ .Address }}"; };`, "root", 0644),
 		"apt-get update",

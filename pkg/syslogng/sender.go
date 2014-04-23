@@ -10,7 +10,7 @@ type Sender struct {
 	Version  string `urknall:"default=3.5"`
 }
 
-func (s *Sender) Package(r *urknall.Runlist) {
+func (s *Sender) Package(r *urknall.Package) {
 	r.Add(
 		&Package{Version: s.Version},
 		cmd.WriteFile("/usr/local/etc/syslog-ng.conf", sender, "root", 0644),

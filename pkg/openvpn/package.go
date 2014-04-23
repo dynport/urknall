@@ -36,7 +36,7 @@ func (p *Package) PublicIp() string {
 	}
 }
 
-func (p *Package) Package(r *urknall.Runlist) {
+func (p *Package) Package(r *urknall.Package) {
 	if len(p.Country) != 2 {
 		panic("Country must be exactly 2 characters long")
 	}

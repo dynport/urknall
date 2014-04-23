@@ -9,7 +9,7 @@ type Masquerade struct {
 	Interface string `urknall:"required=true"`
 }
 
-func (*Masquerade) Package(r *urknall.Runlist) {
+func (*Masquerade) Package(r *urknall.Package) {
 	r.Add(
 		cmd.WriteFile("/etc/network/if-pre-up.d/iptables", ipUp, "root", 0744),
 		"IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables",

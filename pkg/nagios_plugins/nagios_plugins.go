@@ -17,7 +17,7 @@ func (plugins *Package) InstallPath() string {
 	return utils.MustRenderTemplate("/opt/nagios-plugins-{{ .Version }}", plugins)
 }
 
-func (plugins *Package) Package(r *urknall.Runlist) {
+func (plugins *Package) Package(r *urknall.Package) {
 	r.Add(
 		cmd.InstallPackages("build-essential", "libssl-dev", "openssl", "file"),
 		cmd.DownloadAndExtract(plugins.url(), "/opt/src"),

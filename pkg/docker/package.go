@@ -16,7 +16,7 @@ type Package struct {
 	Autostart bool
 }
 
-func (docker *Package) Package(r *urknall.Runlist) {
+func (docker *Package) Package(r *urknall.Package) {
 	r.Add(
 		cmd.InstallPackages("bsdtar", "lxc"),
 		cmd.DownloadToFile("http://get.docker.io/builds/Linux/x86_64/docker-{{ .Version }}", "/opt/docker-{{ .Version }}", "root", 0755),

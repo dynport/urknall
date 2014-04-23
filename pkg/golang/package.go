@@ -15,7 +15,7 @@ func New(version string) *Package {
 	}
 }
 
-func (pkg *Package) Package(r *urknall.Runlist) {
+func (pkg *Package) Package(r *urknall.Package) {
 	url := "http://go.googlecode.com/files/go{{ .Version }}.linux-amd64.tar.gz"
 	r.Add(
 		cmd.InstallPackages("build-essential", "curl", "bzr", "mercurial", "git-core"),

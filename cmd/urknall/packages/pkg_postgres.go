@@ -15,7 +15,7 @@ func (p *Postgres) User() string {
 	return "postgres"
 }
 
-func (pkg *Postgres) Package(r *urknall.Runlist) {
+func (pkg *Postgres) Package(r *urknall.Package) {
 	r.Add(
 		InstallPackages("build-essential", "openssl", "libssl-dev", "flex", "zlib1g-dev", "libxslt1-dev", "libxml2-dev", "python-dev", "libreadline-dev", "bison"),
 		Mkdir("/opt/src/", "root", 0755),
@@ -103,7 +103,7 @@ func (g *PostGis) url() string {
 	return "http://download.osgeo.org/postgis/source/postgis-{{ .Version }}.tar.gz"
 }
 
-func (g *PostGis) Package(r *urknall.Runlist) {
+func (g *PostGis) Package(r *urknall.Package) {
 	r.Add(
 		Mkdir("/opt/src", "root", 0755),
 		DownloadAndExtract(g.url(), "/opt/src/"),

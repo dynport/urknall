@@ -33,7 +33,7 @@ func (ruby *Ruby) PackageDependencies() []string {
 	return []string{"libyaml-0-2", "libxml2", "libxslt1.1", "libreadline6", "libssl1.0.0", "zlib1g"}
 }
 
-func (ruby *Ruby) Package(r *urknall.Runlist) {
+func (ruby *Ruby) Package(r *urknall.Package) {
 	r.Add(
 		InstallPackages("curl", "build-essential",
 			"libyaml-dev", "libxml2-dev", "libxslt1-dev",

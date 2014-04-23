@@ -31,7 +31,7 @@ func (metric *Package) url() string {
 	return "https://github.com/dynport/metrix/releases/download/v{{ .Version }}/metrix-v{{ .Version }}.linux.amd64.tar.gz"
 }
 
-func (metrix *Package) Package(r *urknall.Runlist) {
+func (metrix *Package) Package(r *urknall.Package) {
 	r.Add(
 		cmd.Mkdir(metrix.installPath(), "root", 0755),
 		cmd.DownloadAndExtract(metrix.url(), metrix.installPath()),

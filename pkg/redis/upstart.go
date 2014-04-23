@@ -12,7 +12,7 @@ type Upstart struct {
 	Autostart   bool
 }
 
-func (u *Upstart) Package(r *urknall.Runlist) {
+func (u *Upstart) Package(r *urknall.Package) {
 	r.Add(
 		cmd.WriteFile("/etc/init/{{ .Name }}.conf", upstart, "root", 0644),
 	)

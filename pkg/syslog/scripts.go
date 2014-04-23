@@ -9,7 +9,7 @@ type CreateHourlySymlinks struct {
 	Root string `urknall:"default=/var/log/hourly"`
 }
 
-func (*CreateHourlySymlinks) Package(r *urknall.Runlist) {
+func (*CreateHourlySymlinks) Package(r *urknall.Package) {
 	r.Add(
 		cmd.Mkdir("/opt/scripts", "root", 0755),
 		cmd.WriteFile("/opt/scripts/create_hourly_symlinks.sh", createHourlySymlinks, "root", 0755),

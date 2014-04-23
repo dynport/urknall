@@ -19,7 +19,7 @@ func (ng *Package) url() string {
 	return "http://www.balabit.com/downloads/files/syslog-ng/open-source-edition/{{ .Version }}/source/syslog-ng_{{ .Version }}.tar.gz"
 }
 
-func (ng *Package) Package(r *urknall.Runlist) {
+func (ng *Package) Package(r *urknall.Package) {
 	r.Add(
 		cmd.InstallPackages("build-essential", "libevtlog-dev", "pkg-config", "libglib2.0-dev"),
 		cmd.DownloadAndExtract(ng.url(), "/opt/src"),

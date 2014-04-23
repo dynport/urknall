@@ -18,7 +18,7 @@ type Package struct {
 	Autostart          bool
 }
 
-func (pkg *Package) Package(r *urknall.Runlist) {
+func (pkg *Package) Package(r *urknall.Package) {
 	syslogPatchPath := "/tmp/nginx_syslog_patch"
 	fileName := "syslog_{{ .SyslogPatchVersion }}.patch"
 	r.Add(
