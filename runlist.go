@@ -2,18 +2,19 @@ package urknall
 
 import (
 	"fmt"
-	"github.com/dynport/urknall/cmd"
 	"log"
 	"runtime/debug"
+
+	"github.com/dynport/urknall/cmd"
 )
 
 // A runlist is a container for commands. Use the following methods to add new commands.
 type Runlist struct {
 	commands []cmd.Command
 
-	name string  // Name of the compilable.
-	pkg  Package // only used for rendering templates
-	host *Host   // this is just for logging
+	name string   // Name of the compilable.
+	pkg  Packager // only used for rendering templates
+	host *Host    // this is just for logging
 }
 
 func (rl *Runlist) Name() string {
@@ -32,7 +33,7 @@ func (rl *Runlist) Add(first interface{}, others ...interface{}) {
 			rl.AddCommand(&cmd.ShellCommand{Command: t})
 		case cmd.Command:
 			rl.AddCommand(t)
-		case Package:
+		case Packager:
 			rl.AddPackage(t)
 		default:
 			panic(fmt.Sprintf("type %T not supported!", t))
@@ -41,7 +42,7 @@ func (rl *Runlist) Add(first interface{}, others ...interface{}) {
 }
 
 // Add the given package's commands to the runlist.
-func (rl *Runlist) AddPackage(p Package) {
+func (rl *Runlist) AddPackage(p Packager) {
 	r := &Runlist{pkg: p, host: rl.host}
 	e := validatePackage(p)
 	if e != nil {

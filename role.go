@@ -27,7 +27,7 @@ func (rr RoleRegistry) Add(name string, role Role) (e error) {
 }
 
 // Add a single package as a role (creating the boilerplate for you).
-func (rr RoleRegistry) AddPackage(name string, pkg Package) (e error) {
+func (rr RoleRegistry) AddPackage(name string, pkg Packager) (e error) {
 	return rr.Add(name, func(host *Host) { host.Add(name, pkg) })
 }
 

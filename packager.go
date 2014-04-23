@@ -8,14 +8,14 @@ import (
 )
 
 // A "Package" is an entity that packs commands into a runlist, taking into account their own configuration.
-type Package interface {
+type Packager interface {
 	Package(rl *Runlist) // Add the package specific commands to the runlist.
 }
 
 // If a package downloads and compiles code provisioning can be optimized by precompiling the sources and just extract
 // the results to the host. This requires a repository to store the binary packages.
 type BinaryPackage interface {
-	Package
+	Packager
 	Name() string                  // Name of the package.
 	PkgVersion() string            // Version of the package installed.
 	InstallPath() string           // Path to install to.
@@ -23,7 +23,7 @@ type BinaryPackage interface {
 }
 
 // Compile the given package and return the generated runlist.
-func CompilePackage(pkg Package) (*Runlist, error) {
+func CompilePackage(pkg Packager) (*Runlist, error) {
 	rl := &Runlist{pkg: pkg}
 	return rl, rl.compileWithBinaryPackages()
 }
@@ -39,7 +39,7 @@ func (anon *anonymousPackage) Package(rl *Runlist) {
 }
 
 // Create a package from a set of commands.
-func NewPackage(cmds ...interface{}) Package {
+func NewPackage(cmds ...interface{}) Packager {
 	return &anonymousPackage{cmds: cmds}
 }
 

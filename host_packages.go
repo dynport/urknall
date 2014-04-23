@@ -4,7 +4,7 @@ import (
 	"github.com/dynport/urknall/cmd"
 )
 
-func newRunlist(name string, pkg Package, host *Host) *Runlist {
+func newRunlist(name string, pkg Packager, host *Host) *Runlist {
 	return &Runlist{name: name, pkg: pkg, host: host}
 }
 

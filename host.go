@@ -75,7 +75,7 @@ func (h *Host) AddCommands(name string, cmd interface{}, cmds ...interface{}) {
 // The name is used as reference during provisioning and allows for provisioning the very same package in different
 // configuration (with different version for example). Package names must be unique and the "uk." prefix is reserved for
 // urknall internal packages.
-func (h *Host) AddPackage(name string, pkg Package) {
+func (h *Host) AddPackage(name string, pkg Packager) {
 	if strings.HasPrefix(name, "uk.") {
 		panic(fmt.Sprintf(`package name prefix "uk." reserved (in %q)`, name))
 	}
@@ -95,7 +95,7 @@ func (h *Host) AddPackage(name string, pkg Package) {
 }
 
 // Add the given package with the given name to the host.
-func (h *Host) addSystemPackage(name string, pkg Package) (e error) {
+func (h *Host) addSystemPackage(name string, pkg Packager) (e error) {
 	name = "uk." + name
 	for i := range h.packageNames {
 		if h.packageNames[i] == name {
