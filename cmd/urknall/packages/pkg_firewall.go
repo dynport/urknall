@@ -18,7 +18,11 @@ func (f *Firewall) Package(r *urknall.Runlist) {
 	r.Add(
 		InstallPackages("iptables", "ipset"),
 		WriteFile("/etc/network/if-pre-up.d/iptables", firewallUpstart, "root", 0744),
-		WriteFile("/etc/iptables/ipsets", fwIpset, "root", 0644),
+	)
+	if len(f.IPSets) > 0 {
+		r.Add(WriteFile("/etc/iptables/ipsets", fwIpset, "root", 0644))
+	}
+	r.Add(
 		WriteFile("/etc/iptables/rules_ipv4", fw_rules_ipv4, "root", 0644),
 		WriteFile("/etc/iptables/rules_ipv6", fw_rules_ipv6, "root", 0644),
 		"{ modprobe iptable_filter && modprobe iptable_nat; }; /bin/true", // here to make sure next command succeeds.
@@ -155,7 +159,7 @@ set -e
 
 case "$IFACE" in
 	{{ .Interface }})
-		/usr/sbin/ipset restore -! < /etc/iptables/ipsets
+		test -e /etc/iptables/ipsets && /usr/sbin/ipset restore -! < /etc/iptables/ipsets
 		/sbin/iptables-restore < /etc/iptables/rules_ipv4
 		/sbin/ip6tables-restore < /etc/iptables/rules_ipv6
 		;;
