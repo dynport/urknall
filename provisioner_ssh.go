@@ -33,23 +33,6 @@ func newSSHClient(host *Host, opts *ProvisionOptions) (client *sshClient) {
 	return &sshClient{host: host, client: c, provisionOptions: *opts}
 }
 
-func buildBinaryPackage(runner *Runner, pkg BinaryPackage) (e error) {
-	name := pkg.Name() + "." + pkg.PkgVersion()
-	compileRunlist := newRunlist(name+".build", pkg, nil)
-	// Don't use binary packages, as otherwise you'll be caugth in an awkward self reference trying to use a binary
-	// package to build the very binary package.
-	if e = compileRunlist.compileWithoutBinaryPackages(); e != nil {
-		return e
-	}
-
-	packageRunlist := newRunlist(name+".package", pkg, nil)
-	if e = packageRunlist.buildBinaryPackage(); e != nil {
-		return e
-	}
-
-	return provisionRunlists([]*Package{compileRunlist, packageRunlist}, runner)
-}
-
 func prepareHost(runner *Runner) error {
 	if runner.User == "" {
 		return fmt.Errorf("User not set")

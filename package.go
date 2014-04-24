@@ -108,15 +108,6 @@ func (rl *Package) compile(useBinaryPkg bool) (e error) {
 		}
 	}()
 
-	if _, ok := rl.pkg.(BinaryPackage); ok && useBinaryPkg {
-		if rl.host.BinaryPackageRepository != "" {
-			m.publish(fmt.Sprintf("going to use a binary package from %q", rl.host.BinaryPackageRepository))
-			rl.installBinaryPackage()
-			m.publish("finished")
-			return nil
-		}
-		m.publish(fmt.Sprintf("package %q's binary not used, as no repository defined. Going to build.", rl.name))
-	}
 	if e = validatePackage(rl.pkg); e != nil {
 		return e
 	}
