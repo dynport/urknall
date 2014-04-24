@@ -60,25 +60,6 @@ func (h *Host) publicInterface() string {
 //	return sc.provision()
 //}
 
-// Create a binary package from the given package. This is an optimization for packages that download, compile and
-// install sources. As compilation might take its time this step can be done once and the effort be reused. Keep in mind
-// that:
-//
-//	* Packages to be precompiled should only contain the steps necessary to compile and install the sources
-//	  (configuration will only be executed during the package creation).
-//	* Packages must implement the extend BinaryPackage interface.
-//	* There must be a binary package repository reachable and configured for all hosts that should use the binary
-//	  packages.
-//	* The host to build binary packages on must have the BuildHost flag set. This is to make sure that the side effects
-//	  (like installed compilers, extracted sources, etc) are known to the administration and don't happen by accident.
-func (h *Host) BuildBinaryPackage(pkg BinaryPackage) (e error) {
-	if !h.BuildHost {
-		return fmt.Errorf("Host %q is not a build host.", h.Hostname)
-	}
-	sc := newSSHClient(h, nil)
-	return sc.buildBinaryPackage(pkg)
-}
-
 // Predicate to test whether sudo is required (user for the host is not "root").
 func (h *Host) isSudoRequired() bool {
 	if h.User != "" && h.User != "root" {

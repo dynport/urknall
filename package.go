@@ -1,6 +1,7 @@
 package urknall
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"log"
 	"runtime/debug"
@@ -19,6 +20,20 @@ type Package struct {
 
 func (rl *Package) Name() string {
 	return rl.name
+}
+
+func (p *Package) tasks() []*taskData {
+	tasks := make([]*taskData, 0, len(p.commands))
+
+	cmdHash := sha256.New()
+	for i := range p.commands {
+		rawCmd := p.commands[i].Shell()
+		cmdHash.Write([]byte(rawCmd))
+
+		task := &taskData{runlist: p, command: p.commands[i], checksum: fmt.Sprintf("%x", cmdHash.Sum(nil))}
+		tasks = append(tasks, task)
+	}
+	return tasks
 }
 
 // Add commands (can also be given as string) or packages (commands will be extracted and added accordingly) to the

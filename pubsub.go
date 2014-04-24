@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/dynport/dgtk/pubsub"
-	"github.com/dynport/gossh"
 )
 
 var pubSub = []*pubsub.PubSub{}
@@ -60,7 +59,6 @@ type Message struct {
 
 	duration               time.Duration
 	totalRuntime           time.Duration
-	sshResult              *gossh.Result
 	line                   string
 	stream                 string
 	command                string

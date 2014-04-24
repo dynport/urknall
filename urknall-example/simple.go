@@ -6,13 +6,12 @@ import (
 	"github.com/dynport/urknall"
 	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/pkg/nginx"
+	"github.com/dynport/urknall/runner/ssh"
 )
 
 func provisionHost() {
-	host := &urknall.Host{
-		IP:       "127.0.0.1",
-		Hostname: "my-urknall-host",
-		User:     "root",
+	host := &ssh.Host{
+		Address: "127.0.0.1",
 	}
 
 	list := &urknall.PackageList{}

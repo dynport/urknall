@@ -11,6 +11,7 @@ import (
 	"github.com/dynport/urknall/fw"
 	"github.com/dynport/urknall/pkg/nginx"
 	"github.com/dynport/urknall/pkg/ruby"
+	"github.com/dynport/urknall/runner/ssh"
 )
 
 func main() {
@@ -26,8 +27,8 @@ func main() {
 	defer l.Close()
 
 	// condfigure the host to provision
-	host := &urknall.Host{
-		IP: os.Args[1],
+	host := &ssh.Host{
+		Address: os.Args[1],
 	}
 
 	list := &urknall.PackageList{}
@@ -46,7 +47,7 @@ func main() {
 	list.AddCommands("packages", cmd.InstallPackages("ngrep", "dnsutils", "whois"))
 
 	// firewall setup: allow inbound http and https (currently ssh (22) is also allowed by default)
-	host.Firewall = fw.Firewall{
+	list.Add("firewall", &fw.Firewall{
 		{
 			Description: "Allow incoming http",
 			Chain:       fw.ChainInput,
@@ -59,7 +60,8 @@ func main() {
 			Protocol:    fw.ProtocolTcp,
 			Destination: &fw.Target{Port: fw.PortHttps},
 		},
-	}
+	},
+	)
 
 	// install a custom packag (must implement urknall.Package)
 	list.AddPackage("app", &App{

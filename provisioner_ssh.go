@@ -1,7 +1,7 @@
 package urknall
 
 import (
-	"crypto/sha256"
+	"bytes"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -33,50 +33,56 @@ func newSSHClient(host *Host, opts *ProvisionOptions) (client *sshClient) {
 	return &sshClient{host: host, client: c, provisionOptions: *opts}
 }
 
-func (sc *sshClient) buildBinaryPackage(pkg BinaryPackage) (e error) {
+func buildBinaryPackage(runner *Runner, pkg BinaryPackage) (e error) {
 	name := pkg.Name() + "." + pkg.PkgVersion()
-	compileRunlist := newRunlist(name+".build", pkg, sc.host)
+	compileRunlist := newRunlist(name+".build", pkg, nil)
 	// Don't use binary packages, as otherwise you'll be caugth in an awkward self reference trying to use a binary
 	// package to build the very binary package.
 	if e = compileRunlist.compileWithoutBinaryPackages(); e != nil {
 		return e
 	}
 
-	packageRunlist := newRunlist(name+".package", pkg, sc.host)
+	packageRunlist := newRunlist(name+".package", pkg, nil)
 	if e = packageRunlist.buildBinaryPackage(); e != nil {
 		return e
 	}
 
-	return provisionRunlists([]*Package{compileRunlist, packageRunlist}, sc)
+	return provisionRunlists([]*Package{compileRunlist, packageRunlist}, runner)
 }
 
-func (sc *sshClient) prepareHost() (e error) {
-	con, e := sc.client.Connection()
+func prepareHost(runner *Runner) error {
+	if runner.User == "" {
+		return fmt.Errorf("User not set")
+	}
+	cmd, e := runner.Commander.Command(fmt.Sprintf(`grep "^%s:" /etc/group | grep %s`, ukGROUP, runner.User))
 	if e != nil {
 		return e
 	}
-
-	if e := executeCommand(con, fmt.Sprintf(`grep "^%s:" /etc/group | grep %s`, ukGROUP, sc.host.user())); e != nil {
+	if e := cmd.Run(); e != nil {
 		// If user is missing the group, create group (if necessary), add user and restart ssh connection.
 		cmds := []string{
 			fmt.Sprintf(`{ grep -e '^%[1]s:' /etc/group > /dev/null || { groupadd %[1]s; }; }`, ukGROUP),
 			fmt.Sprintf(`{ [[ -d %[1]s ]] || { mkdir -p -m 2775 %[1]s && chgrp %[2]s %[1]s; }; }`, ukCACHEDIR, ukGROUP),
-			fmt.Sprintf("usermod -a -G %s %s", ukGROUP, sc.host.user()),
+			fmt.Sprintf("usermod -a -G %s %s", ukGROUP, runner.User),
 		}
 
-		if e := executeCommand(con, fmt.Sprintf(`sudo bash -c "%s"`, strings.Join(cmds, " && "))); e != nil {
-			return fmt.Errorf("failed to initiate user %q for provisioning: %s", sc.host.user(), e)
+		cmd, e = runner.Commander.Command(fmt.Sprintf(`sudo bash -c "%s"`, strings.Join(cmds, " && ")))
+		if e != nil {
+			return e
 		}
-
-		// Restarting the connection is required to make sure the user's new group is added properly.
-		sc.client.Conn.Close()
-		sc.client.Conn = nil
+		out := &bytes.Buffer{}
+		err := &bytes.Buffer{}
+		cmd.SetStderr(err)
+		cmd.SetStdout(out)
+		if e := cmd.Run(); e != nil {
+			return fmt.Errorf("failed to initiate user %q for provisioning: %s, out=%q err=%q", runner.User, e, out.String(), err.String())
+		}
 	}
 	return nil
 }
 
-func (sc *sshClient) ProvisionRunlist(rl *Package, ct checksumTree) (e error) {
-	tasks := sc.buildTasksForRunlist(rl)
+func provisionRunlist(runner *Runner, rl *Package, ct checksumTree) (e error) {
+	tasks := rl.tasks()
 
 	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", rl.name)
 
@@ -89,19 +95,27 @@ func (sc *sshClient) ProvisionRunlist(rl *Package, ct checksumTree) (e error) {
 		// Create checksum dir and set group bit (all new files will inherit the directory's group). This allows for
 		// different users (being part of that group) to create, modify and delete the contained checksum and log files.
 		createChecksumDirCmd := fmt.Sprintf("mkdir -m2775 -p %s", checksumDir)
-		if sc.host.isSudoRequired() {
+		if runner.IsSudoRequired() {
 			createChecksumDirCmd = fmt.Sprintf(`sudo %s`, createChecksumDirCmd)
 		}
-		r, e := sc.client.Execute(createChecksumDirCmd)
+
+		cmd, e := runner.Commander.Command(createChecksumDirCmd)
 		if e != nil {
-			return fmt.Errorf(r.Stderr() + ": " + e.Error())
+			return e
+		}
+		err := &bytes.Buffer{}
+
+		cmd.SetStderr(err)
+
+		if e := cmd.Run(); e != nil {
+			return fmt.Errorf(err.String() + ": " + e.Error())
 		}
 	}
 
 	for i := range tasks {
 		task := tasks[i]
 		logMsg := task.command.Logging()
-		m := &Message{key: MessageRunlistsProvisionTask, task: task, message: logMsg, host: sc.host, runlist: rl}
+		m := &Message{key: MessageRunlistsProvisionTask, task: task, message: logMsg, host: nil, runlist: rl}
 		if _, found := checksumHash[task.checksum]; found { // Task is cached.
 			m.execStatus = statusCached
 			m.publish("finished")
@@ -110,14 +124,14 @@ func (sc *sshClient) ProvisionRunlist(rl *Package, ct checksumTree) (e error) {
 		}
 
 		if len(checksumHash) > 0 { // All remaining checksums are invalid, as something changed.
-			if e = sc.cleanUpRemainingCachedEntries(checksumDir, checksumHash); e != nil {
+			if e = cleanUpRemainingCachedEntries(runner, checksumDir, checksumHash); e != nil {
 				return e
 			}
 			checksumHash = make(map[string]struct{})
 		}
 		m.execStatus = statusExecStart
 		m.publish("started")
-		e = sc.runTask(task, checksumDir)
+		e = runTask(runner, task, checksumDir)
 		m.error_ = e
 		m.execStatus = statusExecFinished
 		m.publish("finished")
@@ -145,35 +159,38 @@ func newDebugWriter(host *Host, task *taskData) func(i ...interface{}) {
 	}
 }
 
-func (sc *sshClient) runTask(task *taskData, checksumDir string) (e error) {
-	if sc.provisionOptions.DryRun {
+func runTask(runner *Runner, task *taskData, checksumDir string) (e error) {
+	if runner.DryRun {
 		return nil
 	}
-
 	sCmd := fmt.Sprintf("bash <<EOF_RUNTASK\nset -xe\n%s\nEOF_RUNTASK\n", task.command.Shell())
-	for _, env := range sc.host.Env {
+	for _, env := range runner.Env {
 		sCmd = env + " " + sCmd
 	}
-	if sc.host.isSudoRequired() {
+	if runner.IsSudoRequired() {
 		sCmd = fmt.Sprintf("sudo -i %s", sCmd)
 	}
-
-	con, e := sc.client.Connection()
-	if e != nil {
-		return e
-	}
-	runner := &remoteTaskRunner{clientConn: con, cmd: sCmd, task: task, host: sc.host, dir: checksumDir}
-	return runner.run()
+	r := &remoteTaskRunner{Runner: runner, cmd: sCmd, task: task, dir: checksumDir}
+	return r.run()
 }
 
-func (sc *sshClient) BuildChecksumTree() (ct checksumTree, e error) {
+func buildChecksumTree(runner *Runner) (ct checksumTree, e error) {
 	ct = checksumTree{}
 
-	rsp, e := sc.client.Execute(fmt.Sprintf(`[[ -d %[1]s ]] && find %[1]s -type f -name \*.done`, ukCACHEDIR))
+	cmd, e := runner.Commander.Command(fmt.Sprintf(`[[ -d %[1]s ]] && find %[1]s -type f -name \*.done`, ukCACHEDIR))
 	if e != nil {
 		return nil, e
 	}
-	for _, line := range strings.Split(rsp.Stdout(), "\n") {
+	out := &bytes.Buffer{}
+	err := &bytes.Buffer{}
+
+	cmd.SetStdout(out)
+	cmd.SetStderr(err)
+
+	if e := cmd.Run(); e != nil {
+		return nil, e
+	}
+	for _, line := range strings.Split(out.String(), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
@@ -193,19 +210,26 @@ func (sc *sshClient) BuildChecksumTree() (ct checksumTree, e error) {
 	return ct, nil
 }
 
-func (sc *sshClient) cleanUpRemainingCachedEntries(checksumDir string, checksumHash map[string]struct{}) (e error) {
+func cleanUpRemainingCachedEntries(runner *Runner, checksumDir string, checksumHash map[string]struct{}) (e error) {
 	invalidCacheEntries := make([]string, 0, len(checksumHash))
 	for k, _ := range checksumHash {
 		invalidCacheEntries = append(invalidCacheEntries, fmt.Sprintf("%s.done", k))
 	}
-	if sc.provisionOptions.DryRun {
-		(&Message{key: MessageCleanupCacheEntries, invalidatedCachentries: invalidCacheEntries, host: sc.host}).publish(".dryrun")
+	if runner.DryRun {
+		(&Message{key: MessageCleanupCacheEntries, invalidatedCachentries: invalidCacheEntries, host: nil}).publish(".dryrun")
 	} else {
 		cmd := fmt.Sprintf("cd %s && rm -f *.failed %s", checksumDir, strings.Join(invalidCacheEntries, " "))
-		m := &Message{command: cmd, host: sc.host, key: MessageUrknallInternal}
+		m := &Message{command: cmd, host: nil, key: MessageUrknallInternal}
 		m.publish("started")
-		result, _ := sc.client.Execute(cmd)
-		m.sshResult = result
+
+		c, e := runner.Commander.Command(cmd)
+		if e != nil {
+			return e
+		}
+		if e := c.Run(); e != nil {
+			return e
+		}
+		//m.sshResult = result
 		m.publish("finished")
 	}
 	return nil
@@ -219,18 +243,4 @@ type taskData struct {
 
 func (data *taskData) Command() cmd.Command {
 	return data.command
-}
-
-func (sc *sshClient) buildTasksForRunlist(rl *Package) (tasks []*taskData) {
-	tasks = make([]*taskData, 0, len(rl.commands))
-
-	cmdHash := sha256.New()
-	for i := range rl.commands {
-		rawCmd := rl.commands[i].Shell()
-		cmdHash.Write([]byte(rawCmd))
-
-		task := &taskData{runlist: rl, command: rl.commands[i], checksum: fmt.Sprintf("%x", cmdHash.Sum(nil))}
-		tasks = append(tasks, task)
-	}
-	return tasks
 }

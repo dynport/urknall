@@ -1,9 +1,10 @@
 package urknall
 
 import (
+	"testing"
+
 	"github.com/dynport/urknall/cmd"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 type customCommand struct {
@@ -22,12 +23,12 @@ type somePackage struct {
 	IField int
 }
 
-func (sp *somePackage) Package(rl *Runlist) {
+func (sp *somePackage) Package(rl *Package) {
 }
 
 func TestAddCommand(t *testing.T) {
 	Convey("Given a runlist for a certain package", t, func() {
-		rl := &Runlist{pkg: &somePackage{SField: "something", IField: 1}}
+		rl := &Package{pkg: &somePackage{SField: "something", IField: 1}}
 
 		Convey("When a string is added", func() {
 			rl.Add(`string with "{{ .SField }}" and "{{ .IField }}"`)

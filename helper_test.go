@@ -2,8 +2,8 @@ package urknall
 
 import (
 	"fmt"
-	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestPadToFixedLength(t *testing.T) {
@@ -30,12 +30,12 @@ func TestPadToFixedLength(t *testing.T) {
 
 type testPkgWoutCNamer struct{}
 
-func (t *testPkgWoutCNamer) Package(r *Runlist) {
+func (t *testPkgWoutCNamer) Package(r *Package) {
 }
 
 type testPkgWCNamer struct{}
 
-func (t *testPkgWCNamer) Package(r *Runlist) {
+func (t *testPkgWCNamer) Package(r *Package) {
 }
 
 func (t *testPkgWCNamer) PackageName() string {

@@ -1,8 +1,8 @@
 package urknall
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestUserHandling(t *testing.T) {
@@ -59,6 +59,7 @@ func TestInterfaceHandling(t *testing.T) {
 	defaultInterface := "eth0"
 	Convey("Given a host", t, func() {
 		h := &Host{IP: "127.0.0.1"}
+		list := &PackageList{}
 		Convey("When no interface is set", func() {
 			Convey("And the Interface method is called", func() {
 				v := h.publicInterface()
@@ -69,10 +70,10 @@ func TestInterfaceHandling(t *testing.T) {
 		})
 
 		Convey("When adding packages", func() {
-			So(func() { h.AddPackage("pkg", nil) }, ShouldNotPanic)
-			So(func() { h.AddPackage("other_pkg", nil) }, ShouldNotPanic)
+			So(func() { list.AddPackage("pkg", nil) }, ShouldNotPanic)
+			So(func() { list.AddPackage("other_pkg", nil) }, ShouldNotPanic)
 			Convey("when adding a package with the same name", func() {
-				So(func() { h.AddPackage("pkg", nil) }, ShouldPanic)
+				So(func() { list.AddPackage("pkg", nil) }, ShouldPanic)
 			})
 		})
 

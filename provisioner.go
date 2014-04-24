@@ -8,8 +8,8 @@ type Provisioner interface {
 }
 
 // Provision the given list of runlists.
-func provisionRunlists(runLists []*Package, provisioner Provisioner) (e error) {
-	ct, e := provisioner.BuildChecksumTree()
+func provisionRunlists(runLists []*Package, runner *Runner) (e error) {
+	ct, e := buildChecksumTree(runner)
 	if e != nil {
 		return e
 	}
@@ -18,7 +18,7 @@ func provisionRunlists(runLists []*Package, provisioner Provisioner) (e error) {
 		rl := runLists[i]
 		m := &Message{key: MessageRunlistsProvision, runlist: rl}
 		m.publish("started")
-		if e = provisioner.ProvisionRunlist(rl, ct); e != nil {
+		if e = provisionRunlist(runner, rl, ct); e != nil {
 			m.publishError(e)
 			return e
 		}
