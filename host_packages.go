@@ -13,10 +13,6 @@ func (h *PackageList) newHostPackage(cmds ...interface{}) *hostPackage {
 	return &hostPackage{Host: nil, cmds: cmds}
 }
 
-func (h *hostPackage) Interface() string {
-	return h.publicInterface()
-}
-
 func (hp *hostPackage) Package(rl *Package) {
 	for i := range hp.cmds {
 		rl.Add(hp.cmds[i])

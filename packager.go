@@ -12,22 +12,6 @@ type Packager interface {
 	Package(rl *Package) // Add the package specific commands to the runlist.
 }
 
-// If a package downloads and compiles code provisioning can be optimized by precompiling the sources and just extract
-// the results to the host. This requires a repository to store the binary packages.
-type BinaryPackage interface {
-	Packager
-	Name() string                  // Name of the package.
-	PkgVersion() string            // Version of the package installed.
-	InstallPath() string           // Path to install to.
-	PackageDependencies() []string // Dependent packages.
-}
-
-// Compile the given package and return the generated runlist.
-func CompilePackage(pkg Packager) (*Package, error) {
-	rl := &Package{pkg: pkg}
-	return rl, rl.compileWithBinaryPackages()
-}
-
 type anonymousPackage struct {
 	cmds []interface{}
 }

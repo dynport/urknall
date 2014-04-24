@@ -82,15 +82,7 @@ func (rl *Package) AddCommand(c cmd.Command) {
 	rl.commands = append(rl.commands, c)
 }
 
-func (rl *Package) compileWithBinaryPackages() (e error) {
-	return rl.compile(true)
-}
-
-func (rl *Package) compileWithoutBinaryPackages() (e error) {
-	return rl.compile(false)
-}
-
-func (rl *Package) compile(useBinaryPkg bool) (e error) {
+func (rl *Package) compile() (e error) {
 	m := &Message{runlist: rl, host: rl.host, key: MessageRunlistsPrecompile}
 	m.publish("started")
 	defer func() {
