@@ -1,8 +1,6 @@
 package main
 
-import (
-	"github.com/dynport/urknall"
-)
+import "github.com/dynport/urknall"
 
 func NewOpenVPN() *OpenVPN {
 	return &OpenVPN{}
@@ -35,7 +33,7 @@ func (p *OpenVPN) PublicIp() string {
 	}
 }
 
-func (p *OpenVPN) Package(r *urknall.Runlist) {
+func (p *OpenVPN) Package(r *urknall.Package) {
 	if len(p.Country) != 2 {
 		panic("Country must be exactly 2 characters long")
 	}
@@ -153,9 +151,9 @@ export PKCS11_MODULE_PATH=changeme
 export PKCS11_PIN=1234
 `
 
-func (u *OpenVpnUser) Package(r *urknall.Runlist) {
+func (u *OpenVpnUser) Package(r *urknall.Package) {
 	r.Add(
-		addUser,
+		addVpnUser,
 		openVpnPackagePath+" "+u.Login,
 	)
 }
@@ -166,7 +164,7 @@ type OpenVpnUser struct {
 	Email string `urknall:"required=true"`
 }
 
-const addUser = `bash -xe <<EOF
+const addVpnUser = `bash -xe <<EOF
 cd /etc/openvpn/easy-rsa
 source ./vars
 export KEY_EMAIL="{{ .Email }}"
@@ -179,7 +177,7 @@ type OpenVpnMasquerade struct {
 	Interface string `urknall:"required=true"`
 }
 
-func (*OpenVpnMasquerade) Package(r *urknall.Runlist) {
+func (*OpenVpnMasquerade) Package(r *urknall.Package) {
 	r.Add(
 		WriteFile("/etc/network/if-pre-up.d/iptables", ipUp, "root", 0744),
 		"IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables",

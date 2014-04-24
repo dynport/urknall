@@ -5,58 +5,30 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-
-	"github.com/dynport/gossh"
 	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/pubsub"
 )
 
 type checksumTree map[string]map[string]struct{}
 
-// Options for the provisioner. Use nil, if nothing required.
-type provisionOptions struct {
-	// Verify which commands would be executed and which are cached.
-	DryRun bool
+type Provisioner interface {
+	ProvisionRunlist(*Package, checksumTree) error
+	BuildChecksumTree() (checksumTree, error)
 }
 
-type provisioner struct {
-	sshClient        *gossh.Client
-	host             *Host
-	provisionOptions *provisionOptions
-}
-
-func newProvisioner(host *Host, opts *provisionOptions) (prov *provisioner) {
-	if opts == nil {
-		opts = &provisionOptions{}
-	}
-	c := gossh.New(host.IP, host.user())
-	c.Port = host.Port
-	if host.Password != "" {
-		c.SetPassword(host.Password)
-	}
-	return &provisioner{host: host, sshClient: c, provisionOptions: opts}
-}
-
-func (prov *provisioner) provision() (e error) {
-	if e = prov.host.precompileRunlists(); e != nil {
-		return e
-	}
-
-	if e = prov.prepareHost(); e != nil {
-		return e
-	}
-
-	ct, e := prov.BuildChecksumTree()
+// Provision the given list of runlists.
+func provisionRunlists(runLists []*Package, runner *Runner) (e error) {
+	ct, e := buildChecksumTree(runner)
 	if e != nil {
 		return e
 	}
 
-	for i := range prov.host.runlists {
-		rl := prov.host.runlists[i]
-		m := message(pubsub.MessageRunlistsProvision, prov.host, rl)
-		m.Publish("started")
-		if e = prov.ProvisionRunlist(rl, ct); e != nil {
-			m.PublishError(e)
+	for i := range runLists {
+		rl := runLists[i]
+		m := &Message{key: MessageRunlistsProvision, runlist: rl}
+		m.publish("started")
+		if e = provisionRunlist(runner, rl, ct); e != nil {
+			m.publishError(e)
 			return e
 		}
 		m.Publish("finished")

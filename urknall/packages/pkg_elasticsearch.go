@@ -18,7 +18,7 @@ type ElasticSearch struct {
 	NodeName       string
 }
 
-func (p *ElasticSearch) Package(r *urknall.Runlist) {
+func (p *ElasticSearch) Package(r *urknall.Package) {
 	r.Add(
 		InstallPackages("openjdk-6-jdk"),
 		DownloadAndExtract(p.url(), "/opt/"),
@@ -26,7 +26,7 @@ func (p *ElasticSearch) Package(r *urknall.Runlist) {
 		Mkdir(p.DataPath, "elasticsearch", 0755),
 		WriteFile("{{ .InstallPath }}/config/elasticsearch.yml", config, "root", 0644),
 		WriteFile("{{ .InstallPath }}/config/logging.yml", configLogger, "root", 0644),
-		WriteFile("/etc/init/elasticsearch.conf", upstart, "root", 0644),
+		WriteFile("/etc/init/elasticsearch.conf", elasticSearchUpstart, "root", 0644),
 	)
 }
 
@@ -38,7 +38,7 @@ func (p *ElasticSearch) InstallPath() string {
 	return "/opt/elasticsearch-" + p.Version
 }
 
-const upstart = `
+const elasticSearchUpstart = `
 {{ with .DataPath }}
 pre-start script
 	mkdir -p {{ . }}

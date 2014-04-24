@@ -18,7 +18,7 @@ func (p *Redis) InstallPath() string {
 	return "/opt/redis-" + p.Version
 }
 
-func (p *Redis) Package(r *urknall.Runlist) {
+func (p *Redis) Package(r *urknall.Package) {
 	r.Add(
 		InstallPackages("build-essential"),
 		Mkdir("/opt/src/", "root", 0755),
@@ -48,7 +48,7 @@ type RedisConfig struct {
 	SyslogIdent string `urknall:"default=redis"`
 }
 
-func (c *RedisConfig) Package(r *urknall.Runlist) {
+func (c *RedisConfig) Package(r *urknall.Package) {
 	r.Add(
 		WriteFile(c.Path, redisCfg, "root", 0644),
 	)
@@ -105,7 +105,7 @@ type RedisUpstart struct {
 	Autostart   bool
 }
 
-func (u *RedisUpstart) Package(r *urknall.Runlist) {
+func (u *RedisUpstart) Package(r *urknall.Package) {
 	r.Add(
 		WriteFile("/etc/init/{{ .Name }}.conf", redisUpstart, "root", 0644),
 	)

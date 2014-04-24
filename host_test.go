@@ -54,3 +54,47 @@ func TestUserHandling(t *testing.T) {
 		})
 	})
 }
+
+func TestInterfaceHandling(t *testing.T) {
+	defaultInterface := "eth0"
+	Convey("Given a host", t, func() {
+		h := &Host{IP: "127.0.0.1"}
+		list := &PackageList{}
+		Convey("When no interface is set", func() {
+			Convey("And the Interface method is called", func() {
+				v := h.publicInterface()
+				Convey("Then the interface is set to the default", func() {
+					So(v, ShouldEqual, defaultInterface)
+				})
+			})
+		})
+
+		Convey("When adding packages", func() {
+			So(func() { list.AddPackage("pkg", nil) }, ShouldNotPanic)
+			So(func() { list.AddPackage("other_pkg", nil) }, ShouldNotPanic)
+			Convey("when adding a package with the same name", func() {
+				So(func() { list.AddPackage("pkg", nil) }, ShouldPanic)
+			})
+		})
+
+		Convey("When the interface is explicitly set to the default", func() {
+			h.Interface = defaultInterface
+			Convey("And the Interface method is called", func() {
+				v := h.publicInterface()
+				Convey("Then the interface is set to the default", func() {
+					So(v, ShouldEqual, defaultInterface)
+				})
+			})
+		})
+
+		Convey("When the interface is set to 'tun0'", func() {
+			h.Interface = "tun0"
+			Convey("And the Interface method is called", func() {
+				v := h.publicInterface()
+				Convey("Then the interface is set to 'tun0'", func() {
+					So(v, ShouldEqual, "tun0")
+				})
+			})
+		})
+	})
+}
