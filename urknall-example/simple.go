@@ -5,7 +5,6 @@ import (
 
 	"github.com/dynport/urknall"
 	"github.com/dynport/urknall/cmd"
-	"github.com/dynport/urknall/pkg/nginx"
 	"github.com/dynport/urknall/runner/ssh"
 )
 
@@ -23,7 +22,7 @@ func provisionHost() {
 	list.AddCommands("marker", cmd.WriteFile("/tmp/installed.txt", "OK", "root", 0644))
 
 	// install packages (implementing urknall.Package)
-	list.AddPackage("nginx", nginx.New("1.4.4"))
+	list.AddPackage("nginx", &Nginx{Version: "1.4.4"})
 
 	// provision host with ssh and no extra options
 

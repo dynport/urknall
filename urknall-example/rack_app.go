@@ -9,8 +9,6 @@ import (
 	"github.com/dynport/urknall"
 	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/fw"
-	"github.com/dynport/urknall/pkg/nginx"
-	"github.com/dynport/urknall/pkg/ruby"
 	"github.com/dynport/urknall/runner/ssh"
 )
 
@@ -37,11 +35,11 @@ func main() {
 	list.AddCommands("package_upgrade", cmd.UpdatePackages())
 
 	// use some standard packages
-	nx := nginx.New("1.4.4")
-	list.AddPackage("ruby", nx)
+	nx := &Nginx{Version: "1.4.4"}
+	list.AddPackage("nginx", nx)
 
-	rb := ruby.New("2.0.0-p353")
-	list.AddPackage("nginx", rb)
+	rb := &Ruby{Version: "2.0.0-p353"}
+	list.AddPackage("ruby", rb)
 
 	// install some custom system commands
 	list.AddCommands("packages", cmd.InstallPackages("ngrep", "dnsutils", "whois"))
