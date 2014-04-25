@@ -22,5 +22,5 @@ func ProvisionWithOptions(host Host, list *PackageList, opts *ProvisionOptions) 
 	if e != nil {
 		return e
 	}
-	return provisionRunlists(list.runlists(), runner)
+	return provisionPackageList(list, runner)
 }

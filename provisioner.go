@@ -54,14 +54,14 @@ func buildChecksumTree(runner *Runner) (ct checksumTree, e error) {
 }
 
 // Provision the given list of runlists.
-func provisionRunlists(runLists []*Package, runner *Runner) (e error) {
+func provisionPackageList(list *PackageList, runner *Runner) (e error) {
 	ct, e := buildChecksumTree(runner)
 	if e != nil {
 		return e
 	}
 
-	for i := range runLists {
-		rl := runLists[i]
+	for i := range list.Items {
+		rl := list.Items[i]
 		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvision, Hostname: runner.Hostname()}
 		m.Publish("started")
 		if e = provisionRunlist(runner, rl, ct); e != nil {
@@ -73,16 +73,16 @@ func provisionRunlists(runLists []*Package, runner *Runner) (e error) {
 	return nil
 }
 
-func provisionRunlist(runner *Runner, rl *Package, ct checksumTree) (e error) {
-	tasks := rl.tasks()
+func provisionRunlist(runner *Runner, rl *PackageListItem, ct checksumTree) (e error) {
+	tasks := rl.Package.tasks()
 
-	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", rl.name)
+	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", rl.Key)
 
 	var found bool
 	var checksumHash map[string]struct{}
-	if checksumHash, found = ct[rl.name]; !found {
-		ct[rl.name] = map[string]struct{}{}
-		checksumHash = ct[rl.name]
+	if checksumHash, found = ct[rl.Key]; !found {
+		ct[rl.Key] = map[string]struct{}{}
+		checksumHash = ct[rl.Key]
 
 		// Create checksum dir and set group bit (all new files will inherit the directory's group). This allows for
 		// different users (being part of that group) to create, modify and delete the contained checksum and log files.
@@ -107,7 +107,7 @@ func provisionRunlist(runner *Runner, rl *Package, ct checksumTree) (e error) {
 	for i := range tasks {
 		task := tasks[i]
 		logMsg := task.command.Logging()
-		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvisionTask, TaskChecksum: task.checksum, Message: logMsg, Hostname: runner.Hostname()}
+		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvisionTask, TaskChecksum: task.checksum, Message: logMsg, Hostname: runner.Hostname(), RunlistName: rl.Key}
 		if _, found := checksumHash[task.checksum]; found { // Task is cached.
 			m.ExecStatus = pubsub.StatusCached
 			m.Publish("finished")

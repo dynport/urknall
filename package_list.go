@@ -8,8 +8,7 @@ import (
 type PackageList struct {
 	Items []*PackageListItem
 
-	packageNames []string
-	userRunlists []*Package
+	packageNames map[string]struct{}
 }
 
 type PackageListItem struct {
@@ -43,29 +42,26 @@ func (h *PackageList) AddPackage(name string, pkg Packager) {
 		panic(fmt.Sprintf(`package names must not contain spaces (%q does)`, name))
 	}
 
-	for i := range h.packageNames {
-		if h.packageNames[i] == name {
-			panic(fmt.Sprintf("package with name %q exists already", name))
-		}
+	if h.packageNames == nil {
+		h.packageNames = map[string]struct{}{}
 	}
 
-	h.packageNames = append(h.packageNames, name)
-	h.userRunlists = append(h.userRunlists, &Package{name: name, pkg: pkg})
-}
+	if _, ok := h.packageNames[name]; ok {
+		panic(fmt.Sprintf("package with name %q exists already", name))
+	}
 
-func (h *PackageList) runlists() (r []*Package) {
-	r = make([]*Package, 0, len(h.userRunlists))
-	r = append(r, h.userRunlists...)
-	return r
+	h.packageNames[name] = struct{}{}
+	packager := &Package{name: name, pkg: pkg}
+	h.Items = append(h.Items, &PackageListItem{Key: name, Package: packager})
 }
 
 func (h *PackageList) precompileRunlists() (e error) {
-	for _, runlist := range h.runlists() {
-		if len(runlist.commands) > 0 {
-			return fmt.Errorf("pkg %q seems to be packaged already", runlist.name)
+	for _, item := range h.Items {
+		if len(item.Package.commands) > 0 {
+			return fmt.Errorf("pkg %q seems to be packaged already", item.Key)
 		}
 
-		if e = runlist.compile(); e != nil {
+		if e = item.Package.compile(); e != nil {
 			return e
 		}
 	}
