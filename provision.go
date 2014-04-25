@@ -18,9 +18,9 @@ func ProvisionWithOptions(host Host, list *PackageList, opts *ProvisionOptions) 
 		Host: host,
 		User: host.User(),
 	}
-	e = prepareHost(runner)
+	e = runner.prepare()
 	if e != nil {
 		return e
 	}
-	return provisionPackageList(list, runner)
+	return runner.provision(list)
 }

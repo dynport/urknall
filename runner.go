@@ -13,18 +13,7 @@ type Runner struct {
 	Host   Host
 }
 
-func (runner *Runner) Hostname() string {
-	if s, ok := runner.Host.(fmt.Stringer); ok {
-		return s.String()
-	}
-	return "MISSING"
-}
-
-func (runner *Runner) IsSudoRequired() bool {
-	return runner.User != "root"
-}
-
-func prepareHost(runner *Runner) error {
+func (runner *Runner) prepare() error {
 	if runner.User == "" {
 		return fmt.Errorf("User not set")
 	}
@@ -53,4 +42,15 @@ func prepareHost(runner *Runner) error {
 		}
 	}
 	return nil
+}
+
+func (runner *Runner) Hostname() string {
+	if s, ok := runner.Host.(fmt.Stringer); ok {
+		return s.String()
+	}
+	return "MISSING"
+}
+
+func (runner *Runner) IsSudoRequired() bool {
+	return runner.User != "root"
 }

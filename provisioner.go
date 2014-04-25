@@ -54,7 +54,7 @@ func buildChecksumTree(runner *Runner) (ct checksumTree, e error) {
 }
 
 // Provision the given list of runlists.
-func provisionPackageList(list *PackageList, runner *Runner) (e error) {
+func (runner *Runner) provision(list *PackageList) (e error) {
 	ct, e := buildChecksumTree(runner)
 	if e != nil {
 		return e
