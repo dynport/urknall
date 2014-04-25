@@ -9,15 +9,19 @@ import (
 	"github.com/dynport/urknall"
 )
 
-type Host struct {
+func New() *host {
+	return &host{}
+}
+
+type host struct {
 	cachedUser string
 }
 
-func (c *Host) String() string {
+func (c *host) String() string {
 	return "LOCAL"
 }
 
-func (c *Host) User() string {
+func (c *host) User() string {
 	if c.cachedUser == "" {
 		out := &bytes.Buffer{}
 		err := &bytes.Buffer{}
@@ -34,7 +38,7 @@ func (c *Host) User() string {
 	return c.cachedUser
 }
 
-func (c *Host) Command(cmd string) (urknall.Command, error) {
+func (c *host) Command(cmd string) (urknall.Command, error) {
 	return &Command{
 		command: exec.Command("bash", "-c", cmd),
 	}, nil
