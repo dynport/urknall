@@ -63,5 +63,25 @@ func (h *PackageList) AddPackage(name string, pkg Packager) {
 	}
 
 	h.packageNames = append(h.packageNames, name)
-	h.userRunlists = append(h.userRunlists, newRunlist(name, pkg, nil))
+	h.userRunlists = append(h.userRunlists, &Package{name: name, pkg: pkg})
+}
+
+func (h *PackageList) runlists() (r []*Package) {
+	r = make([]*Package, 0, len(h.userRunlists))
+	r = append(r, h.userRunlists...)
+	return r
+}
+
+func (h *PackageList) precompileRunlists() (e error) {
+	for _, runlist := range h.runlists() {
+		if len(runlist.commands) > 0 {
+			return fmt.Errorf("pkg %q seems to be packaged already", runlist.name)
+		}
+
+		if e = runlist.compile(); e != nil {
+			return e
+		}
+	}
+
+	return nil
 }

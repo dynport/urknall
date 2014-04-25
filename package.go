@@ -7,6 +7,7 @@ import (
 	"runtime/debug"
 
 	"github.com/dynport/urknall/cmd"
+	"github.com/dynport/urknall/pubsub"
 )
 
 // A runlist is a container for commands. Use the following methods to add new commands.
@@ -15,7 +16,6 @@ type Package struct {
 
 	name string   // Name of the compilable.
 	pkg  Packager // only used for rendering templates
-	host *Host    // this is just for logging
 }
 
 func (rl *Package) Name() string {
@@ -45,7 +45,7 @@ func (rl *Package) Add(first interface{}, others ...interface{}) {
 		case string:
 			// No explicit expansion required as the function is called recursively with a ShellCommand type, that has
 			// explicitly renders the template.
-			rl.AddCommand(&cmd.ShellCommand{Command: t})
+			rl.AddCommand(&stringCommand{cmd: t})
 		case cmd.Command:
 			rl.AddCommand(t)
 		case Packager:
@@ -58,7 +58,7 @@ func (rl *Package) Add(first interface{}, others ...interface{}) {
 
 // Add the given package's commands to the runlist.
 func (rl *Package) AddPackage(p Packager) {
-	r := &Package{pkg: p, host: rl.host}
+	r := &Package{pkg: p}
 	e := validatePackage(p)
 	if e != nil {
 		panic(e.Error())
@@ -83,8 +83,8 @@ func (rl *Package) AddCommand(c cmd.Command) {
 }
 
 func (rl *Package) compile() (e error) {
-	m := &Message{runlist: rl, host: rl.host, key: MessageRunlistsPrecompile}
-	m.publish("started")
+	m := &pubsub.Message{RunlistName: rl.Name(), Key: pubsub.MessageRunlistsPrecompile}
+	m.Publish("started")
 	defer func() {
 		if r := recover(); r != nil {
 			var ok bool
@@ -92,9 +92,9 @@ func (rl *Package) compile() (e error) {
 			if !ok {
 				e = fmt.Errorf("failed to precompile package: %v %q", rl.name, r)
 			}
-			m.error_ = e
-			m.stack = string(debug.Stack())
-			m.publish("panic")
+			m.Error = e
+			m.Stack = string(debug.Stack())
+			m.Publish("panic")
 			log.Printf("ERROR: %s", r)
 			log.Print(string(debug.Stack()))
 		}
@@ -104,6 +104,6 @@ func (rl *Package) compile() (e error) {
 		return e
 	}
 	rl.pkg.Package(rl)
-	m.publish("finished")
+	m.Publish("finished")
 	return nil
 }

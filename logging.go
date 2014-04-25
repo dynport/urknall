@@ -6,10 +6,10 @@ import (
 	"github.com/dynport/urknall/pubsub"
 )
 
-func message(key string, host *Host, rl *Runlist) (msg *pubsub.Message) {
+func message(key string, hostname string, rl *Package) (msg *pubsub.Message) {
 	msg = &pubsub.Message{Key: key, StartedAt: time.Now()}
-	if host != nil {
-		msg.HostIP = host.IP
+	if hostname != "" {
+		msg.HostIP = hostname
 	}
 	if rl != nil {
 		msg.RunlistName = rl.name

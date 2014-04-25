@@ -31,7 +31,6 @@ package urknall
 
 import (
 	"io"
-	"sync"
 
 	"github.com/dynport/urknall/pubsub"
 )
@@ -42,39 +41,7 @@ func OpenStdoutLogger() io.Closer {
 	return pubsub.OpenStdoutLogger()
 }
 
-func Provision(host *Host) (e error) {
-	prov := newProvisioner(host, nil)
-	return prov.provision()
-}
-
-func ProvisionMulti(hosts ...*Host) (elist []error) {
-	wg := &sync.WaitGroup{}
-
-	eChannel := make(chan error, len(hosts))
-	for _, host := range hosts {
-		wg.Add(1)
-		go func(wg *sync.WaitGroup, eChannel chan<- error, host *Host) {
-			defer wg.Done()
-
-			prov := newProvisioner(host, nil)
-
-			if e := prov.provision(); e != nil {
-				eChannel <- e
-			}
-		}(wg, eChannel, host)
-	}
-
-	wg.Wait()
-	close(eChannel)
-
-	for e := range eChannel {
-		elist = append(elist, e)
-	}
-
-	return elist
-}
-
-func ProvisionDryRun(host *Host) (e error) {
-	prov := newProvisioner(host, &provisionOptions{DryRun: true})
-	return prov.provision()
+func ProvisionDryRun(commander Commander, list *PackageList) (e error) {
+	opts := &ProvisionOptions{DryRun: true}
+	return ProvisionWithOptions(commander, list, opts)
 }

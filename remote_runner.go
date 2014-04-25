@@ -9,18 +9,18 @@ import (
 )
 
 type remoteTaskRunner struct {
-	Runner *Runner
-	cmd    string
-	dir    string
-	task   *taskData
-	host   *Host
+	Runner   *Runner
+	cmd      string
+	dir      string
+	task     *taskData
+	hostname string
 
 	started time.Time
 }
 
 func (runner *remoteTaskRunner) baseCommand() string {
-	cmd := strings.Join(runner.host.Env, " ") + " bash -s -x -e"
-	if runner.host.isSudoRequired() {
+	cmd := strings.Join(runner.Runner.Env, " ") + " bash -s -x -e"
+	if runner.Runner.IsSudoRequired() {
 		cmd = "sudo " + cmd
 	}
 	return cmd
@@ -100,7 +100,7 @@ func logError(e error) {
 }
 
 func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, r io.Reader, finished chan string) {
-	m := message("task.io", runner.host, runner.task.runlist)
+	m := message("task.io", runner.Runner.Hostname(), runner.task.runlist)
 	m.Message = runner.task.Command().Logging()
 	m.Stream = stream
 
