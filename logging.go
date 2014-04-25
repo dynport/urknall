@@ -9,7 +9,7 @@ import (
 func message(key string, hostname string, rl *Package) (msg *pubsub.Message) {
 	runlistName := ""
 	if rl != nil {
-		msg.RunlistName = runlistName
+		runlistName = rl.name
 	}
 
 	return &pubsub.Message{Key: key, StartedAt: time.Now(), Hostname: hostname, RunlistName: runlistName}
