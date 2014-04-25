@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -15,6 +16,14 @@ type remoteTaskRunner struct {
 	host   *Host
 
 	started time.Time
+}
+
+func (runner *remoteTaskRunner) baseCommand() string {
+	cmd := strings.Join(runner.host.Env, " ") + " bash -s -x -e"
+	if runner.host.isSudoRequired() {
+		cmd = "sudo " + cmd
+	}
+	return cmd
 }
 
 func (runner *remoteTaskRunner) run() error {
@@ -91,11 +100,16 @@ func logError(e error) {
 }
 
 func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, r io.Reader, finished chan string) {
+	m := message("task.io", runner.host, runner.task.runlist)
+	m.Message = runner.task.Command().Logging()
+	m.Stream = stream
+
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		line := scanner.Text()
-		m := &Message{key: "task.io", host: runner.host, stream: stream, task: runner.task, line: line, runlist: runner.task.runlist, totalRuntime: time.Since(runner.started)}
-		m.publish(stream)
+		m.Line = line
+		m.TotalRuntime = time.Since(runner.started)
+		m.Publish(stream)
 		logs <- time.Now().UTC().Format(time.RFC3339Nano) + "\t" + stream + "\t" + scanner.Text()
 	}
 	finished <- stream
