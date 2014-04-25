@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/dynport/urknall"
-	"github.com/dynport/urknall/runner/ssh"
+	"github.com/dynport/urknall/ssh"
 )
 
 func main() {
