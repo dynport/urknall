@@ -1,5 +1,5 @@
 package urknall
 
-type Commander interface {
+type Host interface {
 	Command(cmd string) (Command, error)
 }

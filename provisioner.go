@@ -20,7 +20,7 @@ type Provisioner interface {
 func buildChecksumTree(runner *Runner) (ct checksumTree, e error) {
 	ct = checksumTree{}
 
-	cmd, e := runner.Commander.Command(fmt.Sprintf(`[[ -d %[1]s ]] && find %[1]s -type f -name \*.done`, ukCACHEDIR))
+	cmd, e := runner.Host.Command(fmt.Sprintf(`[[ -d %[1]s ]] && find %[1]s -type f -name \*.done`, ukCACHEDIR))
 	if e != nil {
 		return nil, e
 	}
@@ -91,7 +91,7 @@ func provisionRunlist(runner *Runner, rl *Package, ct checksumTree) (e error) {
 			createChecksumDirCmd = fmt.Sprintf(`sudo %s`, createChecksumDirCmd)
 		}
 
-		cmd, e := runner.Commander.Command(createChecksumDirCmd)
+		cmd, e := runner.Host.Command(createChecksumDirCmd)
 		if e != nil {
 			return e
 		}
@@ -172,7 +172,7 @@ func cleanUpRemainingCachedEntries(runner *Runner, checksumDir string, checksumH
 		m := &pubsub.Message{Key: pubsub.MessageUrknallInternal, Hostname: runner.Hostname()}
 		m.Publish("started")
 
-		c, e := runner.Commander.Command(cmd)
+		c, e := runner.Host.Command(cmd)
 		if e != nil {
 			return e
 		}

@@ -7,21 +7,21 @@ import (
 	"github.com/dynport/urknall/runner"
 )
 
-type Commander struct {
+type Host struct {
+}
+
+func (c *Host) String() string {
+	return "LOCAL"
+}
+
+func (c *Host) Command(cmd string) (runner.Command, error) {
+	return &Command{
+		command: exec.Command("bash", "-c", cmd),
+	}, nil
 }
 
 type Command struct {
 	command *exec.Cmd
-}
-
-func (c *Commander) String() string {
-	return "LOCAL"
-}
-
-func (c *Commander) Command(cmd string) (runner.Command, error) {
-	return &Command{
-		command: exec.Command("bash", "-c", cmd),
-	}, nil
 }
 
 func (c *Command) StdoutPipe() (io.Reader, error) {

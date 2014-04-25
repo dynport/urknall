@@ -7,14 +7,14 @@ import (
 )
 
 type Runner struct {
-	User      string
-	DryRun    bool
-	Env       []string
-	Commander Commander
+	User   string
+	DryRun bool
+	Env    []string
+	Host   Host
 }
 
 func (runner *Runner) Hostname() string {
-	if s, ok := runner.Commander.(fmt.Stringer); ok {
+	if s, ok := runner.Host.(fmt.Stringer); ok {
 		return s.String()
 	}
 	return "MISSING"
@@ -28,7 +28,7 @@ func prepareHost(runner *Runner) error {
 	if runner.User == "" {
 		return fmt.Errorf("User not set")
 	}
-	cmd, e := runner.Commander.Command(fmt.Sprintf(`{ grep "^%s:" /etc/group | grep %s; } && [[ -d /var/lib/urknall ]]`, ukGROUP, runner.User))
+	cmd, e := runner.Host.Command(fmt.Sprintf(`{ grep "^%s:" /etc/group | grep %s; } && [[ -d /var/lib/urknall ]]`, ukGROUP, runner.User))
 	if e != nil {
 		return e
 	}
@@ -40,7 +40,7 @@ func prepareHost(runner *Runner) error {
 			fmt.Sprintf("usermod -a -G %s %s", ukGROUP, runner.User),
 		}
 
-		cmd, e = runner.Commander.Command(fmt.Sprintf(`sudo bash -c "%s"`, strings.Join(cmds, " && ")))
+		cmd, e = runner.Host.Command(fmt.Sprintf(`sudo bash -c "%s"`, strings.Join(cmds, " && ")))
 		if e != nil {
 			return e
 		}

@@ -1,7 +1,7 @@
 package urknall
 
-func Provision(commander Commander, list *PackageList) error {
-	return ProvisionWithOptions(commander, list, nil)
+func Provision(host Host, list *PackageList) error {
+	return ProvisionWithOptions(host, list, nil)
 }
 
 type userer interface {
@@ -12,17 +12,17 @@ type ProvisionOptions struct {
 	DryRun bool
 }
 
-func ProvisionWithOptions(commander Commander, list *PackageList, opts *ProvisionOptions) error {
+func ProvisionWithOptions(host Host, list *PackageList, opts *ProvisionOptions) error {
 	e := list.precompileRunlists()
 	if e != nil {
 		return e
 	}
 
 	runner := &Runner{
-		Commander: commander,
+		Host: host,
 	}
 
-	if userer, ok := commander.(userer); ok {
+	if userer, ok := host.(userer); ok {
 		runner.User = userer.User()
 	} else {
 		runner.User = "root"

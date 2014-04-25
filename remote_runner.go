@@ -32,7 +32,7 @@ func (runner *remoteTaskRunner) run() error {
 	errors := make(chan error)
 	logs := runner.newLogWriter(prefix+".log", errors)
 
-	c, e := runner.Runner.Commander.Command(runner.cmd)
+	c, e := runner.Runner.Host.Command(runner.cmd)
 	if e != nil {
 		return e
 	}
@@ -84,7 +84,7 @@ func (runner *remoteTaskRunner) writeChecksumFile(prefix string, e error) {
 		targetFile = prefix + ".failed"
 	}
 	cmd := "cat > " + targetFile + " <<EOF\n" + runner.task.Command().Shell() + "\nEOF"
-	c, e := runner.Runner.Commander.Command(cmd)
+	c, e := runner.Runner.Host.Command(cmd)
 	if e != nil {
 		panic(e.Error())
 	}
@@ -117,7 +117,7 @@ func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, r
 func (runner *remoteTaskRunner) newLogWriter(path string, errors chan error) chan string {
 	logs := make(chan string)
 	go func() {
-		c, e := runner.Runner.Commander.Command("{ t=$(tempfile -m0660) || exit 1; } && cat - > $t && mv $t " + path + " && chgrp urknall " + path)
+		c, e := runner.Runner.Host.Command("{ t=$(tempfile -m0660) || exit 1; } && cat - > $t && mv $t " + path + " && chgrp urknall " + path)
 		if e != nil {
 			errors <- e
 			return
