@@ -14,6 +14,10 @@ type Command struct {
 	command *exec.Cmd
 }
 
+func (c *Commander) String() string {
+	return "LOCAL"
+}
+
 func (c *Commander) Command(cmd string) (runner.Command, error) {
 	return &Command{
 		command: exec.Command("bash", "-c", cmd),

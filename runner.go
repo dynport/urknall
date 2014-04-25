@@ -14,7 +14,10 @@ type Runner struct {
 }
 
 func (runner *Runner) Hostname() string {
-	return "IMPLEMENT_ME"
+	if s, ok := runner.Commander.(fmt.Stringer); ok {
+		return s.String()
+	}
+	return "MISSING"
 }
 
 func (runner *Runner) IsSudoRequired() bool {

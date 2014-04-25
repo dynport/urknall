@@ -9,11 +9,10 @@ import (
 )
 
 type remoteTaskRunner struct {
-	Runner   *Runner
-	cmd      string
-	dir      string
-	task     *taskData
-	hostname string
+	Runner *Runner
+	cmd    string
+	dir    string
+	task   *taskData
 
 	started time.Time
 }

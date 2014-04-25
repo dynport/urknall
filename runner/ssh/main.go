@@ -2,15 +2,11 @@ package ssh
 
 import (
 	"fmt"
-	"log"
-	"os"
 	"strings"
 
 	"code.google.com/p/go.crypto/ssh"
 	"github.com/dynport/urknall"
 )
-
-var debugger = log.New(os.Stderr, "", 0)
 
 type Host struct {
 	Address  string
@@ -21,6 +17,11 @@ type Host struct {
 	user    string
 
 	client *ssh.Client
+}
+
+func (host *Host) String() string {
+	host.parseAddress()
+	return host.address
 }
 
 func (host *Host) User() string {
@@ -64,7 +65,6 @@ func (c *Host) Client() (*ssh.Client, error) {
 	if c.Password != "" {
 		config.Auth = append(config.Auth, ssh.Password(c.Password))
 	}
-	debugger.Printf("connecting %q with %#v", c.address, config)
 	con, e := ssh.Dial("tcp", fmt.Sprintf("%s:%d", c.address, c.port), config)
 	if e != nil {
 		return nil, e

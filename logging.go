@@ -7,12 +7,10 @@ import (
 )
 
 func message(key string, hostname string, rl *Package) (msg *pubsub.Message) {
-	msg = &pubsub.Message{Key: key, StartedAt: time.Now()}
-	if hostname != "" {
-		msg.HostIP = hostname
-	}
+	runlistName := ""
 	if rl != nil {
-		msg.RunlistName = rl.name
+		msg.RunlistName = runlistName
 	}
-	return msg
+
+	return &pubsub.Message{Key: key, StartedAt: time.Now(), Hostname: hostname, RunlistName: runlistName}
 }

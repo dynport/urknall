@@ -52,7 +52,7 @@ type Message struct {
 	ExecStatus string // Urknall status (executed or cached).
 	Message    string // The message to be logged.
 
-	HostIP string // IP of the host a command is run.
+	Hostname string // IP of the host a command is run.
 
 	RunlistName  string // Name of the runlist currently being executed.
 	TaskChecksum string // Hash of an runlist action.

@@ -52,7 +52,7 @@ func (logger *stdoutLogger) Started() time.Time {
 }
 
 func (logger *stdoutLogger) formatCommandOuput(message *Message) string {
-	prefix := fmt.Sprintf("[%s][%s][%s]", formatIp(message.HostIP), formatRunlistName(message.RunlistName), formatDuration(logger.sinceStarted()))
+	prefix := fmt.Sprintf("[%s][%s][%s]", formatIp(message.Hostname), formatRunlistName(message.RunlistName), formatDuration(logger.sinceStarted()))
 	line := message.Line
 	if message.IsStderr() {
 		line = gocli.Red(line)
@@ -76,7 +76,7 @@ func (logger *stdoutLogger) DefaultFormatter(message *Message) string {
 	if len(message.Line) > 0 {
 		return logger.formatCommandOuput(message)
 	}
-	ip := message.HostIP
+	ip := message.Hostname
 	runlistName := message.RunlistName
 	payload := ""
 	if message.Message != "" {

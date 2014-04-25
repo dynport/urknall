@@ -62,7 +62,7 @@ func provisionRunlists(runLists []*Package, runner *Runner) (e error) {
 
 	for i := range runLists {
 		rl := runLists[i]
-		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvision}
+		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvision, Hostname: runner.Hostname()}
 		m.Publish("started")
 		if e = provisionRunlist(runner, rl, ct); e != nil {
 			m.PublishError(e)
@@ -107,7 +107,7 @@ func provisionRunlist(runner *Runner, rl *Package, ct checksumTree) (e error) {
 	for i := range tasks {
 		task := tasks[i]
 		logMsg := task.command.Logging()
-		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvisionTask, TaskChecksum: task.checksum, Message: logMsg}
+		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvisionTask, TaskChecksum: task.checksum, Message: logMsg, Hostname: runner.Hostname()}
 		if _, found := checksumHash[task.checksum]; found { // Task is cached.
 			m.ExecStatus = pubsub.StatusCached
 			m.Publish("finished")
@@ -166,10 +166,10 @@ func cleanUpRemainingCachedEntries(runner *Runner, checksumDir string, checksumH
 		invalidCacheEntries = append(invalidCacheEntries, fmt.Sprintf("%s.done", k))
 	}
 	if runner.DryRun {
-		(&pubsub.Message{Key: pubsub.MessageCleanupCacheEntries, InvalidatedCacheEntries: invalidCacheEntries}).Publish(".dryrun")
+		(&pubsub.Message{Key: pubsub.MessageCleanupCacheEntries, InvalidatedCacheEntries: invalidCacheEntries, Hostname: runner.Hostname()}).Publish(".dryrun")
 	} else {
 		cmd := fmt.Sprintf("cd %s && rm -f *.failed %s", checksumDir, strings.Join(invalidCacheEntries, " "))
-		m := &pubsub.Message{Key: pubsub.MessageUrknallInternal}
+		m := &pubsub.Message{Key: pubsub.MessageUrknallInternal, Hostname: runner.Hostname()}
 		m.Publish("started")
 
 		c, e := runner.Commander.Command(cmd)
