@@ -19,14 +19,14 @@ type Host struct {
 	client *ssh.Client
 }
 
-func (host *Host) String() string {
-	host.parseAddress()
-	return host.address
-}
-
 func (host *Host) User() string {
 	host.parseAddress()
 	return host.user
+}
+
+func (host *Host) String() string {
+	host.parseAddress()
+	return host.address
 }
 
 func (host *Host) parseAddress() {
