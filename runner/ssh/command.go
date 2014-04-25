@@ -11,6 +11,10 @@ type Command struct {
 	session *ssh.Session
 }
 
+func (c *Command) Close() error {
+	return c.session.Close()
+}
+
 func (c *Command) StdinPipe() (io.Writer, error) {
 	return c.session.StdinPipe()
 }
