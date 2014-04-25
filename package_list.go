@@ -17,19 +17,6 @@ type PackageListItem struct {
 	Package *Package
 }
 
-// Add the given package with the given name to the host.
-func (list *PackageList) addSystemPackage(name string, pkg Packager) (e error) {
-	name = "uk." + name
-	for i := range list.packageNames {
-		if list.packageNames[i] == name {
-			return fmt.Errorf("package with name %q exists already", name)
-		}
-	}
-
-	list.packageNames = append(list.packageNames, name)
-	return nil
-}
-
 // Alias for the AddCommands methods.
 func (h *PackageList) Add(name string, cmd interface{}, cmds ...interface{}) {
 	h.AddCommands(name, cmd, cmds...)
