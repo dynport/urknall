@@ -9,16 +9,16 @@ import (
 
 // A "Package" is an entity that packs commands into a runlist, taking into account their own configuration.
 type Packager interface {
-	Package(rl *Package) // Add the package specific commands to the runlist.
+	Package(*Package) // Add the package specific commands to the runlist.
 }
 
 type anonymousPackage struct {
 	cmds []interface{}
 }
 
-func (anon *anonymousPackage) Package(rl *Package) {
+func (anon *anonymousPackage) Package(pkg *Package) {
 	for i := range anon.cmds {
-		rl.Add(anon.cmds[i])
+		pkg.Add(anon.cmds[i])
 	}
 }
 

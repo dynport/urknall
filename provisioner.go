@@ -73,16 +73,16 @@ func provisionPackageList(list *PackageList, runner *Runner) (e error) {
 	return nil
 }
 
-func provisionRunlist(runner *Runner, rl *PackageListItem, ct checksumTree) (e error) {
-	tasks := rl.Package.tasks()
+func provisionRunlist(runner *Runner, item *PackageListItem, ct checksumTree) (e error) {
+	tasks := item.Package.tasks()
 
-	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", rl.Key)
+	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", item.Key)
 
 	var found bool
 	var checksumHash map[string]struct{}
-	if checksumHash, found = ct[rl.Key]; !found {
-		ct[rl.Key] = map[string]struct{}{}
-		checksumHash = ct[rl.Key]
+	if checksumHash, found = ct[item.Key]; !found {
+		ct[item.Key] = map[string]struct{}{}
+		checksumHash = ct[item.Key]
 
 		// Create checksum dir and set group bit (all new files will inherit the directory's group). This allows for
 		// different users (being part of that group) to create, modify and delete the contained checksum and log files.
@@ -107,7 +107,7 @@ func provisionRunlist(runner *Runner, rl *PackageListItem, ct checksumTree) (e e
 	for i := range tasks {
 		task := tasks[i]
 		logMsg := task.command.Logging()
-		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvisionTask, TaskChecksum: task.checksum, Message: logMsg, Hostname: runner.Hostname(), RunlistName: rl.Key}
+		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvisionTask, TaskChecksum: task.checksum, Message: logMsg, Hostname: runner.Hostname(), RunlistName: item.Key}
 		if _, found := checksumHash[task.checksum]; found { // Task is cached.
 			m.ExecStatus = pubsub.StatusCached
 			m.Publish("finished")

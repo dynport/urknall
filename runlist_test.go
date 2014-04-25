@@ -21,7 +21,7 @@ type somePackage struct {
 	IField int
 }
 
-func (sp *somePackage) Package(rl *Package) {
+func (sp *somePackage) Package(pkg *Package) {
 }
 
 func TestAddCommand(t *testing.T) {

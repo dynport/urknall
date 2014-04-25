@@ -18,8 +18,8 @@ type Package struct {
 	pkg  Packager // only used for rendering templates
 }
 
-func (rl *Package) Name() string {
-	return rl.name
+func (pkg *Package) Name() string {
+	return pkg.name
 }
 
 func (p *Package) tasks() []*taskData {
@@ -38,18 +38,18 @@ func (p *Package) tasks() []*taskData {
 
 // Add commands (can also be given as string) or packages (commands will be extracted and added accordingly) to the
 // runlist.
-func (rl *Package) Add(first interface{}, others ...interface{}) {
+func (pkg *Package) Add(first interface{}, others ...interface{}) {
 	all := append([]interface{}{first}, others...)
 	for _, c := range all {
 		switch t := c.(type) {
 		case string:
 			// No explicit expansion required as the function is called recursively with a ShellCommand type, that has
 			// explicitly renders the template.
-			rl.AddCommand(&stringCommand{cmd: t})
+			pkg.AddCommand(&stringCommand{cmd: t})
 		case cmd.Command:
-			rl.AddCommand(t)
+			pkg.AddCommand(t)
 		case Packager:
-			rl.AddPackage(t)
+			pkg.AddPackage(t)
 		default:
 			panic(fmt.Sprintf("type %T not supported!", t))
 		}
@@ -57,21 +57,21 @@ func (rl *Package) Add(first interface{}, others ...interface{}) {
 }
 
 // Add the given package's commands to the runlist.
-func (rl *Package) AddPackage(p Packager) {
+func (pkg *Package) AddPackage(p Packager) {
 	r := &Package{pkg: p}
 	e := validatePackage(p)
 	if e != nil {
 		panic(e.Error())
 	}
 	p.Package(r)
-	rl.commands = append(rl.commands, r.commands...)
+	pkg.commands = append(pkg.commands, r.commands...)
 }
 
 // Add the given command to the runlist.
-func (rl *Package) AddCommand(c cmd.Command) {
-	if rl.pkg != nil {
+func (pkg *Package) AddCommand(c cmd.Command) {
+	if pkg.pkg != nil {
 		if renderer, ok := c.(cmd.Renderer); ok {
-			renderer.Render(rl.pkg)
+			renderer.Render(pkg.pkg)
 		}
 		if validator, ok := c.(cmd.Validator); ok {
 			if e := validator.Validate(); e != nil {
@@ -79,18 +79,18 @@ func (rl *Package) AddCommand(c cmd.Command) {
 			}
 		}
 	}
-	rl.commands = append(rl.commands, c)
+	pkg.commands = append(pkg.commands, c)
 }
 
-func (rl *Package) compile() (e error) {
-	m := &pubsub.Message{RunlistName: rl.Name(), Key: pubsub.MessageRunlistsPrecompile}
+func (pkg *Package) compile() (e error) {
+	m := &pubsub.Message{RunlistName: pkg.Name(), Key: pubsub.MessageRunlistsPrecompile}
 	m.Publish("started")
 	defer func() {
 		if r := recover(); r != nil {
 			var ok bool
 			e, ok = r.(error)
 			if !ok {
-				e = fmt.Errorf("failed to precompile package: %v %q", rl.name, r)
+				e = fmt.Errorf("failed to precompile package: %v %q", pkg.name, r)
 			}
 			m.Error = e
 			m.Stack = string(debug.Stack())
@@ -100,10 +100,10 @@ func (rl *Package) compile() (e error) {
 		}
 	}()
 
-	if e = validatePackage(rl.pkg); e != nil {
+	if e = validatePackage(pkg.pkg); e != nil {
 		return e
 	}
-	rl.pkg.Package(rl)
+	pkg.pkg.Package(pkg)
 	m.Publish("finished")
 	return nil
 }
