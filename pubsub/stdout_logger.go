@@ -99,10 +99,11 @@ func (logger *stdoutLogger) DefaultFormatter(message *Message) string {
 }
 
 func formatRunlistName(name string) string {
-	if len(name) > 8 {
-		name = name[0:8]
+	maxLen := 12
+	if len(name) > maxLen {
+		name = name[0:maxLen]
 	}
-	return fmt.Sprintf("%-8s", name)
+	return fmt.Sprintf("%-*s", maxLen, name)
 }
 
 func formatDuration(dur time.Duration) string {
