@@ -1,6 +1,7 @@
 package ssh
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -20,6 +21,11 @@ type Host struct {
 	user    string
 
 	client *ssh.Client
+}
+
+func (host *Host) User() string {
+	host.parseAddress()
+	return host.user
 }
 
 func (host *Host) parseAddress() {
@@ -45,33 +51,21 @@ func (host *Host) parseAddress() {
 
 }
 
-func (host *Host) User() string {
-	host.parseAddress()
-	parts := strings.Split(host.Address, "@")
-	if len(parts) == 2 {
-		return parts[0]
-	}
-	return "root"
-}
-
 type SshClient interface {
 	Client() (*ssh.Client, error)
 }
 
 func (c *Host) Client() (*ssh.Client, error) {
+	c.parseAddress()
 	var e error
 	config := &ssh.ClientConfig{
-		User: c.User(),
+		User: c.user,
 	}
 	if c.Password != "" {
 		config.Auth = append(config.Auth, ssh.Password(c.Password))
 	}
-	addr := c.Address
-	if !strings.Contains(addr, ":") {
-		addr += ":22"
-	}
-	debugger.Printf("connecting %q with %#v", addr, config)
-	con, e := ssh.Dial("tcp", addr, config)
+	debugger.Printf("connecting %q with %#v", c.address, config)
+	con, e := ssh.Dial("tcp", fmt.Sprintf("%s:%d", c.address, c.port), config)
 	if e != nil {
 		return nil, e
 	}
