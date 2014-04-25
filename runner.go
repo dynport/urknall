@@ -28,7 +28,7 @@ func prepareHost(runner *Runner) error {
 	if runner.User == "" {
 		return fmt.Errorf("User not set")
 	}
-	cmd, e := runner.Commander.Command(fmt.Sprintf(`grep "^%s:" /etc/group | grep %s`, ukGROUP, runner.User))
+	cmd, e := runner.Commander.Command(fmt.Sprintf(`{ grep "^%s:" /etc/group | grep %s; } && [[ -d /var/lib/urknall ]]`, ukGROUP, runner.User))
 	if e != nil {
 		return e
 	}
