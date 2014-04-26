@@ -8,10 +8,11 @@ import (
 )
 
 func main() {
-	l := urknall.OpenStdoutLogger()
-	defer l.Close()
-	host := &ssh.Host{Address: "127.0.0.1:22"}
-	e := urknall.Provision(host, &urknall.PackageList{})
+	defer urknall.OpenStdoutLogger().Close()
+	list := &urknall.PackageList{}
+	list.Add("pkg.hello", "echo hello world")
+	host := &ssh.Host{Address: "ubuntu@127.0.0.1"}
+	e := urknall.Provision(host, list)
 	if e != nil {
 		log.Fatal(e)
 	}
