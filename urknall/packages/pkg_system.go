@@ -54,7 +54,7 @@ vm.swappiness=0
 `
 
 type Timezone struct {
-	Timezone string `urknall:"required"`
+	Timezone string `urknall:"required=true"`
 }
 
 func (t *Timezone) Package(r *urknall.Package) {
@@ -65,7 +65,7 @@ func (t *Timezone) Package(r *urknall.Package) {
 }
 
 type Hostname struct {
-	Hostname string `urknall:"required"`
+	Hostname string `urknall:"required=true"`
 }
 
 func (h *Hostname) Package(r *urknall.Package) {
