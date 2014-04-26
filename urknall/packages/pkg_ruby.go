@@ -31,18 +31,17 @@ func (ruby *Ruby) Name() string {
 
 func (ruby *Ruby) Package(r *urknall.Package) {
 	r.Add(
-		InstallPackages("curl", "build-essential",
-			"libyaml-dev", "libxml2-dev", "libxslt1-dev",
-			"libreadline-dev", "libssl-dev", "zlib1g-dev"))
-
-	r.Add(
-		DownloadAndExtract(ruby.downloadURL(), "/opt/src"))
-
-	r.Add(
-		And("cd {{ .SourcePath }}",
+		InstallPackages(
+			"curl", "build-essential", "libyaml-dev", "libxml2-dev", "libxslt1-dev", "libreadline-dev", "libssl-dev", "zlib1g-dev",
+		),
+		DownloadAndExtract(ruby.downloadURL(), "/opt/src"),
+		And(
+			"cd {{ .SourcePath }}",
 			"./configure --disable-install-doc --prefix={{ .InstallPath }}",
 			"make",
-			"make install"))
+			"make install",
+		),
+	)
 
 	if ruby.WithBundler {
 		r.Add("{{ .InstallPath }}/bin/gem install bundler")
