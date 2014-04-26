@@ -26,6 +26,9 @@ func (base *base) baseDir() string {
 
 func (init *base) writeAsset(name string) error {
 	dst := init.baseDir() + "/uk_" + name
+	if name == "main.go" {
+		dst = init.baseDir() + "/" + name
+	}
 	logger.Printf("writing asset %q to %q", name, dst)
 	dir := path.Dir(dst)
 	_, e := os.Stat(dir)
