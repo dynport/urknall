@@ -7,7 +7,7 @@ import (
 )
 
 func TestPackages(t *testing.T) {
-	packages := []urknall.Package{
+	packages := []urknall.Packager{
 		&Nginx{},
 		&Redis{},
 		&Postgres{},
