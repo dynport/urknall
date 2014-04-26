@@ -8,7 +8,7 @@ import (
 
 	"code.google.com/p/go.crypto/ssh"
 	"code.google.com/p/go.crypto/ssh/agent"
-	"github.com/dynport/urknall"
+	"github.com/dynport/urknall/cmd"
 )
 
 type Host struct {
@@ -79,7 +79,7 @@ func (c *Host) Client() (*ssh.Client, error) {
 	return &ssh.Client{Conn: con}, nil
 }
 
-func (c *Host) Command(cmd string) (urknall.Command, error) {
+func (c *Host) Command(cmd string) (cmd.ExecCommand, error) {
 	if c.client == nil {
 		var e error
 		c.client, e = c.Client()

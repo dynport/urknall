@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-
-	"github.com/dynport/urknall"
+	"github.com/dynport/urknall/cmd"
 )
 
 func New() *host {
@@ -38,7 +37,7 @@ func (c *host) User() string {
 	return c.cachedUser
 }
 
-func (c *host) Command(cmd string) (urknall.Command, error) {
+func (c *host) Command(cmd string) (cmd.ExecCommand, error) {
 	return &Command{
 		command: exec.Command("bash", "-c", cmd),
 	}, nil

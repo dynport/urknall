@@ -1,5 +1,7 @@
 package cmd
 
+import "io"
+
 // The Command interface is used to have specialized commands that are used for execution and logging (the latter is
 // useful to hide the gory details of more complex commands).
 type Command interface {
@@ -18,4 +20,16 @@ type Renderer interface {
 // on commands to verify validity.
 type Validator interface {
 	Validate() error
+}
+
+type ExecCommand interface {
+	StdoutPipe() (io.Reader, error)
+	StderrPipe() (io.Reader, error)
+	StdinPipe() (io.Writer, error)
+	SetStdout(io.Writer)
+	SetStderr(io.Writer)
+	SetStdin(io.Reader)
+	Run() error
+	Start() error
+	Wait() error
 }
