@@ -60,8 +60,8 @@ func (runner *Runner) provision(list *PackageList) (e error) {
 		return e
 	}
 
-	for i := range list.Items {
-		rl := list.Items[i]
+	for i := range list.items {
+		rl := list.items[i]
 		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvision, Hostname: runner.Hostname()}
 		m.Publish("started")
 		if e = provisionRunlist(runner, rl, ct); e != nil {

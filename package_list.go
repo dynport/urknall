@@ -6,7 +6,7 @@ import (
 )
 
 type PackageList struct {
-	Items []*PackageListItem
+	items []*PackageListItem
 
 	packageNames map[string]struct{}
 }
@@ -52,11 +52,11 @@ func (h *PackageList) AddPackage(name string, pkg Packager) {
 
 	h.packageNames[name] = struct{}{}
 	packager := &Package{name: name, pkg: pkg}
-	h.Items = append(h.Items, &PackageListItem{Key: name, Package: packager})
+	h.items = append(h.items, &PackageListItem{Key: name, Package: packager})
 }
 
 func (h *PackageList) precompileRunlists() (e error) {
-	for _, item := range h.Items {
+	for _, item := range h.items {
 		if len(item.Package.commands) > 0 {
 			return fmt.Errorf("pkg %q seems to be packaged already", item.Key)
 		}
