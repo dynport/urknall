@@ -2,9 +2,12 @@ package ssh
 
 import (
 	"fmt"
+	"net"
+	"os"
 	"strings"
 
 	"code.google.com/p/go.crypto/ssh"
+	"code.google.com/p/go.crypto/ssh/agent"
 	"github.com/dynport/urknall"
 )
 
@@ -64,6 +67,11 @@ func (c *Host) Client() (*ssh.Client, error) {
 	}
 	if c.Password != "" {
 		config.Auth = append(config.Auth, ssh.Password(c.Password))
+	}
+	if sshSocket := os.Getenv("SSH_AUTH_SOCK"); sshSocket != "" {
+		if c, e := net.Dial("unix", sshSocket); e == nil {
+			config.Auth = append(config.Auth, ssh.PublicKeysCallback(agent.NewClient(c).Signers))
+		}
 	}
 	con, e := ssh.Dial("tcp", fmt.Sprintf("%s:%d", c.address, c.port), config)
 	if e != nil {
