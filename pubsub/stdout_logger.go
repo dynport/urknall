@@ -35,6 +35,14 @@ func OpenStdoutLogger() io.Closer {
 	return logger
 }
 
+func OpenStdoutLoggerWithFormatter(f formatter) io.Closer {
+	logger := &stdoutLogger{}
+	logger.Formatter = f
+	// Ignore the error from Start. It would only be triggered if the formatter wouldn't be set.
+	_ = logger.Start()
+	return logger
+}
+
 type stdoutLogger struct {
 	Formatter    formatter
 	maxLengths   map[int]int
@@ -65,6 +73,34 @@ func formatIp(ip string) string {
 }
 
 type formatter func(urknallMessage *Message) string
+
+func SimpleFormatter(message *Message) string {
+	ignoreKeys := []string{MessageRunlistsPrecompile, MessageCleanupCacheEntries, MessageRunlistsProvision, MessageUrknallInternal}
+	for _, k := range ignoreKeys {
+		if strings.HasPrefix(message.Key, k) {
+			return ""
+		}
+	}
+	if len(message.Line) > 0 {
+		prefix := fmt.Sprintf("[%s]", formatRunlistName(message.RunlistName, 8))
+		line := message.Line
+		return prefix + " " + line
+	}
+	runlistName := message.RunlistName
+	payload := ""
+	if message.Message != "" {
+		payload = message.Message
+	}
+	execStatus := fmt.Sprintf("%-8s", message.ExecStatus)
+	parts := []string{
+		fmt.Sprintf("[%s][%s]%s",
+			formatRunlistName(runlistName, 8),
+			execStatus,
+			payload,
+		),
+	}
+	return strings.Join(parts, " ")
+}
 
 func (logger *stdoutLogger) DefaultFormatter(message *Message) string {
 	ignoreKeys := []string{MessageRunlistsPrecompile, MessageCleanupCacheEntries, MessageRunlistsProvision, MessageUrknallInternal}
