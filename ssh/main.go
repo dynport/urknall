@@ -11,6 +11,10 @@ import (
 	"github.com/dynport/urknall/cmd"
 )
 
+func New(address string) *Host {
+	return &Host{Address: address}
+}
+
 type Host struct {
 	Address  string
 	Password string
