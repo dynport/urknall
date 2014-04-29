@@ -33,7 +33,7 @@ func (p *OpenVPN) PublicIp() string {
 	}
 }
 
-func (p *OpenVPN) Package(r *urknall.Package) {
+func (p *OpenVPN) Package(r *urknall.Task) {
 	if len(p.Country) != 2 {
 		panic("Country must be exactly 2 characters long")
 	}
@@ -151,7 +151,7 @@ export PKCS11_MODULE_PATH=changeme
 export PKCS11_PIN=1234
 `
 
-func (u *OpenVpnUser) Package(r *urknall.Package) {
+func (u *OpenVpnUser) Package(r *urknall.Task) {
 	r.Add(
 		addVpnUser,
 		openVpnPackagePath+" "+u.Login,
@@ -177,7 +177,7 @@ type OpenVpnMasquerade struct {
 	Interface string `urknall:"required=true"`
 }
 
-func (*OpenVpnMasquerade) Package(r *urknall.Package) {
+func (*OpenVpnMasquerade) Package(r *urknall.Task) {
 	r.Add(
 		WriteFile("/etc/network/if-pre-up.d/iptables", ipUp, "root", 0744),
 		"IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables",

@@ -10,7 +10,7 @@ type Jenkins struct {
 	ListenPort string `urknall:"default=8080"`
 }
 
-func (pkg *Jenkins) Package(r *urknall.Package) {
+func (pkg *Jenkins) Package(r *urknall.Task) {
 	urlRoot := "http://mirrors.jenkins-ci.org"
 	url := urlRoot + "/war/" + pkg.Version + "/jenkins.war"
 

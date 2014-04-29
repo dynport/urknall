@@ -1,29 +1,26 @@
 package urknall
 
-type Provisioning struct {
-	Host   Host
-	List   *PackageList
+type Build struct {
+	Target
+	*Package
 	DryRun bool
 }
 
-func (p *Provisioning) Run() error {
-	e := p.List.precompileRunlists()
+func (p *Build) Run() error {
+	e := p.Package.precompileRunlists()
 	if e != nil {
 		return e
 	}
 
-	runner := &Runner{
-		Host: p.Host,
-		User: p.Host.User(),
-	}
+	runner := &Runner{Target: p.Target}
 	e = runner.prepare()
 	if e != nil {
 		return e
 	}
-	return runner.provision(p.List)
+	return runner.provision(p.Package)
 }
 
-func Provision(host Host, list *PackageList) error {
+func Provision(host Target, list *Package) error {
 	return ProvisionWithOptions(host, list, nil)
 }
 
@@ -31,15 +28,14 @@ type ProvisionOptions struct {
 	DryRun bool
 }
 
-func ProvisionWithOptions(host Host, list *PackageList, opts *ProvisionOptions) error {
+func ProvisionWithOptions(host Target, list *Package, opts *ProvisionOptions) error {
 	e := list.precompileRunlists()
 	if e != nil {
 		return e
 	}
 
 	runner := &Runner{
-		Host: host,
-		User: host.User(),
+		Target: host,
 	}
 	e = runner.prepare()
 	if e != nil {

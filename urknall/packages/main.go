@@ -9,10 +9,10 @@ import (
 
 func main() {
 	defer urknall.OpenStdoutLogger().Close()
-	list := &urknall.PackageList{}
-	list.Add("pkg.hello", "echo hello world")
+	pkg := &urknall.Package{}
+	pkg.Add("pkg.hello", "echo hello world")
 	host := &ssh.Host{Address: "ubuntu@127.0.0.1"}
-	e := urknall.Provision(host, list)
+	e := urknall.Provision(host, pkg)
 	if e != nil {
 		log.Fatal(e)
 	}

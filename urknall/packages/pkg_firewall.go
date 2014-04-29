@@ -16,7 +16,7 @@ type Firewall struct {
 	IPSets    []*FirewallIPSet // List of ipsets for the firewall.
 }
 
-func (f *Firewall) Package(r *urknall.Package) {
+func (f *Firewall) Package(r *urknall.Task) {
 	r.Add(
 		InstallPackages("iptables", "ipset"),
 		WriteFile("/etc/network/if-pre-up.d/iptables", firewallUpstart, "root", 0744),

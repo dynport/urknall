@@ -13,14 +13,14 @@ import (
 type checksumTree map[string]map[string]struct{}
 
 type Provisioner interface {
-	ProvisionRunlist(*Package, checksumTree) error
+	ProvisionRunlist(*Task, checksumTree) error
 	BuildChecksumTree() (checksumTree, error)
 }
 
 func buildChecksumTree(runner *Runner) (ct checksumTree, e error) {
 	ct = checksumTree{}
 
-	cmd, e := runner.Host.Command(fmt.Sprintf(`[[ -d %[1]s ]] && find %[1]s -type f -name \*.done`, ukCACHEDIR))
+	cmd, e := runner.Command(fmt.Sprintf(`[[ -d %[1]s ]] && find %[1]s -type f -name \*.done`, ukCACHEDIR))
 	if e != nil {
 		return nil, e
 	}
@@ -54,7 +54,7 @@ func buildChecksumTree(runner *Runner) (ct checksumTree, e error) {
 }
 
 // Provision the given list of runlists.
-func (runner *Runner) provision(list *PackageList) (e error) {
+func (runner *Runner) provision(list *Package) (e error) {
 	ct, e := buildChecksumTree(runner)
 	if e != nil {
 		return e
@@ -91,7 +91,7 @@ func provisionRunlist(runner *Runner, item *PackageListItem, ct checksumTree) (e
 			createChecksumDirCmd = fmt.Sprintf(`sudo %s`, createChecksumDirCmd)
 		}
 
-		cmd, e := runner.Host.Command(createChecksumDirCmd)
+		cmd, e := runner.Command(createChecksumDirCmd)
 		if e != nil {
 			return e
 		}
@@ -153,7 +153,7 @@ func runTask(runner *Runner, task *taskData, checksumDir string) (e error) {
 type taskData struct {
 	command  cmd.Command // The command to be executed.
 	checksum string      // The checksum of the command.
-	runlist  *Package
+	runlist  *Task
 }
 
 func (data *taskData) Command() cmd.Command {
@@ -172,7 +172,7 @@ func cleanUpRemainingCachedEntries(runner *Runner, checksumDir string, checksumH
 		m := &pubsub.Message{Key: pubsub.MessageUrknallInternal, Hostname: runner.Hostname()}
 		m.Publish("started")
 
-		c, e := runner.Host.Command(cmd)
+		c, e := runner.Command(cmd)
 		if e != nil {
 			return e
 		}

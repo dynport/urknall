@@ -7,17 +7,16 @@ import (
 )
 
 type Runner struct {
-	User   string
 	DryRun bool
 	Env    []string
-	Host   Host
+	Target
 }
 
 func (runner *Runner) prepare() error {
-	if runner.User == "" {
+	if runner.User() == "" {
 		return fmt.Errorf("User not set")
 	}
-	cmd, e := runner.Host.Command(fmt.Sprintf(`{ grep "^%s:" /etc/group | grep %s; } && [[ -d /var/lib/urknall ]]`, ukGROUP, runner.User))
+	cmd, e := runner.Command(fmt.Sprintf(`{ grep "^%s:" /etc/group | grep %s; } && [[ -d /var/lib/urknall ]]`, ukGROUP, runner.User))
 	if e != nil {
 		return e
 	}
@@ -29,7 +28,7 @@ func (runner *Runner) prepare() error {
 			fmt.Sprintf("usermod -a -G %s %s", ukGROUP, runner.User),
 		}
 
-		cmd, e = runner.Host.Command(fmt.Sprintf(`sudo bash -c "%s"`, strings.Join(cmds, " && ")))
+		cmd, e = runner.Command(fmt.Sprintf(`sudo bash -c "%s"`, strings.Join(cmds, " && ")))
 		if e != nil {
 			return e
 		}
@@ -45,12 +44,12 @@ func (runner *Runner) prepare() error {
 }
 
 func (runner *Runner) Hostname() string {
-	if s, ok := runner.Host.(fmt.Stringer); ok {
+	if s, ok := runner.Target.(fmt.Stringer); ok {
 		return s.String()
 	}
 	return "MISSING"
 }
 
 func (runner *Runner) IsSudoRequired() bool {
-	return runner.User != "root"
+	return runner.User() != "root"
 }

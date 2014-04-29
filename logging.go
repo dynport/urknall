@@ -6,7 +6,7 @@ import (
 	"github.com/dynport/urknall/pubsub"
 )
 
-func message(key string, hostname string, pkg *Package) (msg *pubsub.Message) {
+func message(key string, hostname string, pkg *Task) (msg *pubsub.Message) {
 	runlistName := ""
 	if pkg != nil {
 		runlistName = pkg.name

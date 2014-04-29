@@ -11,18 +11,18 @@ import (
 )
 
 // A runlist is a container for commands. Use the following methods to add new commands.
-type Package struct {
+type Task struct {
 	commands []cmd.Command
 
 	name string   // Name of the compilable.
 	pkg  Packager // only used for rendering templates
 }
 
-func (pkg *Package) Name() string {
+func (pkg *Task) Name() string {
 	return pkg.name
 }
 
-func (p *Package) tasks() []*taskData {
+func (p *Task) tasks() []*taskData {
 	tasks := make([]*taskData, 0, len(p.commands))
 
 	cmdHash := sha256.New()
@@ -38,7 +38,7 @@ func (p *Package) tasks() []*taskData {
 
 // Add commands (can also be given as string) or packages (commands will be extracted and added accordingly) to the
 // runlist.
-func (pkg *Package) Add(first interface{}, others ...interface{}) {
+func (pkg *Task) Add(first interface{}, others ...interface{}) {
 	all := append([]interface{}{first}, others...)
 	for _, c := range all {
 		switch t := c.(type) {
@@ -57,8 +57,8 @@ func (pkg *Package) Add(first interface{}, others ...interface{}) {
 }
 
 // Add the given package's commands to the runlist.
-func (pkg *Package) AddPackage(p Packager) {
-	r := &Package{pkg: p}
+func (pkg *Task) AddPackage(p Packager) {
+	r := &Task{pkg: p}
 	e := validatePackage(p)
 	if e != nil {
 		panic(e.Error())
@@ -68,7 +68,7 @@ func (pkg *Package) AddPackage(p Packager) {
 }
 
 // Add the given command to the runlist.
-func (pkg *Package) AddCommand(c cmd.Command) {
+func (pkg *Task) AddCommand(c cmd.Command) {
 	if pkg.pkg != nil {
 		if renderer, ok := c.(cmd.Renderer); ok {
 			renderer.Render(pkg.pkg)
@@ -82,7 +82,7 @@ func (pkg *Package) AddCommand(c cmd.Command) {
 	pkg.commands = append(pkg.commands, c)
 }
 
-func (pkg *Package) compile() (e error) {
+func (pkg *Task) compile() (e error) {
 	m := &pubsub.Message{RunlistName: pkg.Name(), Key: pubsub.MessageRunlistsPrecompile}
 	m.Publish("started")
 	defer func() {

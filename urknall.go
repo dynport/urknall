@@ -45,7 +45,7 @@ func OpenSimpleStdoutLogger() io.Closer {
 	return pubsub.OpenStdoutLoggerWithFormatter(pubsub.SimpleFormatter)
 }
 
-func ProvisionDryRun(host Host, list *PackageList) (e error) {
+func ProvisionDryRun(target Target, list *Package) (e error) {
 	opts := &ProvisionOptions{DryRun: true}
-	return ProvisionWithOptions(host, list, opts)
+	return ProvisionWithOptions(target, list, opts)
 }

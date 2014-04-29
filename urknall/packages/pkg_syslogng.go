@@ -16,7 +16,7 @@ func (ng *SyslogNg) url() string {
 	return "http://www.balabit.com/downloads/files/syslog-ng/open-source-edition/{{ .Version }}/source/syslog-ng_{{ .Version }}.tar.gz"
 }
 
-func (ng *SyslogNg) Package(r *urknall.Package) {
+func (ng *SyslogNg) Package(r *urknall.Task) {
 	r.Add(
 		InstallPackages("build-essential", "libevtlog-dev", "pkg-config", "libglib2.0-dev"),
 		DownloadAndExtract(ng.url(), "/opt/src"),
@@ -56,7 +56,7 @@ type SyslogNgReceiver struct {
 	AmqpHost string
 }
 
-func (p *SyslogNgReceiver) Package(r *urknall.Package) {
+func (p *SyslogNgReceiver) Package(r *urknall.Task) {
 	r.Add(
 		&SyslogNg{Version: p.Version},
 		WriteFile("/usr/local/etc/syslog-ng.conf", syslogReceiver, "root", 0644),
@@ -70,7 +70,7 @@ type SyslogNgSender struct {
 	Version  string `urknall:"default=3.5"`
 }
 
-func (s *SyslogNgSender) Package(r *urknall.Package) {
+func (s *SyslogNgSender) Package(r *urknall.Task) {
 	r.Add(
 		&SyslogNg{Version: s.Version},
 		WriteFile("/usr/local/etc/syslog-ng.conf", syslogNgSender, "root", 0644),
@@ -122,7 +122,7 @@ type CreateHourlySymlinks struct {
 	Root string `urknall:"default=/var/log/hourly"`
 }
 
-func (*CreateHourlySymlinks) Package(r *urknall.Package) {
+func (*CreateHourlySymlinks) Package(r *urknall.Task) {
 	r.Add(
 		Mkdir("/opt/scripts", "root", 0755),
 		WriteFile("/opt/scripts/create_hourly_symlinks.sh", createHourlySymlinks, "root", 0755),
