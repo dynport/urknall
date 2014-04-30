@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+
 	"github.com/dynport/urknall/cmd"
 )
 
@@ -29,7 +30,7 @@ func (c *host) User() string {
 		cmd.Stderr = err
 		e := cmd.Run()
 		if e != nil {
-			fmt.Printf("error reading login name: err=%q out=%q e=%q", err.String(), out.String, e)
+			fmt.Printf("error reading login name: err=%q out=%q e=%q", err.String(), out.String(), e)
 			os.Exit(1)
 		}
 		c.cachedUser = out.String()

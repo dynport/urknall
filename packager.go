@@ -8,23 +8,23 @@ import (
 )
 
 // A "Package" is an entity that packs commands into a runlist, taking into account their own configuration.
-type Packager interface {
+type Tasker interface {
 	Package(*Task) // Add the package specific commands to the runlist.
 }
 
-type anonymousPackage struct {
+type anonymousTask struct {
 	cmds []interface{}
 }
 
-func (anon *anonymousPackage) Package(pkg *Task) {
+func (anon *anonymousTask) Package(pkg *Task) {
 	for i := range anon.cmds {
 		pkg.Add(anon.cmds[i])
 	}
 }
 
 // Create a package from a set of commands.
-func NewPackage(cmds ...interface{}) Packager {
-	return &anonymousPackage{cmds: cmds}
+func NewTask(cmds ...interface{}) Tasker {
+	return &anonymousTask{cmds: cmds}
 }
 
 // Initialize the given struct reading, interpreting and validating the 'urknall' annotations given with the type.

@@ -16,7 +16,7 @@ func (runner *Runner) prepare() error {
 	if runner.User() == "" {
 		return fmt.Errorf("User not set")
 	}
-	cmd, e := runner.Command(fmt.Sprintf(`{ grep "^%s:" /etc/group | grep %s; } && [[ -d /var/lib/urknall ]]`, ukGROUP, runner.User))
+	cmd, e := runner.Command(fmt.Sprintf(`{ grep "^%s:" /etc/group | grep %s; } && [[ -d /var/lib/urknall ]]`, ukGROUP, runner.User()))
 	if e != nil {
 		return e
 	}
@@ -25,7 +25,7 @@ func (runner *Runner) prepare() error {
 		cmds := []string{
 			fmt.Sprintf(`{ grep -e '^%[1]s:' /etc/group > /dev/null || { groupadd %[1]s; }; }`, ukGROUP),
 			fmt.Sprintf(`{ [[ -d %[1]s ]] || { mkdir -p -m 2775 %[1]s && chgrp %[2]s %[1]s; }; }`, ukCACHEDIR, ukGROUP),
-			fmt.Sprintf("usermod -a -G %s %s", ukGROUP, runner.User),
+			fmt.Sprintf("usermod -a -G %s %s", ukGROUP, runner.User()),
 		}
 
 		cmd, e = runner.Command(fmt.Sprintf(`sudo bash -c "%s"`, strings.Join(cmds, " && ")))
@@ -37,7 +37,7 @@ func (runner *Runner) prepare() error {
 		cmd.SetStderr(err)
 		cmd.SetStdout(out)
 		if e := cmd.Run(); e != nil {
-			return fmt.Errorf("failed to initiate user %q for provisioning: %s, out=%q err=%q", runner.User, e, out.String(), err.String())
+			return fmt.Errorf("failed to initiate user %q for provisioning: %s, out=%q err=%q", runner.User(), e, out.String(), err.String())
 		}
 	}
 	return nil

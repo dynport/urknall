@@ -25,7 +25,7 @@ func (h *Package) Add(name string, cmd interface{}, cmds ...interface{}) {
 // configuration) with the given name.
 func (h *Package) AddCommands(name string, cmd interface{}, cmds ...interface{}) {
 	cmdList := append([]interface{}{cmd}, cmds...)
-	h.AddPackage(name, NewPackage(cmdList...))
+	h.AddPackage(name, NewTask(cmdList...))
 }
 
 // Add the given package with the given name to the host.
@@ -33,7 +33,7 @@ func (h *Package) AddCommands(name string, cmd interface{}, cmds ...interface{})
 // The name is used as reference during provisioning and allows for provisioning the very same package in different
 // configuration (with different version for example). Package names must be unique and the "uk." prefix is reserved for
 // urknall internal packages.
-func (h *Package) AddPackage(name string, pkg Packager) {
+func (h *Package) AddPackage(name string, task Tasker) {
 	if strings.HasPrefix(name, "uk.") {
 		panic(fmt.Sprintf(`package name prefix "uk." reserved (in %q)`, name))
 	}
@@ -51,7 +51,7 @@ func (h *Package) AddPackage(name string, pkg Packager) {
 	}
 
 	h.packageNames[name] = struct{}{}
-	packager := &Task{name: name, pkg: pkg}
+	packager := &Task{name: name, task: task}
 	h.items = append(h.items, &PackageListItem{Key: name, Package: packager})
 }
 
