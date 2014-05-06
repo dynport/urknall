@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 
 	"code.google.com/p/go.crypto/ssh"
@@ -11,52 +12,52 @@ import (
 	"github.com/dynport/urknall/cmd"
 )
 
-func New(address string) *Host {
-	return &Host{Address: address}
+func New(addr string) (host *Host, e error) {
+	host = &Host{port: 22, user: "root"}
+
+	hostAndPort := strings.SplitN(addr, ":", 2)
+	if len(hostAndPort) == 2 {
+		addr = hostAndPort[0]
+		host.port, e = strconv.Atoi(hostAndPort[1])
+		if e != nil {
+			return nil, fmt.Errorf("port must be given as integer, got %q", hostAndPort[1])
+		}
+	}
+
+	userAndAddress := strings.Split(addr, "@")
+	switch len(userAndAddress) {
+	case 1:
+		host.address = addr
+	case 2:
+		host.user = userAndAddress[0]
+		host.address = userAndAddress[1]
+	default:
+		return nil, fmt.Errorf("expected host address of the form '<user>@<host>', but was given: %s", addr)
+	}
+
+	if host.address == "" {
+		e = fmt.Errorf("empty address given for host")
+	}
+
+	return host, e
 }
 
 type Host struct {
-	Address  string
 	Password string
 
-	address string
-	port    int
 	user    string
+	port    int
+	address string
 
 	client *ssh.Client
 }
 
 func (host *Host) User() string {
-	host.parseAddress()
 	return host.user
 }
 
 func (host *Host) String() string {
-	host.parseAddress()
-	return host.address
-}
-
-func (host *Host) parseAddress() {
-	if host.port > 0 {
-		return
-	}
-	hostAndPort := strings.Split(host.Address, ":")
-	var addr string
-	if len(hostAndPort) == 2 {
-		addr = hostAndPort[0]
-	} else {
-		host.port = 22
-		addr = host.Address
-	}
-	userAndAddress := strings.Split(addr, "@")
-	if len(userAndAddress) == 2 {
-		host.user = userAndAddress[0]
-		host.address = userAndAddress[1]
-	} else {
-		host.user = "root"
-		host.address = addr
-	}
-
+	return fmt.Sprintf("%s@%s:%d", host.user, host.address, host.port)
 }
 
 type SshClient interface {
@@ -64,7 +65,6 @@ type SshClient interface {
 }
 
 func (c *Host) Client() (*ssh.Client, error) {
-	c.parseAddress()
 	var e error
 	config := &ssh.ClientConfig{
 		User: c.user,
