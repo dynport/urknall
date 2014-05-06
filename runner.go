@@ -29,7 +29,7 @@ func (runner *Runner) prepare() error {
 	if runner.target.User() == "" {
 		return fmt.Errorf("User not set")
 	}
-	cmd, e := runner.Command(fmt.Sprintf(`{ grep "^%s:" /etc/group | grep %s; } && [[ -d /var/lib/urknall ]]`, ukGROUP, runner.target.User()))
+	cmd, e := runner.Command(fmt.Sprintf(`{ grep "^%s:" /etc/group | grep %s; } && [ -d /var/lib/urknall ]`, ukGROUP, runner.target.User()))
 	if e != nil {
 		return e
 	}
@@ -37,11 +37,11 @@ func (runner *Runner) prepare() error {
 		// If user is missing the group, create group (if necessary), add user and restart ssh connection.
 		cmds := []string{
 			fmt.Sprintf(`{ grep -e '^%[1]s:' /etc/group > /dev/null || { groupadd %[1]s; }; }`, ukGROUP),
-			fmt.Sprintf(`{ [[ -d %[1]s ]] || { mkdir -p -m 2775 %[1]s && chgrp %[2]s %[1]s; }; }`, ukCACHEDIR, ukGROUP),
+			fmt.Sprintf(`{ [ -d %[1]s ] || { mkdir -p -m 2775 %[1]s && chgrp %[2]s %[1]s; }; }`, ukCACHEDIR, ukGROUP),
 			fmt.Sprintf("usermod -a -G %s %s", ukGROUP, runner.target.User()),
 		}
 
-		cmd, e = runner.Command(fmt.Sprintf(`sudo bash -c "%s"`, strings.Join(cmds, " && ")))
+		cmd, e = runner.Command(strings.Join(cmds, " && "))
 		if e != nil {
 			return e
 		}

@@ -20,7 +20,7 @@ type Provisioner interface {
 func buildChecksumTree(runner *Runner) (ct checksumTree, e error) {
 	ct = checksumTree{}
 
-	cmd, e := runner.Command(fmt.Sprintf(`[[ -d %[1]s ]] && find %[1]s -type f -name \*.done`, ukCACHEDIR))
+	cmd, e := runner.Command(fmt.Sprintf(`[ -d %[1]s ] && find %[1]s -type f -name \*.done`, ukCACHEDIR))
 	if e != nil {
 		return nil, e
 	}
@@ -136,7 +136,7 @@ func runTask(runner *Runner, task *taskData, checksumDir string) (e error) {
 	if runner.DryRun {
 		return nil
 	}
-	sCmd := fmt.Sprintf("bash <<EOF_RUNTASK\nset -xe\n%s\nEOF_RUNTASK\n", task.command.Shell())
+	sCmd := fmt.Sprintf("sh -x -e -c %q", task.command.Shell())
 	for _, env := range runner.Env {
 		sCmd = env + " " + sCmd
 	}
