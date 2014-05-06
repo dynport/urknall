@@ -114,7 +114,8 @@ func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, r
 func (runner *remoteTaskRunner) newLogWriter(path string, errors chan error) chan string {
 	logs := make(chan string)
 	go func() {
-		c, e := runner.Runner.Command("{ t=$(tempfile -m0660) || exit 1; } && cat - > $t && mv $t " + path + " && chgrp urknall " + path)
+		// so ugly, but: sudo not required and "sh -c" adds some escaping issues with the variables.
+		c, e := runner.Runner.target.Command("{ t=$(mktemp) || exit 1; } && cat - > $t && mv $t " + path + " && chgrp urknall " + path + " && chmod 0660 " + path)
 		if e != nil {
 			errors <- e
 			return
