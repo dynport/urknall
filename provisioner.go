@@ -87,9 +87,6 @@ func provisionRunlist(runner *Runner, item *PackageListItem, ct checksumTree) (e
 		// Create checksum dir and set group bit (all new files will inherit the directory's group). This allows for
 		// different users (being part of that group) to create, modify and delete the contained checksum and log files.
 		createChecksumDirCmd := fmt.Sprintf("mkdir -m2775 -p %s", checksumDir)
-		if runner.IsSudoRequired() {
-			createChecksumDirCmd = fmt.Sprintf(`sudo %s`, createChecksumDirCmd)
-		}
 
 		cmd, e := runner.Command(createChecksumDirCmd)
 		if e != nil {
@@ -142,9 +139,6 @@ func runTask(runner *Runner, task *taskData, checksumDir string) (e error) {
 	sCmd := fmt.Sprintf("bash <<EOF_RUNTASK\nset -xe\n%s\nEOF_RUNTASK\n", task.command.Shell())
 	for _, env := range runner.Env {
 		sCmd = env + " " + sCmd
-	}
-	if runner.IsSudoRequired() {
-		sCmd = fmt.Sprintf("sudo -i %s", sCmd)
 	}
 	r := &remoteTaskRunner{Runner: runner, cmd: sCmd, task: task, dir: checksumDir}
 	return r.run()

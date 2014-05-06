@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"io"
 	"log"
-	"strings"
 	"time"
 )
 
@@ -17,18 +16,11 @@ type remoteTaskRunner struct {
 	started time.Time
 }
 
-func (runner *remoteTaskRunner) baseCommand() string {
-	cmd := strings.Join(runner.Runner.Env, " ") + " bash -s -x -e"
-	if runner.Runner.IsSudoRequired() {
-		cmd = "sudo " + cmd
-	}
-	return cmd
-}
-
 func (runner *remoteTaskRunner) run() error {
 	runner.started = time.Now()
 
 	prefix := runner.dir + "/" + runner.task.checksum
+
 	errors := make(chan error)
 	logs := runner.newLogWriter(prefix+".log", errors)
 

@@ -51,7 +51,7 @@ func Build(tgt Target, pkg *Package) error {
 		return e
 	}
 
-	runner := &Runner{Target: tgt}
+	runner := NewRunner(tgt)
 	e = runner.prepare()
 	if e != nil {
 		return e
