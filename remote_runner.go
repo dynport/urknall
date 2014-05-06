@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"log"
+	"sync"
 	"time"
 )
 
@@ -29,32 +30,25 @@ func (runner *remoteTaskRunner) run() error {
 		return e
 	}
 
+	var wg sync.WaitGroup
+
 	// Get pipes for stdout and stderr and forward messages to logs channel.
 	stdout, e := c.StdoutPipe()
 	if e != nil {
 		return e
 	}
-	finishedMap := map[string]interface{}{
-		"stdout": true,
-		"stderr": true,
-	}
-	finishedChannel := make(chan string)
-	go runner.forwardStream(logs, "stdout", stdout, finishedChannel)
+	wg.Add(1)
+	go runner.forwardStream(logs, "stdout", &wg, stdout)
 
 	stderr, e := c.StderrPipe()
 	if e != nil {
 		return e
 	}
-	go runner.forwardStream(logs, "stderr", stderr, finishedChannel)
+	wg.Add(1)
+	go runner.forwardStream(logs, "stderr", &wg, stderr)
 
 	e = c.Run()
-	// Command was executed. Close the logging channel (thereby closing the back-channel of the logs).
-	for len(finishedMap) > 0 {
-		select {
-		case s := <-finishedChannel:
-			delete(finishedMap, s)
-		}
-	}
+	wg.Wait()
 	close(logs)
 
 	runner.writeChecksumFile(prefix, e)
@@ -90,7 +84,9 @@ func logError(e error) {
 	log.Printf("ERROR: %s", e.Error())
 }
 
-func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, r io.Reader, finished chan string) {
+func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, wg *sync.WaitGroup, r io.Reader) {
+	defer wg.Done()
+
 	m := message("task.io", runner.Runner.Hostname(), runner.task.runlist)
 	m.Message = runner.task.Command().Logging()
 	m.Stream = stream
@@ -108,7 +104,6 @@ func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, r
 		m.Publish(stream)
 		logs <- time.Now().UTC().Format(time.RFC3339Nano) + "\t" + stream + "\t" + scanner.Text()
 	}
-	finished <- stream
 }
 
 func (runner *remoteTaskRunner) newLogWriter(path string, errors chan error) chan string {
