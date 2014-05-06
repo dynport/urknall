@@ -50,7 +50,7 @@ func (runner *Runner) prepare() error {
 		cmd.SetStderr(err)
 		cmd.SetStdout(out)
 		if e := cmd.Run(); e != nil {
-			return fmt.Errorf("failed to initiate user %q for provisioning: %s, out=%q err=%q", runner.User(), e, out.String(), err.String())
+			return fmt.Errorf("failed to initiate user %q for provisioning: %s, out=%q err=%q", runner.target.User(), e, out.String(), err.String())
 		}
 	}
 	return nil
