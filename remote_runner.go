@@ -52,6 +52,7 @@ func (runner *remoteTaskRunner) run() error {
 	close(logs)
 
 	runner.writeChecksumFile(prefix, e)
+	// TODO(gf): should add better error handling (don't panic right now, but properly close everything open).
 
 	// Get errors that might have occured while handling the back-channel for the logs.
 	select {
