@@ -1,21 +1,15 @@
 package urknall
 
-type Build struct {
-	Target
-	*Package
-	DryRun bool
-}
-
-func (p *Build) Run() error {
-	e := p.Package.precompileRunlists()
+func Build(tgt Target, pkg *Package) error {
+	e := pkg.precompileRunlists()
 	if e != nil {
 		return e
 	}
 
-	runner := &Runner{Target: p.Target}
+	runner := &Runner{Target: tgt}
 	e = runner.prepare()
 	if e != nil {
 		return e
 	}
-	return runner.provision(p.Package)
+	return runner.provision(pkg)
 }
