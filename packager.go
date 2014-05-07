@@ -16,8 +16,8 @@ func (anon *anonymousTask) Package(pkg *Task) {
 }
 
 // Create a package from a set of commands.
-func NewTask(cmds ...interface{}) Tasker {
-	return &anonymousTask{cmds: cmds}
+func NewTask(cmds ...interface{}) *Task {
+	return &Task{task: &anonymousTask{cmds: cmds}}
 }
 
 // Initialize the given struct reading, interpreting and validating the 'urknall' annotations given with the type.
