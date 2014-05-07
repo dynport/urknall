@@ -95,13 +95,7 @@ func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, w
 
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
-		line := scanner.Text()
-		// beg: arghhhhhh
-		if line == "stdin: is not a tty" {
-			continue
-		}
-		// end: arghh
-		m.Line = line
+		m.Line = scanner.Text()
 		m.TotalRuntime = time.Since(runner.started)
 		m.Publish(stream)
 		logs <- time.Now().UTC().Format(time.RFC3339Nano) + "\t" + stream + "\t" + scanner.Text()
