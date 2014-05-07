@@ -6,12 +6,12 @@ import (
 )
 
 type Package struct {
-	items []*PackageListItem
+	items []*packageListItem
 
 	packageNames map[string]struct{}
 }
 
-type PackageListItem struct {
+type packageListItem struct {
 	Key     string
 	Package *Task
 }
@@ -52,7 +52,7 @@ func (h *Package) AddPackage(name string, task Tasker) {
 
 	h.packageNames[name] = struct{}{}
 	packager := &Task{name: name, task: task}
-	h.items = append(h.items, &PackageListItem{Key: name, Package: packager})
+	h.items = append(h.items, &packageListItem{Key: name, Package: packager})
 }
 
 func (h *Package) precompileRunlists() (e error) {

@@ -73,7 +73,7 @@ func (runner *Runner) provision(list *Package) (e error) {
 	return nil
 }
 
-func provisionRunlist(runner *Runner, item *PackageListItem, ct checksumTree) (e error) {
+func provisionRunlist(runner *Runner, item *packageListItem, ct checksumTree) (e error) {
 	tasks := item.Package.tasks()
 
 	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", item.Key)
