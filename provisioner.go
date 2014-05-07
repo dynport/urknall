@@ -64,7 +64,7 @@ func (runner *Runner) provision(list *Package) (e error) {
 		rl := list.items[i]
 		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvision, Hostname: runner.Hostname()}
 		m.Publish("started")
-		if e = provisionRunlist(runner, rl, ct); e != nil {
+		if e = runner.provisionRunlist(rl, ct); e != nil {
 			m.PublishError(e)
 			return e
 		}
@@ -73,7 +73,7 @@ func (runner *Runner) provision(list *Package) (e error) {
 	return nil
 }
 
-func provisionRunlist(runner *Runner, item *packageListItem, ct checksumTree) (e error) {
+func (runner *Runner) provisionRunlist(item *packageListItem, ct checksumTree) (e error) {
 	tasks := item.Package.tasks()
 
 	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", item.Key)
@@ -113,14 +113,14 @@ func provisionRunlist(runner *Runner, item *packageListItem, ct checksumTree) (e
 		}
 
 		if len(checksumHash) > 0 { // All remaining checksums are invalid, as something changed.
-			if e = cleanUpRemainingCachedEntries(runner, checksumDir, checksumHash); e != nil {
+			if e = runner.cleanUpRemainingCachedEntries(checksumDir, checksumHash); e != nil {
 				return e
 			}
 			checksumHash = make(map[string]struct{})
 		}
 		m.ExecStatus = pubsub.StatusExecStart
 		m.Publish("started")
-		e = runTask(runner, task, checksumDir)
+		e = runner.runTask(task, checksumDir)
 		m.Error = e
 		m.ExecStatus = pubsub.StatusExecFinished
 		m.Publish("finished")
@@ -132,7 +132,7 @@ func provisionRunlist(runner *Runner, item *packageListItem, ct checksumTree) (e
 	return nil
 }
 
-func runTask(runner *Runner, task *taskData, checksumDir string) (e error) {
+func (runner *Runner) runTask(task *taskData, checksumDir string) (e error) {
 	if runner.DryRun {
 		return nil
 	}
@@ -154,7 +154,7 @@ func (data *taskData) Command() cmd.Command {
 	return data.command
 }
 
-func cleanUpRemainingCachedEntries(runner *Runner, checksumDir string, checksumHash map[string]struct{}) (e error) {
+func (runner *Runner) cleanUpRemainingCachedEntries(checksumDir string, checksumHash map[string]struct{}) (e error) {
 	invalidCacheEntries := make([]string, 0, len(checksumHash))
 	for k, _ := range checksumHash {
 		invalidCacheEntries = append(invalidCacheEntries, fmt.Sprintf("%s.done", k))
