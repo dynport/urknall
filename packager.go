@@ -1,12 +1,5 @@
 package urknall
 
-import (
-	"fmt"
-	"reflect"
-	"strconv"
-	"strings"
-)
-
 // A "Package" is an entity that packs commands into a runlist, taking into account their own configuration.
 type Tasker interface {
 	Package(*Task) // Add the package specific commands to the runlist.
