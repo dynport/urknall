@@ -15,32 +15,41 @@ type Task struct {
 	commands []cmd.Command
 
 	name string       // Name of the compilable.
-	task TaskPackager // only used for rendering templates
+	task TaskPackager // only used for rendering templates TODO(gf): rename
 }
 
-func (p *Task) rawCommands() []*rawCommand {
-	rawCommands := make([]*rawCommand, 0, len(p.commands))
+type TaskPackager interface {
+	Package(*Task)
+}
+
+// Create a task from a set of commands without configuration.
+func NewTask(cmds ...interface{}) *Task {
+	return &Task{task: &anonymousTask{cmds: cmds}}
+}
+
+func (task *Task) rawCommands() []*rawCommand {
+	rawCommands := make([]*rawCommand, 0, len(task.commands))
 
 	cmdHash := sha256.New()
-	for i := range p.commands {
-		cmdHash.Write([]byte(p.commands[i].Shell()))
-		rawCmd := &rawCommand{task: p, Command: p.commands[i], checksum: fmt.Sprintf("%x", cmdHash.Sum(nil))}
+	for i := range task.commands {
+		cmdHash.Write([]byte(task.commands[i].Shell()))
+		rawCmd := &rawCommand{task: task, Command: task.commands[i], checksum: fmt.Sprintf("%x", cmdHash.Sum(nil))}
 		rawCommands = append(rawCommands, rawCmd)
 	}
 	return rawCommands
 }
 
-func (pkg *Task) Add(cmds ...interface{}) {
+func (task *Task) Add(cmds ...interface{}) {
 	for _, c := range cmds {
 		switch t := c.(type) {
 		case string:
 			// No explicit expansion required as the function is called recursively with a ShellCommand type, that has
 			// explicitly renders the template.
-			pkg.addCommand(&stringCommand{cmd: t})
+			task.addCommand(&stringCommand{cmd: t})
 		case cmd.Command:
-			pkg.addCommand(t)
+			task.addCommand(t)
 		case TaskPackager:
-			pkg.addPackage(t)
+			task.addPackage(t)
 		default:
 			panic(fmt.Sprintf("type %T not supported!", t))
 		}
@@ -48,21 +57,21 @@ func (pkg *Task) Add(cmds ...interface{}) {
 }
 
 // Add the given package's commands to the runlist.
-func (pkg *Task) addPackage(p TaskPackager) {
+func (task *Task) addPackage(p TaskPackager) {
 	r := &Task{task: p}
 	e := validatePackage(p)
 	if e != nil {
 		panic(e.Error())
 	}
 	p.Package(r)
-	pkg.commands = append(pkg.commands, r.commands...)
+	task.commands = append(task.commands, r.commands...)
 }
 
 // Add the given command to the runlist.
-func (pkg *Task) addCommand(c cmd.Command) {
-	if pkg.task != nil {
+func (task *Task) addCommand(c cmd.Command) {
+	if task.task != nil {
 		if renderer, ok := c.(cmd.Renderer); ok {
-			renderer.Render(pkg.task)
+			renderer.Render(task.task)
 		}
 		if validator, ok := c.(cmd.Validator); ok {
 			if e := validator.Validate(); e != nil {
@@ -70,18 +79,18 @@ func (pkg *Task) addCommand(c cmd.Command) {
 			}
 		}
 	}
-	pkg.commands = append(pkg.commands, c)
+	task.commands = append(task.commands, c)
 }
 
-func (pkg *Task) compile() (e error) {
-	m := &pubsub.Message{RunlistName: pkg.name, Key: pubsub.MessageRunlistsPrecompile}
+func (task *Task) compile() (e error) {
+	m := &pubsub.Message{RunlistName: task.name, Key: pubsub.MessageRunlistsPrecompile}
 	m.Publish("started")
 	defer func() {
 		if r := recover(); r != nil {
 			var ok bool
 			e, ok = r.(error)
 			if !ok {
-				e = fmt.Errorf("failed to precompile package: %v %q", pkg.name, r)
+				e = fmt.Errorf("failed to precompile package: %v %q", task.name, r)
 			}
 			m.Error = e
 			m.Stack = string(debug.Stack())
@@ -91,10 +100,20 @@ func (pkg *Task) compile() (e error) {
 		}
 	}()
 
-	if e = validatePackage(pkg.task); e != nil {
+	if e = validatePackage(task.task); e != nil {
 		return e
 	}
-	pkg.task.Package(pkg)
+	task.task.Package(task) // TODO(gf): ouch
 	m.Publish("finished")
 	return nil
+}
+
+type anonymousTask struct {
+	cmds []interface{}
+}
+
+func (anon *anonymousTask) Package(pkg *Task) {
+	for i := range anon.cmds {
+		pkg.Add(anon.cmds[i])
+	}
 }
