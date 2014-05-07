@@ -73,7 +73,7 @@ func (build *Build) run() (e error) {
 }
 
 func (build *Build) provisionRunlist(task *Task, ct checksumTree) (e error) {
-	tasks := task.tasks()
+	commands := task.rawCommands()
 
 	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", task.name)
 
@@ -100,9 +100,8 @@ func (build *Build) provisionRunlist(task *Task, ct checksumTree) (e error) {
 		}
 	}
 
-	for i := range tasks {
-		cmd := tasks[i]
-		logMsg := cmd.command.Logging()
+	for _, cmd := range commands {
+		logMsg := cmd.Logging()
 		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvisionTask, TaskChecksum: cmd.checksum, Message: logMsg, Hostname: build.hostname(), RunlistName: task.name}
 		if _, found := checksumHash[cmd.checksum]; found { // Task is cached.
 			m.ExecStatus = pubsub.StatusCached
@@ -118,11 +117,15 @@ func (build *Build) provisionRunlist(task *Task, ct checksumTree) (e error) {
 			checksumHash = make(map[string]struct{})
 		}
 		m.ExecStatus = pubsub.StatusExecStart
-		m.Publish("started")
-		e = build.runTask(cmd, checksumDir)
-		m.Error = e
-		m.ExecStatus = pubsub.StatusExecFinished
-		m.Publish("finished")
+		if build.DryRun {
+			m.Publish("executed")
+		} else {
+			m.Publish("started")
+			e = cmd.execute(build, checksumDir)
+			m.Error = e
+			m.ExecStatus = pubsub.StatusExecFinished
+			m.Publish("finished")
+		}
 		if e != nil {
 			return e
 		}
@@ -131,26 +134,19 @@ func (build *Build) provisionRunlist(task *Task, ct checksumTree) (e error) {
 	return nil
 }
 
-func (build *Build) runTask(task *taskData, checksumDir string) (e error) {
-	if build.DryRun {
-		return nil
-	}
-	sCmd := fmt.Sprintf("sh -x -e -c %q", task.command.Shell())
+type rawCommand struct {
+	cmd.Command        // The command to be executed.
+	checksum    string // The checksum of the command.
+	task        *Task
+}
+
+func (cmd *rawCommand) execute(build *Build, checksumDir string) (e error) {
+	sCmd := fmt.Sprintf("sh -x -e -c %q", cmd.Shell())
 	for _, env := range build.Env {
 		sCmd = env + " " + sCmd
 	}
-	r := &remoteTaskRunner{build: build, cmd: sCmd, task: task, dir: checksumDir}
+	r := &remoteTaskRunner{build: build, cmd: sCmd, rawCommand: cmd, dir: checksumDir}
 	return r.run()
-}
-
-type taskData struct {
-	command  cmd.Command // The command to be executed.
-	checksum string      // The checksum of the command.
-	runlist  *Task
-}
-
-func (data *taskData) Command() cmd.Command {
-	return data.command
 }
 
 func (build *Build) cleanUpRemainingCachedEntries(checksumDir string, checksumHash map[string]struct{}) (e error) {

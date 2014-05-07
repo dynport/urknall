@@ -10,10 +10,10 @@ import (
 )
 
 type remoteTaskRunner struct {
-	build *Build
-	cmd   string
-	dir   string
-	task  *taskData
+	build      *Build
+	cmd        string
+	dir        string
+	rawCommand *rawCommand
 
 	started time.Time
 }
@@ -21,7 +21,7 @@ type remoteTaskRunner struct {
 func (runner *remoteTaskRunner) run() error {
 	runner.started = time.Now()
 
-	prefix := runner.dir + "/" + runner.task.checksum
+	prefix := runner.dir + "/" + runner.rawCommand.checksum
 
 	errors := make(chan error)
 	logs := runner.newLogWriter(prefix+".log", errors)
@@ -71,7 +71,7 @@ func (runner *remoteTaskRunner) writeChecksumFile(prefix string, e error) {
 		logError(e)
 		targetFile = prefix + ".failed"
 	}
-	cmd := fmt.Sprintf("echo %q > %s", runner.task.Command().Shell(), targetFile)
+	cmd := fmt.Sprintf("echo %q > %s", runner.rawCommand.Shell(), targetFile)
 	c, e := runner.build.prepareCommand(cmd)
 	if e != nil {
 		panic(e.Error())
@@ -89,8 +89,8 @@ func logError(e error) {
 func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, wg *sync.WaitGroup, r io.Reader) {
 	defer wg.Done()
 
-	m := message("task.io", runner.build.hostname(), runner.task.runlist)
-	m.Message = runner.task.Command().Logging()
+	m := message("task.io", runner.build.hostname(), runner.rawCommand.task)
+	m.Message = runner.rawCommand.Logging()
 	m.Stream = stream
 
 	scanner := bufio.NewScanner(r)

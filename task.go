@@ -18,19 +18,16 @@ type Task struct {
 	task TaskPackager // only used for rendering templates
 }
 
-// TODO(gf): rename! this is not tasks but internal commands or something like that.
-func (p *Task) tasks() []*taskData {
-	tasks := make([]*taskData, 0, len(p.commands))
+func (p *Task) rawCommands() []*rawCommand {
+	rawCommands := make([]*rawCommand, 0, len(p.commands))
 
 	cmdHash := sha256.New()
 	for i := range p.commands {
-		rawCmd := p.commands[i].Shell()
-		cmdHash.Write([]byte(rawCmd))
-
-		task := &taskData{runlist: p, command: p.commands[i], checksum: fmt.Sprintf("%x", cmdHash.Sum(nil))}
-		tasks = append(tasks, task)
+		cmdHash.Write([]byte(p.commands[i].Shell()))
+		rawCmd := &rawCommand{task: p, Command: p.commands[i], checksum: fmt.Sprintf("%x", cmdHash.Sum(nil))}
+		rawCommands = append(rawCommands, rawCmd)
 	}
-	return tasks
+	return rawCommands
 }
 
 func (pkg *Task) Add(cmds ...interface{}) {
