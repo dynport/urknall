@@ -36,20 +36,17 @@ func (p *Task) tasks() []*taskData {
 	return tasks
 }
 
-// Add commands (can also be given as string) or packages (commands will be extracted and added accordingly) to the
-// runlist.
-func (pkg *Task) Add(first interface{}, others ...interface{}) {
-	all := append([]interface{}{first}, others...)
-	for _, c := range all {
+func (pkg *Task) Add(cmds ...interface{}) {
+	for _, c := range cmds {
 		switch t := c.(type) {
 		case string:
 			// No explicit expansion required as the function is called recursively with a ShellCommand type, that has
 			// explicitly renders the template.
-			pkg.AddCommand(&stringCommand{cmd: t})
+			pkg.addCommand(&stringCommand{cmd: t})
 		case cmd.Command:
-			pkg.AddCommand(t)
+			pkg.addCommand(t)
 		case TaskPackager:
-			pkg.AddPackage(t)
+			pkg.addPackage(t)
 		default:
 			panic(fmt.Sprintf("type %T not supported!", t))
 		}
@@ -57,7 +54,7 @@ func (pkg *Task) Add(first interface{}, others ...interface{}) {
 }
 
 // Add the given package's commands to the runlist.
-func (pkg *Task) AddPackage(p TaskPackager) {
+func (pkg *Task) addPackage(p TaskPackager) {
 	r := &Task{task: p}
 	e := validatePackage(p)
 	if e != nil {
@@ -68,7 +65,7 @@ func (pkg *Task) AddPackage(p TaskPackager) {
 }
 
 // Add the given command to the runlist.
-func (pkg *Task) AddCommand(c cmd.Command) {
+func (pkg *Task) addCommand(c cmd.Command) {
 	if pkg.task != nil {
 		if renderer, ok := c.(cmd.Renderer); ok {
 			renderer.Render(pkg.task)
