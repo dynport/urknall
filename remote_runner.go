@@ -10,10 +10,10 @@ import (
 )
 
 type remoteTaskRunner struct {
-	Runner *Runner
-	cmd    string
-	dir    string
-	task   *taskData
+	build *Build
+	cmd   string
+	dir   string
+	task  *taskData
 
 	started time.Time
 }
@@ -26,7 +26,7 @@ func (runner *remoteTaskRunner) run() error {
 	errors := make(chan error)
 	logs := runner.newLogWriter(prefix+".log", errors)
 
-	c, e := runner.Runner.command(runner.cmd)
+	c, e := runner.build.prepareCommand(runner.cmd)
 	if e != nil {
 		return e
 	}
@@ -72,7 +72,7 @@ func (runner *remoteTaskRunner) writeChecksumFile(prefix string, e error) {
 		targetFile = prefix + ".failed"
 	}
 	cmd := fmt.Sprintf("echo %q > %s", runner.task.Command().Shell(), targetFile)
-	c, e := runner.Runner.command(cmd)
+	c, e := runner.build.prepareCommand(cmd)
 	if e != nil {
 		panic(e.Error())
 	}
@@ -89,7 +89,7 @@ func logError(e error) {
 func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, wg *sync.WaitGroup, r io.Reader) {
 	defer wg.Done()
 
-	m := message("task.io", runner.Runner.hostname(), runner.task.runlist)
+	m := message("task.io", runner.build.hostname(), runner.task.runlist)
 	m.Message = runner.task.Command().Logging()
 	m.Stream = stream
 
@@ -105,8 +105,8 @@ func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, w
 func (runner *remoteTaskRunner) newLogWriter(path string, errors chan error) chan string {
 	logs := make(chan string)
 	go func() {
-		// so ugly, but: sudo not required and "sh -c" adds some escaping issues with the variables.
-		c, e := runner.Runner.target.Command("{ t=$(mktemp) || exit 1; } && cat - > $t && mv $t " + path + " && chgrp urknall " + path + " && chmod 0660 " + path)
+		// so ugly, but: sudo not required and "sh -c" adds some escaping issues with the variables. This is why Command is called directly.
+		c, e := runner.build.Command("{ t=$(mktemp) || exit 1; } && cat - > $t && mv $t " + path + " && chgrp urknall " + path + " && chmod 0660 " + path)
 		if e != nil {
 			errors <- e
 			return

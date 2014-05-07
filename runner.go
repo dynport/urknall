@@ -8,28 +8,18 @@ import (
 	"github.com/dynport/urknall/cmd"
 )
 
-type Runner struct {
-	DryRun bool
-	Env    []string
-	target Target
-}
-
-func NewRunner(tgt Target) *Runner {
-	return &Runner{target: tgt}
-}
-
-func (runner *Runner) command(cmd string) (cmd.ExecCommand, error) {
-	if runner.target.User() != "root" {
+func (build *Build) prepareCommand(cmd string) (cmd.ExecCommand, error) {
+	if build.User() != "root" {
 		cmd = fmt.Sprintf("sudo sh -c %q", cmd)
 	}
-	return runner.target.Command(cmd)
+	return build.Command(cmd)
 }
 
-func (runner *Runner) prepare() error {
-	if runner.target.User() == "" {
+func (build *Build) prepare() error {
+	if build.User() == "" {
 		return fmt.Errorf("User not set")
 	}
-	cmd, e := runner.command(fmt.Sprintf(`{ grep "^%s:" /etc/group | grep %s; } && [ -d /var/lib/urknall ]`, ukGROUP, runner.target.User()))
+	cmd, e := build.prepareCommand(fmt.Sprintf(`{ grep "^%s:" /etc/group | grep %s; } && [ -d /var/lib/urknall ]`, ukGROUP, build.User()))
 	if e != nil {
 		return e
 	}
@@ -38,10 +28,10 @@ func (runner *Runner) prepare() error {
 		cmds := []string{
 			fmt.Sprintf(`{ grep -e '^%[1]s:' /etc/group > /dev/null || { groupadd %[1]s; }; }`, ukGROUP),
 			fmt.Sprintf(`{ [ -d %[1]s ] || { mkdir -p -m 2775 %[1]s && chgrp %[2]s %[1]s; }; }`, ukCACHEDIR, ukGROUP),
-			fmt.Sprintf("usermod -a -G %s %s", ukGROUP, runner.target.User()),
+			fmt.Sprintf("usermod -a -G %s %s", ukGROUP, build.User()),
 		}
 
-		cmd, e = runner.command(strings.Join(cmds, " && "))
+		cmd, e = build.prepareCommand(strings.Join(cmds, " && "))
 		if e != nil {
 			return e
 		}
@@ -50,14 +40,14 @@ func (runner *Runner) prepare() error {
 		cmd.SetStderr(err)
 		cmd.SetStdout(out)
 		if e := cmd.Run(); e != nil {
-			return fmt.Errorf("failed to initiate user %q for provisioning: %s, out=%q err=%q", runner.target.User(), e, out.String(), err.String())
+			return fmt.Errorf("failed to initiate user %q for provisioning: %s, out=%q err=%q", build.User(), e, out.String(), err.String())
 		}
 	}
 	return nil
 }
 
-func (runner *Runner) hostname() string {
-	if s, ok := runner.target.(fmt.Stringer); ok {
+func (build *Build) hostname() string {
+	if s, ok := build.Target.(fmt.Stringer); ok {
 		return s.String()
 	}
 	return "MISSING"
