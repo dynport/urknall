@@ -12,11 +12,6 @@ import (
 
 type checksumTree map[string]map[string]struct{}
 
-type Provisioner interface {
-	ProvisionRunlist(*Task, checksumTree) error
-	BuildChecksumTree() (checksumTree, error)
-}
-
 func (build *Build) buildChecksumTree() (ct checksumTree, e error) {
 	ct = checksumTree{}
 

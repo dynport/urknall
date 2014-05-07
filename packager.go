@@ -19,8 +19,3 @@ func (anon *anonymousTask) Package(pkg *Task) {
 func NewTask(cmds ...interface{}) *Task {
 	return &Task{task: &anonymousTask{cmds: cmds}}
 }
-
-// Initialize the given struct reading, interpreting and validating the 'urknall' annotations given with the type.
-func InitializePackage(pkg interface{}) error {
-	return validatePackage(pkg)
-}
