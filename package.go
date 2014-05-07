@@ -38,8 +38,8 @@ func (pkg *Package) addTask(task *Task) {
 	pkg.tasks = append(pkg.tasks, task)
 }
 
-func (h *Package) precompile() (e error) {
-	for _, task := range h.tasks {
+func (pkg *Package) precompile() (e error) {
+	for _, task := range pkg.tasks {
 		if len(task.commands) > 0 {
 			return fmt.Errorf("pkg %q seems to be packaged already", task.name)
 		}
