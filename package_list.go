@@ -6,24 +6,19 @@ import (
 )
 
 type Package struct {
-	items []*packageListItem
-
-	packageNames map[string]struct{}
-}
-
-type packageListItem struct {
-	Key     string
-	Package *Task // TODO(gf): rename to something more reasonable!
+	tasks     []*Task
+	taskNames map[string]struct{}
 }
 
 func (pkg *Package) Add(name string, sth interface{}) {
 	switch v := sth.(type) {
 	case *Task:
-		pkg.addTask(name, v)
+		v.name = name // safe to set it here
+		pkg.addTask(v)
 	case *Package:
 		pkg.addPackage(name, v)
 	case TaskPackager:
-		pkg.addTask(name, &Task{name: name, task: v})
+		pkg.addTask(&Task{name: name, task: v})
 	default:
 		panic(fmt.Sprintf("type %T not supported in Package.Add", sth))
 	}
@@ -31,26 +26,25 @@ func (pkg *Package) Add(name string, sth interface{}) {
 
 func (pkg *Package) addPackage(name string, child *Package) {
 	pkg.validateTaskName(name)
-	for _, item := range child.items {
-		itemName := name + "." + item.Key
-		item.Package.name = itemName
-		pkg.addTask(itemName, item.Package)
+	for _, task := range child.tasks {
+		newTask := &Task{name: name + "." + task.name, task: task.task}
+		pkg.addTask(newTask)
 	}
 }
 
-func (pkg *Package) addTask(name string, task *Task) {
-	pkg.validateTaskName(name)
-	pkg.packageNames[name] = struct{}{}
-	pkg.items = append(pkg.items, &packageListItem{Key: name, Package: task})
+func (pkg *Package) addTask(task *Task) {
+	pkg.validateTaskName(task.name)
+	pkg.taskNames[task.name] = struct{}{}
+	pkg.tasks = append(pkg.tasks, task)
 }
 
-func (h *Package) precompileRunlists() (e error) {
-	for _, item := range h.items {
-		if len(item.Package.commands) > 0 {
-			return fmt.Errorf("pkg %q seems to be packaged already", item.Key)
+func (h *Package) precompile() (e error) {
+	for _, task := range h.tasks {
+		if len(task.commands) > 0 {
+			return fmt.Errorf("pkg %q seems to be packaged already", task.name)
 		}
 
-		if e = item.Package.compile(); e != nil {
+		if e = task.compile(); e != nil {
 			return e
 		}
 	}
@@ -67,11 +61,11 @@ func (pkg *Package) validateTaskName(name string) {
 		panic(fmt.Sprintf(`package names must not contain spaces (%q does)`, name))
 	}
 
-	if pkg.packageNames == nil {
-		pkg.packageNames = map[string]struct{}{}
+	if pkg.taskNames == nil {
+		pkg.taskNames = map[string]struct{}{}
 	}
 
-	if _, ok := pkg.packageNames[name]; ok {
+	if _, ok := pkg.taskNames[name]; ok {
 		panic(fmt.Sprintf("package with name %q exists already", name))
 	}
 }

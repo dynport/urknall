@@ -8,7 +8,7 @@ type Build struct {
 }
 
 func (build Build) Run() error {
-	e := build.Pkg.precompileRunlists()
+	e := build.Pkg.precompile()
 	if e != nil {
 		return e
 	}

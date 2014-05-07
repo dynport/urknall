@@ -59,11 +59,11 @@ func (build *Build) run() (e error) {
 		return e
 	}
 
-	for i := range build.Pkg.items {
-		rl := build.Pkg.items[i]
+	for i := range build.Pkg.tasks {
+		task := build.Pkg.tasks[i]
 		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvision, Hostname: build.hostname()}
 		m.Publish("started")
-		if e = build.provisionRunlist(rl, ct); e != nil {
+		if e = build.provisionRunlist(task, ct); e != nil {
 			m.PublishError(e)
 			return e
 		}
@@ -72,16 +72,16 @@ func (build *Build) run() (e error) {
 	return nil
 }
 
-func (build *Build) provisionRunlist(item *packageListItem, ct checksumTree) (e error) {
-	tasks := item.Package.tasks()
+func (build *Build) provisionRunlist(task *Task, ct checksumTree) (e error) {
+	tasks := task.tasks()
 
-	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", item.Key)
+	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", task.name)
 
 	var found bool
 	var checksumHash map[string]struct{}
-	if checksumHash, found = ct[item.Key]; !found {
-		ct[item.Key] = map[string]struct{}{}
-		checksumHash = ct[item.Key]
+	if checksumHash, found = ct[task.name]; !found {
+		ct[task.name] = map[string]struct{}{}
+		checksumHash = ct[task.name]
 
 		// Create checksum dir and set group bit (all new files will inherit the directory's group). This allows for
 		// different users (being part of that group) to create, modify and delete the contained checksum and log files.
@@ -101,13 +101,13 @@ func (build *Build) provisionRunlist(item *packageListItem, ct checksumTree) (e 
 	}
 
 	for i := range tasks {
-		task := tasks[i]
-		logMsg := task.command.Logging()
-		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvisionTask, TaskChecksum: task.checksum, Message: logMsg, Hostname: build.hostname(), RunlistName: item.Key}
-		if _, found := checksumHash[task.checksum]; found { // Task is cached.
+		cmd := tasks[i]
+		logMsg := cmd.command.Logging()
+		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvisionTask, TaskChecksum: cmd.checksum, Message: logMsg, Hostname: build.hostname(), RunlistName: task.name}
+		if _, found := checksumHash[cmd.checksum]; found { // Task is cached.
 			m.ExecStatus = pubsub.StatusCached
 			m.Publish("finished")
-			delete(checksumHash, task.checksum) // Delete checksums of cached tasks from hash.
+			delete(checksumHash, cmd.checksum) // Delete checksums of cached tasks from hash.
 			continue
 		}
 
@@ -119,7 +119,7 @@ func (build *Build) provisionRunlist(item *packageListItem, ct checksumTree) (e 
 		}
 		m.ExecStatus = pubsub.StatusExecStart
 		m.Publish("started")
-		e = build.runTask(task, checksumDir)
+		e = build.runTask(cmd, checksumDir)
 		m.Error = e
 		m.ExecStatus = pubsub.StatusExecFinished
 		m.Publish("finished")

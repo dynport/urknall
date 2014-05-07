@@ -18,6 +18,7 @@ type Task struct {
 	task TaskPackager // only used for rendering templates
 }
 
+// TODO(gf): rename! this is not tasks but internal commands or something like that.
 func (p *Task) tasks() []*taskData {
 	tasks := make([]*taskData, 0, len(p.commands))
 
