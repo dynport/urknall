@@ -14,8 +14,8 @@ import (
 type Task struct {
 	commands []cmd.Command
 
-	name string // Name of the compilable.
-	task Tasker // only used for rendering templates
+	name string       // Name of the compilable.
+	task TaskPackager // only used for rendering templates
 }
 
 func (pkg *Task) Name() string {
@@ -48,7 +48,7 @@ func (pkg *Task) Add(first interface{}, others ...interface{}) {
 			pkg.AddCommand(&stringCommand{cmd: t})
 		case cmd.Command:
 			pkg.AddCommand(t)
-		case Tasker:
+		case TaskPackager:
 			pkg.AddPackage(t)
 		default:
 			panic(fmt.Sprintf("type %T not supported!", t))
@@ -57,7 +57,7 @@ func (pkg *Task) Add(first interface{}, others ...interface{}) {
 }
 
 // Add the given package's commands to the runlist.
-func (pkg *Task) AddPackage(p Tasker) {
+func (pkg *Task) AddPackage(p TaskPackager) {
 	r := &Task{task: p}
 	e := validatePackage(p)
 	if e != nil {

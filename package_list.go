@@ -22,7 +22,7 @@ func (pkg *Package) Add(name string, sth interface{}) {
 		pkg.addTask(name, v)
 	case *Package:
 		pkg.addPackage(name, v)
-	case Tasker:
+	case TaskPackager:
 		pkg.addTask(name, &Task{name: name, task: v})
 	default:
 		panic(fmt.Sprintf("type %T not supported in Package.Add", sth))
