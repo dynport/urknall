@@ -18,10 +18,6 @@ type Task struct {
 	task TaskPackager // only used for rendering templates
 }
 
-func (pkg *Task) Name() string {
-	return pkg.name
-}
-
 func (p *Task) tasks() []*taskData {
 	tasks := make([]*taskData, 0, len(p.commands))
 
@@ -80,7 +76,7 @@ func (pkg *Task) addCommand(c cmd.Command) {
 }
 
 func (pkg *Task) compile() (e error) {
-	m := &pubsub.Message{RunlistName: pkg.Name(), Key: pubsub.MessageRunlistsPrecompile}
+	m := &pubsub.Message{RunlistName: pkg.name, Key: pubsub.MessageRunlistsPrecompile}
 	m.Publish("started")
 	defer func() {
 		if r := recover(); r != nil {
