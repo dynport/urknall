@@ -26,7 +26,7 @@ func (runner *remoteTaskRunner) run() error {
 	errors := make(chan error)
 	logs := runner.newLogWriter(prefix+".log", errors)
 
-	c, e := runner.Runner.Command(runner.cmd)
+	c, e := runner.Runner.command(runner.cmd)
 	if e != nil {
 		return e
 	}
@@ -72,7 +72,7 @@ func (runner *remoteTaskRunner) writeChecksumFile(prefix string, e error) {
 		targetFile = prefix + ".failed"
 	}
 	cmd := fmt.Sprintf("echo %q > %s", runner.task.Command().Shell(), targetFile)
-	c, e := runner.Runner.Command(cmd)
+	c, e := runner.Runner.command(cmd)
 	if e != nil {
 		panic(e.Error())
 	}
@@ -89,7 +89,7 @@ func logError(e error) {
 func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, wg *sync.WaitGroup, r io.Reader) {
 	defer wg.Done()
 
-	m := message("task.io", runner.Runner.Hostname(), runner.task.runlist)
+	m := message("task.io", runner.Runner.hostname(), runner.task.runlist)
 	m.Message = runner.task.Command().Logging()
 	m.Stream = stream
 

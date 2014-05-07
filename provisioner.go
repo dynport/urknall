@@ -20,7 +20,7 @@ type Provisioner interface {
 func (runner *Runner) buildChecksumTree() (ct checksumTree, e error) {
 	ct = checksumTree{}
 
-	cmd, e := runner.Command(fmt.Sprintf(`[ -d %[1]s ] && find %[1]s -type f -name \*.done`, ukCACHEDIR))
+	cmd, e := runner.command(fmt.Sprintf(`[ -d %[1]s ] && find %[1]s -type f -name \*.done`, ukCACHEDIR))
 	if e != nil {
 		return nil, e
 	}
@@ -62,7 +62,7 @@ func (runner *Runner) provision(list *Package) (e error) {
 
 	for i := range list.items {
 		rl := list.items[i]
-		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvision, Hostname: runner.Hostname()}
+		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvision, hostname: runner.Hostname()}
 		m.Publish("started")
 		if e = runner.provisionRunlist(rl, ct); e != nil {
 			m.PublishError(e)
@@ -88,7 +88,7 @@ func (runner *Runner) provisionRunlist(item *packageListItem, ct checksumTree) (
 		// different users (being part of that group) to create, modify and delete the contained checksum and log files.
 		createChecksumDirCmd := fmt.Sprintf("mkdir -m2775 -p %s", checksumDir)
 
-		cmd, e := runner.Command(createChecksumDirCmd)
+		cmd, e := runner.command(createChecksumDirCmd)
 		if e != nil {
 			return e
 		}
@@ -104,7 +104,7 @@ func (runner *Runner) provisionRunlist(item *packageListItem, ct checksumTree) (
 	for i := range tasks {
 		task := tasks[i]
 		logMsg := task.command.Logging()
-		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvisionTask, TaskChecksum: task.checksum, Message: logMsg, Hostname: runner.Hostname(), RunlistName: item.Key}
+		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvisionTask, TaskChecksum: task.checksum, Message: logMsg, Hostname: runner.hostname(), RunlistName: item.Key}
 		if _, found := checksumHash[task.checksum]; found { // Task is cached.
 			m.ExecStatus = pubsub.StatusCached
 			m.Publish("finished")
@@ -160,13 +160,13 @@ func (runner *Runner) cleanUpRemainingCachedEntries(checksumDir string, checksum
 		invalidCacheEntries = append(invalidCacheEntries, fmt.Sprintf("%s.done", k))
 	}
 	if runner.DryRun {
-		(&pubsub.Message{Key: pubsub.MessageCleanupCacheEntries, InvalidatedCacheEntries: invalidCacheEntries, Hostname: runner.Hostname()}).Publish(".dryrun")
+		(&pubsub.Message{Key: pubsub.MessageCleanupCacheEntries, InvalidatedCacheEntries: invalidCacheEntries, Hostname: runner.hostname()}).Publish(".dryrun")
 	} else {
 		cmd := fmt.Sprintf("cd %s && rm -f *.failed %s", checksumDir, strings.Join(invalidCacheEntries, " "))
-		m := &pubsub.Message{Key: pubsub.MessageUrknallInternal, Hostname: runner.Hostname()}
+		m := &pubsub.Message{Key: pubsub.MessageUrknallInternal, Hostname: runner.hostname()}
 		m.Publish("started")
 
-		c, e := runner.Command(cmd)
+		c, e := runner.command(cmd)
 		if e != nil {
 			return e
 		}

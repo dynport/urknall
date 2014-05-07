@@ -18,7 +18,7 @@ func NewRunner(tgt Target) *Runner {
 	return &Runner{target: tgt}
 }
 
-func (runner *Runner) Command(cmd string) (cmd.ExecCommand, error) {
+func (runner *Runner) command(cmd string) (cmd.ExecCommand, error) {
 	if runner.target.User() != "root" {
 		cmd = fmt.Sprintf("sudo sh -c %q", cmd)
 	}
@@ -29,7 +29,7 @@ func (runner *Runner) prepare() error {
 	if runner.target.User() == "" {
 		return fmt.Errorf("User not set")
 	}
-	cmd, e := runner.Command(fmt.Sprintf(`{ grep "^%s:" /etc/group | grep %s; } && [ -d /var/lib/urknall ]`, ukGROUP, runner.target.User()))
+	cmd, e := runner.command(fmt.Sprintf(`{ grep "^%s:" /etc/group | grep %s; } && [ -d /var/lib/urknall ]`, ukGROUP, runner.target.User()))
 	if e != nil {
 		return e
 	}
@@ -41,7 +41,7 @@ func (runner *Runner) prepare() error {
 			fmt.Sprintf("usermod -a -G %s %s", ukGROUP, runner.target.User()),
 		}
 
-		cmd, e = runner.Command(strings.Join(cmds, " && "))
+		cmd, e = runner.command(strings.Join(cmds, " && "))
 		if e != nil {
 			return e
 		}
@@ -56,7 +56,7 @@ func (runner *Runner) prepare() error {
 	return nil
 }
 
-func (runner *Runner) Hostname() string {
+func (runner *Runner) hostname() string {
 	if s, ok := runner.target.(fmt.Stringer); ok {
 		return s.String()
 	}
