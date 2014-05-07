@@ -17,7 +17,7 @@ type Provisioner interface {
 	BuildChecksumTree() (checksumTree, error)
 }
 
-func buildChecksumTree(runner *Runner) (ct checksumTree, e error) {
+func (runner *Runner) buildChecksumTree() (ct checksumTree, e error) {
 	ct = checksumTree{}
 
 	cmd, e := runner.Command(fmt.Sprintf(`[ -d %[1]s ] && find %[1]s -type f -name \*.done`, ukCACHEDIR))
@@ -55,7 +55,7 @@ func buildChecksumTree(runner *Runner) (ct checksumTree, e error) {
 
 // Provision the given list of runlists.
 func (runner *Runner) provision(list *Package) (e error) {
-	ct, e := buildChecksumTree(runner)
+	ct, e := runner.buildChecksumTree()
 	if e != nil {
 		return e
 	}
