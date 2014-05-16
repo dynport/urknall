@@ -24,7 +24,7 @@ type Build struct {
 
 func (build Build) Run() error {
 	build.pkg = &Package{}
-	build.PkgBuilder.Package(build.pkg)
+	build.PkgBuilder.BuildPackage(build.pkg)
 
 	e := build.pkg.precompile()
 	if e != nil {

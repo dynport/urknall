@@ -14,17 +14,17 @@ import (
 type Task struct {
 	commands []cmd.Command
 
-	name string       // Name of the compilable.
-	task TaskPackager // only used for rendering templates TODO(gf): rename
+	name        string      // Name of the compilable.
+	taskBuilder TaskBuilder // only used for rendering templates TODO(gf): rename
 }
 
-type TaskPackager interface {
-	Package(*Task)
+type TaskBuilder interface {
+	BuildTask(*Task)
 }
 
 // Create a task from a set of commands without configuration.
 func NewTask(cmds ...interface{}) *Task {
-	return &Task{task: &anonymousTask{cmds: cmds}}
+	return &Task{taskBuilder: &anonymousTask{cmds: cmds}}
 }
 
 func (task *Task) rawCommands() []*rawCommand {
@@ -48,7 +48,7 @@ func (task *Task) Add(cmds ...interface{}) {
 			task.addCommand(&stringCommand{cmd: t})
 		case cmd.Command:
 			task.addCommand(t)
-		case TaskPackager:
+		case TaskBuilder:
 			task.addPackage(t)
 		default:
 			panic(fmt.Sprintf("type %T not supported!", t))
@@ -57,21 +57,21 @@ func (task *Task) Add(cmds ...interface{}) {
 }
 
 // Add the given package's commands to the runlist.
-func (task *Task) addPackage(p TaskPackager) {
-	r := &Task{task: p}
+func (task *Task) addPackage(p TaskBuilder) {
+	r := &Task{taskBuilder: p}
 	e := validatePackage(p)
 	if e != nil {
 		panic(e.Error())
 	}
-	p.Package(r)
+	p.BuildTask(r)
 	task.commands = append(task.commands, r.commands...)
 }
 
 // Add the given command to the runlist.
 func (task *Task) addCommand(c cmd.Command) {
-	if task.task != nil {
+	if task.taskBuilder != nil {
 		if renderer, ok := c.(cmd.Renderer); ok {
-			renderer.Render(task.task)
+			renderer.Render(task.taskBuilder)
 		}
 		if validator, ok := c.(cmd.Validator); ok {
 			if e := validator.Validate(); e != nil {
@@ -100,10 +100,10 @@ func (task *Task) compile() (e error) {
 		}
 	}()
 
-	if e = validatePackage(task.task); e != nil {
+	if e = validatePackage(task.taskBuilder); e != nil {
 		return e
 	}
-	task.task.Package(task) // TODO(gf): ouch
+	task.taskBuilder.BuildTask(task) // TODO(gf): ouch
 	m.Publish("finished")
 	return nil
 }
@@ -112,7 +112,7 @@ type anonymousTask struct {
 	cmds []interface{}
 }
 
-func (anon *anonymousTask) Package(pkg *Task) {
+func (anon *anonymousTask) BuildTask(pkg *Task) {
 	for i := range anon.cmds {
 		pkg.Add(anon.cmds[i])
 	}

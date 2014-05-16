@@ -6,7 +6,7 @@ import (
 )
 
 type PackageBuilder interface {
-	Package(pkg *Package)
+	BuildPackage(pkg *Package)
 }
 
 type Package struct {
@@ -21,8 +21,8 @@ func (pkg *Package) Add(name string, sth interface{}) {
 		pkg.addTask(v)
 	case PackageBuilder:
 		pkg.addPackage(name, v)
-	case TaskPackager:
-		pkg.addTask(&Task{name: name, task: v})
+	case TaskBuilder:
+		pkg.addTask(&Task{name: name, taskBuilder: v})
 	default:
 		panic(fmt.Sprintf("type %T not supported in Package.Add", sth))
 	}
@@ -32,9 +32,9 @@ func (pkg *Package) addPackage(name string, pkgBuilder PackageBuilder) {
 	pkg.validateTaskName(name)
 
 	child := &Package{}
-	pkgBuilder.Package(child)
+	pkgBuilder.BuildPackage(child)
 	for _, task := range child.tasks {
-		newTask := &Task{name: name + "." + task.name, task: task.task}
+		newTask := &Task{name: name + "." + task.name, taskBuilder: task.taskBuilder}
 		pkg.addTask(newTask)
 	}
 }
