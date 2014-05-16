@@ -12,13 +12,13 @@ import (
 	"github.com/dynport/urknall/cmd"
 )
 
-func New(addr string) (host *Host, e error) {
-	host = &Host{port: 22, user: "root"}
+func New(addr string) (target *Target, e error) {
+	target = &Target{port: 22, user: "root"}
 
 	hostAndPort := strings.SplitN(addr, ":", 2)
 	if len(hostAndPort) == 2 {
 		addr = hostAndPort[0]
-		host.port, e = strconv.Atoi(hostAndPort[1])
+		target.port, e = strconv.Atoi(hostAndPort[1])
 		if e != nil {
 			return nil, fmt.Errorf("port must be given as integer, got %q", hostAndPort[1])
 		}
@@ -27,22 +27,22 @@ func New(addr string) (host *Host, e error) {
 	userAndAddress := strings.Split(addr, "@")
 	switch len(userAndAddress) {
 	case 1:
-		host.address = addr
+		target.address = addr
 	case 2:
-		host.user = userAndAddress[0]
-		host.address = userAndAddress[1]
+		target.user = userAndAddress[0]
+		target.address = userAndAddress[1]
 	default:
-		return nil, fmt.Errorf("expected host address of the form '<user>@<host>', but was given: %s", addr)
+		return nil, fmt.Errorf("expected target address of the form '<user>@<host>', but was given: %s", addr)
 	}
 
-	if host.address == "" {
-		e = fmt.Errorf("empty address given for host")
+	if target.address == "" {
+		e = fmt.Errorf("empty address given for target")
 	}
 
-	return host, e
+	return target, e
 }
 
-type Host struct {
+type Target struct {
 	Password string
 
 	user    string
@@ -52,48 +52,44 @@ type Host struct {
 	client *ssh.Client
 }
 
-func (host *Host) User() string {
-	return host.user
+func (target *Target) User() string {
+	return target.user
 }
 
-func (host *Host) String() string {
-	return fmt.Sprintf("%s@%s:%d", host.user, host.address, host.port)
+func (target *Target) String() string {
+	return fmt.Sprintf("%s@%s:%d", target.user, target.address, target.port)
 }
 
-type SshClient interface {
-	Client() (*ssh.Client, error)
+func (target *Target) Command(cmd string) (cmd.ExecCommand, error) {
+	if target.client == nil {
+		var e error
+		target.client, e = target.buildClient()
+		if e != nil {
+			return nil, e
+		}
+	}
+	ses, e := target.client.NewSession()
+	if e != nil {
+		return nil, e
+	}
+	return &sshCommand{command: cmd, session: ses}, nil
 }
 
-func (c *Host) Client() (*ssh.Client, error) {
+func (target *Target) buildClient() (*ssh.Client, error) {
 	var e error
 	config := &ssh.ClientConfig{
-		User: c.user,
+		User: target.user,
 	}
-	if c.Password != "" {
-		config.Auth = append(config.Auth, ssh.Password(c.Password))
+	if target.Password != "" {
+		config.Auth = append(config.Auth, ssh.Password(target.Password))
 	} else if sshSocket := os.Getenv("SSH_AUTH_SOCK"); sshSocket != "" {
 		if agentConn, e := net.Dial("unix", sshSocket); e == nil {
 			config.Auth = append(config.Auth, ssh.PublicKeysCallback(agent.NewClient(agentConn).Signers))
 		}
 	}
-	con, e := ssh.Dial("tcp", fmt.Sprintf("%s:%d", c.address, c.port), config)
+	con, e := ssh.Dial("tcp", fmt.Sprintf("%s:%d", target.address, target.port), config)
 	if e != nil {
 		return nil, e
 	}
 	return &ssh.Client{Conn: con}, nil
-}
-
-func (c *Host) Command(cmd string) (cmd.ExecCommand, error) {
-	if c.client == nil {
-		var e error
-		c.client, e = c.Client()
-		if e != nil {
-			return nil, e
-		}
-	}
-	ses, e := c.client.NewSession()
-	if e != nil {
-		return nil, e
-	}
-	return &Command{command: cmd, session: ses}, nil
 }

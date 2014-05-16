@@ -39,7 +39,7 @@ func (c *host) User() string {
 }
 
 func (c *host) Command(cmd string) (cmd.ExecCommand, error) {
-	return &Command{
+	return &localCommand{
 		command: exec.Command("bash", "-c", cmd),
 	}, nil
 }

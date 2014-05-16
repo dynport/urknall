@@ -6,47 +6,47 @@ import (
 	"code.google.com/p/go.crypto/ssh"
 )
 
-type Command struct {
+type sshCommand struct {
 	command string
 	session *ssh.Session
 }
 
-func (c *Command) Close() error {
+func (c *sshCommand) Close() error {
 	return c.session.Close()
 }
 
-func (c *Command) StdinPipe() (io.Writer, error) {
+func (c *sshCommand) StdinPipe() (io.Writer, error) {
 	return c.session.StdinPipe()
 }
 
-func (c *Command) StdoutPipe() (io.Reader, error) {
+func (c *sshCommand) StdoutPipe() (io.Reader, error) {
 	return c.session.StdoutPipe()
 }
 
-func (c *Command) StderrPipe() (io.Reader, error) {
+func (c *sshCommand) StderrPipe() (io.Reader, error) {
 	return c.session.StderrPipe()
 }
 
-func (c *Command) SetStdout(w io.Writer) {
+func (c *sshCommand) SetStdout(w io.Writer) {
 	c.session.Stdout = w
 }
 
-func (c *Command) SetStderr(w io.Writer) {
+func (c *sshCommand) SetStderr(w io.Writer) {
 	c.session.Stderr = w
 }
 
-func (c *Command) SetStdin(r io.Reader) {
+func (c *sshCommand) SetStdin(r io.Reader) {
 	c.session.Stdin = r
 }
 
-func (c *Command) Run() error {
+func (c *sshCommand) Run() error {
 	return c.session.Run(c.command)
 }
 
-func (c *Command) Wait() error {
+func (c *sshCommand) Wait() error {
 	return c.session.Wait()
 }
 
-func (c *Command) Start() error {
+func (c *sshCommand) Start() error {
 	return c.session.Start(c.command)
 }

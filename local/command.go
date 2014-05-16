@@ -5,42 +5,42 @@ import (
 	"os/exec"
 )
 
-type Command struct {
+type localCommand struct {
 	command *exec.Cmd
 }
 
-func (c *Command) StdoutPipe() (io.Reader, error) {
+func (c *localCommand) StdoutPipe() (io.Reader, error) {
 	return c.command.StdoutPipe()
 }
 
-func (c *Command) StderrPipe() (io.Reader, error) {
+func (c *localCommand) StderrPipe() (io.Reader, error) {
 	return c.command.StderrPipe()
 }
 
-func (c *Command) StdinPipe() (io.Writer, error) {
+func (c *localCommand) StdinPipe() (io.Writer, error) {
 	return c.command.StdinPipe()
 }
 
-func (c *Command) SetStdout(w io.Writer) {
+func (c *localCommand) SetStdout(w io.Writer) {
 	c.command.Stdout = w
 }
 
-func (c *Command) SetStderr(w io.Writer) {
+func (c *localCommand) SetStderr(w io.Writer) {
 	c.command.Stderr = w
 }
 
-func (c *Command) SetStdin(r io.Reader) {
+func (c *localCommand) SetStdin(r io.Reader) {
 	c.command.Stdin = r
 }
 
-func (c *Command) Wait() error {
+func (c *localCommand) Wait() error {
 	return c.command.Wait()
 }
 
-func (c *Command) Start() error {
+func (c *localCommand) Start() error {
 	return c.command.Start()
 }
 
-func (c *Command) Run() error {
+func (c *localCommand) Run() error {
 	return c.command.Run()
 }
