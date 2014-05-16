@@ -2,8 +2,8 @@ package urknall
 
 import (
 	"fmt"
-	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func shouldBeError(actual interface{}, expected ...interface{}) string {
@@ -525,8 +525,9 @@ func TestMultiTags(t *testing.T) {
 
 		Convey("When an instance is create without a value set", func() {
 			pi := &pkg{}
+			e := validatePackage(pi)
 			Convey("Then validation must succeed", func() {
-				So(validatePackage(pi), ShouldBeNil)
+				So(e, ShouldBeNil)
 			})
 			Convey("Then the instances value must be set properly", func() {
 				So(pi.Field, ShouldEqual, "foo")

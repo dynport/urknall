@@ -6,46 +6,50 @@ import (
 )
 
 type PackageBuilder interface {
-	BuildPackage(pkg *Package)
+	BuildPackage(pkg Package)
 }
 
-type Package struct {
-	tasks     []*Task
+type Package interface {
+	Add(name string, sth interface{})
+}
+
+type packageImpl struct {
+	tasks     []*taskImpl
 	taskNames map[string]struct{}
 }
 
-func (pkg *Package) Add(name string, sth interface{}) {
+func (pkg *packageImpl) Add(name string, sth interface{}) {
 	switch v := sth.(type) {
-	case *Task:
+	case *taskImpl:
 		v.name = name // safe to set it here
 		pkg.addTask(v)
 	case PackageBuilder:
 		pkg.addPackage(name, v)
 	case TaskBuilder:
-		pkg.addTask(&Task{name: name, taskBuilder: v})
+		pkg.addTask(&taskImpl{name: name, taskBuilder: v})
 	default:
 		panic(fmt.Sprintf("type %T not supported in Package.Add", sth))
 	}
 }
 
-func (pkg *Package) addPackage(name string, pkgBuilder PackageBuilder) {
+func (pkg *packageImpl) addPackage(name string, pkgBuilder PackageBuilder) {
 	pkg.validateTaskName(name)
 
-	child := &Package{}
+	child := &packageImpl{}
 	pkgBuilder.BuildPackage(child)
 	for _, task := range child.tasks {
-		newTask := &Task{name: name + "." + task.name, taskBuilder: task.taskBuilder}
+		newTask := &taskImpl{name: name + "." + task.name, taskBuilder: task.taskBuilder}
 		pkg.addTask(newTask)
 	}
 }
 
-func (pkg *Package) addTask(task *Task) {
+func (pkg *packageImpl) addTask(task *taskImpl) {
 	pkg.validateTaskName(task.name)
 	pkg.taskNames[task.name] = struct{}{}
 	pkg.tasks = append(pkg.tasks, task)
 }
 
-func (pkg *Package) precompile() (e error) {
+func (pkg *packageImpl) precompile() (e error) {
 	for _, task := range pkg.tasks {
 		if len(task.commands) > 0 {
 			return fmt.Errorf("pkg %q seems to be packaged already", task.name)
@@ -59,7 +63,7 @@ func (pkg *Package) precompile() (e error) {
 	return nil
 }
 
-func (pkg *Package) validateTaskName(name string) {
+func (pkg *packageImpl) validateTaskName(name string) {
 	if name == "" {
 		panic("package names must not be empty!")
 	}

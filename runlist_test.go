@@ -21,12 +21,12 @@ type somePackage struct {
 	IField int
 }
 
-func (sp *somePackage) BuildTask(pkg *Task) {
+func (sp *somePackage) BuildTask(task Task) {
 }
 
 func TestAddCommand(t *testing.T) {
 	Convey("Given a runlist for a certain package", t, func() {
-		rl := &Task{taskBuilder: &somePackage{SField: "something", IField: 1}}
+		rl := &taskImpl{taskBuilder: &somePackage{SField: "something", IField: 1}}
 
 		Convey("When a string is added", func() {
 			rl.Add(`string with "{{ .SField }}" and "{{ .IField }}"`)

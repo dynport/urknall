@@ -10,8 +10,12 @@ import (
 	"github.com/dynport/urknall/pubsub"
 )
 
+type Task interface {
+	Add(cmds ...interface{})
+}
+
 // A runlist is a container for commands. Use the following methods to add new commands.
-type Task struct {
+type taskImpl struct {
 	commands []cmd.Command
 
 	name        string      // Name of the compilable.
@@ -19,15 +23,15 @@ type Task struct {
 }
 
 type TaskBuilder interface {
-	BuildTask(*Task)
+	BuildTask(Task)
 }
 
 // Create a task from a set of commands without configuration.
-func NewTask(cmds ...interface{}) *Task {
-	return &Task{taskBuilder: &anonymousTask{cmds: cmds}}
+func NewTask(cmds ...interface{}) Task {
+	return &taskImpl{taskBuilder: &anonymousTask{cmds: cmds}}
 }
 
-func (task *Task) rawCommands() []*rawCommand {
+func (task *taskImpl) rawCommands() []*rawCommand {
 	rawCommands := make([]*rawCommand, 0, len(task.commands))
 
 	cmdHash := sha256.New()
@@ -39,7 +43,7 @@ func (task *Task) rawCommands() []*rawCommand {
 	return rawCommands
 }
 
-func (task *Task) Add(cmds ...interface{}) {
+func (task *taskImpl) Add(cmds ...interface{}) {
 	for _, c := range cmds {
 		switch t := c.(type) {
 		case string:
@@ -48,27 +52,14 @@ func (task *Task) Add(cmds ...interface{}) {
 			task.addCommand(&stringCommand{cmd: t})
 		case cmd.Command:
 			task.addCommand(t)
-		case TaskBuilder:
-			task.addPackage(t)
 		default:
 			panic(fmt.Sprintf("type %T not supported!", t))
 		}
 	}
 }
 
-// Add the given package's commands to the runlist.
-func (task *Task) addPackage(p TaskBuilder) {
-	r := &Task{taskBuilder: p}
-	e := validatePackage(p)
-	if e != nil {
-		panic(e.Error())
-	}
-	p.BuildTask(r)
-	task.commands = append(task.commands, r.commands...)
-}
-
 // Add the given command to the runlist.
-func (task *Task) addCommand(c cmd.Command) {
+func (task *taskImpl) addCommand(c cmd.Command) {
 	if task.taskBuilder != nil {
 		if renderer, ok := c.(cmd.Renderer); ok {
 			renderer.Render(task.taskBuilder)
@@ -82,7 +73,7 @@ func (task *Task) addCommand(c cmd.Command) {
 	task.commands = append(task.commands, c)
 }
 
-func (task *Task) compile() (e error) {
+func (task *taskImpl) compile() (e error) {
 	m := &pubsub.Message{RunlistName: task.name, Key: pubsub.MessageRunlistsPrecompile}
 	m.Publish("started")
 	defer func() {
@@ -112,7 +103,7 @@ type anonymousTask struct {
 	cmds []interface{}
 }
 
-func (anon *anonymousTask) BuildTask(pkg *Task) {
+func (anon *anonymousTask) BuildTask(pkg Task) {
 	for i := range anon.cmds {
 		pkg.Add(anon.cmds[i])
 	}

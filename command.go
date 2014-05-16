@@ -10,7 +10,7 @@ import (
 type rawCommand struct {
 	cmd.Command        // The command to be executed.
 	checksum    string // The checksum of the command.
-	task        *Task
+	task        *taskImpl
 }
 
 func (cmd *rawCommand) execute(build *Build, checksumDir string) (e error) {

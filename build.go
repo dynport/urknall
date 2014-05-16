@@ -17,13 +17,13 @@ func Run(target Target, pkgBuilder PackageBuilder) (e error) {
 type Build struct {
 	Target
 	PkgBuilder PackageBuilder
-	pkg        *Package
+	pkg        *packageImpl
 	DryRun     bool
 	Env        []string
 }
 
 func (build Build) Run() error {
-	build.pkg = &Package{}
+	build.pkg = &packageImpl{}
 	build.PkgBuilder.BuildPackage(build.pkg)
 
 	e := build.pkg.precompile()
@@ -88,7 +88,7 @@ func (build *Build) run() (e error) {
 	return nil
 }
 
-func (build *Build) provisionRunlist(task *Task, ct checksumTree) (e error) {
+func (build *Build) provisionRunlist(task *taskImpl, ct checksumTree) (e error) {
 	commands := task.rawCommands()
 
 	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", task.name)
