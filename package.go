@@ -5,6 +5,10 @@ import (
 	"strings"
 )
 
+type PackageBuilder interface {
+	Package(pkg *Package)
+}
+
 type Package struct {
 	tasks     []*Task
 	taskNames map[string]struct{}
@@ -15,7 +19,7 @@ func (pkg *Package) Add(name string, sth interface{}) {
 	case *Task:
 		v.name = name // safe to set it here
 		pkg.addTask(v)
-	case *Package:
+	case PackageBuilder:
 		pkg.addPackage(name, v)
 	case TaskPackager:
 		pkg.addTask(&Task{name: name, task: v})
@@ -24,8 +28,11 @@ func (pkg *Package) Add(name string, sth interface{}) {
 	}
 }
 
-func (pkg *Package) addPackage(name string, child *Package) {
+func (pkg *Package) addPackage(name string, pkgBuilder PackageBuilder) {
 	pkg.validateTaskName(name)
+
+	child := &Package{}
+	pkgBuilder.Package(child)
 	for _, task := range child.tasks {
 		newTask := &Task{name: name + "." + task.name, task: task.task}
 		pkg.addTask(newTask)

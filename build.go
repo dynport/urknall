@@ -10,19 +10,23 @@ import (
 	"github.com/dynport/urknall/pubsub"
 )
 
-func Run(target Target, pkg *Package) (e error) {
-	return (Build{Target: target, Pkg: pkg}).Run()
+func Run(target Target, pkgBuilder PackageBuilder) (e error) {
+	return (Build{Target: target, PkgBuilder: pkgBuilder}).Run()
 }
 
 type Build struct {
 	Target
-	Pkg    *Package
-	DryRun bool
-	Env    []string
+	PkgBuilder PackageBuilder
+	pkg        *Package
+	DryRun     bool
+	Env        []string
 }
 
 func (build Build) Run() error {
-	e := build.Pkg.precompile()
+	build.pkg = &Package{}
+	build.PkgBuilder.Package(build.pkg)
+
+	e := build.pkg.precompile()
 	if e != nil {
 		return e
 	}
@@ -71,8 +75,8 @@ func (build *Build) run() (e error) {
 		return e
 	}
 
-	for i := range build.Pkg.tasks {
-		task := build.Pkg.tasks[i]
+	for i := range build.pkg.tasks {
+		task := build.pkg.tasks[i]
 		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvision, Hostname: build.hostname()}
 		m.Publish("started")
 		if e = build.provisionRunlist(task, ct); e != nil {
