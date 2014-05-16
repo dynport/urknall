@@ -10,6 +10,10 @@ import (
 	"github.com/dynport/urknall/pubsub"
 )
 
+func Run(target Target, pkg *Package) (e error) {
+	return (Build{Target: target, Pkg: pkg}).Run()
+}
+
 type Build struct {
 	Target
 	Pkg    *Package
