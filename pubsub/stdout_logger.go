@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"strings"
 	"time"
 
@@ -27,23 +26,17 @@ var IgnoredMessagesError = errors.New("ignored published messages (subscriber bu
 
 // Create a logging facility for urknall using urknall's default formatter.
 // Note that this resource must be closed afterwards!
-func OpenStdoutLogger() io.Closer {
-	logger := &stdoutLogger{}
+func OpenLogger(w io.Writer) io.Closer {
+	logger := &logger{}
+	logger.Output = w
 	logger.Formatter = logger.DefaultFormatter
 	// Ignore the error from Start. It would only be triggered if the formatter wouldn't be set.
 	_ = logger.Start()
 	return logger
 }
 
-func OpenStdoutLoggerWithFormatter(f formatter) io.Closer {
-	logger := &stdoutLogger{}
-	logger.Formatter = f
-	// Ignore the error from Start. It would only be triggered if the formatter wouldn't be set.
-	_ = logger.Start()
-	return logger
-}
-
-type stdoutLogger struct {
+type logger struct {
+	Output       io.Writer
 	Formatter    formatter
 	maxLengths   map[int]int
 	started      time.Time
@@ -52,14 +45,14 @@ type stdoutLogger struct {
 	subscription *pubsub.Subscription
 }
 
-func (logger *stdoutLogger) Started() time.Time {
+func (logger *logger) Started() time.Time {
 	if logger.started.IsZero() {
 		logger.started = time.Now()
 	}
 	return logger.started
 }
 
-func (logger *stdoutLogger) formatCommandOuput(message *Message) string {
+func (logger *logger) formatCommandOuput(message *Message) string {
 	prefix := fmt.Sprintf("[%s][%s][%s]", formatIp(message.Hostname), formatRunlistName(message.RunlistName, 12), formatDuration(logger.sinceStarted()))
 	line := message.Line
 	if message.IsStderr() {
@@ -102,7 +95,7 @@ func SimpleFormatter(message *Message) string {
 	return strings.Join(parts, " ")
 }
 
-func (logger *stdoutLogger) DefaultFormatter(message *Message) string {
+func (logger *logger) DefaultFormatter(message *Message) string {
 	ignoreKeys := []string{MessageRunlistsPrecompile, MessageCleanupCacheEntries, MessageRunlistsProvision, MessageUrknallInternal}
 	for _, k := range ignoreKeys {
 		if strings.HasPrefix(message.Key, k) {
@@ -149,11 +142,11 @@ func formatDuration(dur time.Duration) string {
 	return fmt.Sprintf("%7s", durString)
 }
 
-func (logger *stdoutLogger) sinceStarted() time.Duration {
+func (logger *logger) sinceStarted() time.Duration {
 	return time.Now().Sub(logger.Started())
 }
 
-func (logger *stdoutLogger) Start() error {
+func (logger *logger) Start() error {
 	logger.started = time.Now()
 	if logger.Formatter == nil {
 		return fmt.Errorf("Formatter must be set")
@@ -162,20 +155,16 @@ func (logger *stdoutLogger) Start() error {
 	RegisterPubSub(logger.pubSub)
 	logger.subscription = logger.pubSub.Subscribe(func(m *Message) {
 		if message := logger.Formatter(m); message != "" {
-			log.Println(message)
+			fmt.Fprintln(logger.Output, message)
 		}
 	})
 	return nil
 }
 
-func (logger *stdoutLogger) Close() (e error) {
+func (logger *logger) Close() (e error) {
 	e = logger.subscription.Close()
 	if d := logger.pubSub.Stats.Ignored(); e == nil && d > 0 {
 		return IgnoredMessagesError
 	}
 	return e
-}
-
-func init() {
-	log.SetFlags(0)
 }

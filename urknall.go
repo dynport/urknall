@@ -37,10 +37,6 @@ import (
 
 // Create a logging facility for urknall using urknall's default formatter.
 // Note that this resource must be closed afterwards!
-func OpenStdoutLogger() io.Closer {
-	return pubsub.OpenStdoutLogger()
-}
-
-func OpenSimpleStdoutLogger() io.Closer {
-	return pubsub.OpenStdoutLoggerWithFormatter(pubsub.SimpleFormatter)
+func OpenLogger(w io.Writer) io.Closer {
+	return pubsub.OpenLogger(w)
 }
