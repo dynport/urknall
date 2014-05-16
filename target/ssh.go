@@ -1,7 +1,8 @@
-package ssh
+package target
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"strconv"
@@ -12,8 +13,8 @@ import (
 	"github.com/dynport/urknall/cmd"
 )
 
-func New(addr string) (target *Target, e error) {
-	target = &Target{port: 22, user: "root"}
+func NewSshTarget(addr string) (target *sshTarget, e error) {
+	target = &sshTarget{port: 22, user: "root"}
 
 	hostAndPort := strings.SplitN(addr, ":", 2)
 	if len(hostAndPort) == 2 {
@@ -42,7 +43,7 @@ func New(addr string) (target *Target, e error) {
 	return target, e
 }
 
-type Target struct {
+type sshTarget struct {
 	Password string
 
 	user    string
@@ -52,15 +53,15 @@ type Target struct {
 	client *ssh.Client
 }
 
-func (target *Target) User() string {
+func (target *sshTarget) User() string {
 	return target.user
 }
 
-func (target *Target) String() string {
+func (target *sshTarget) String() string {
 	return fmt.Sprintf("%s@%s:%d", target.user, target.address, target.port)
 }
 
-func (target *Target) Command(cmd string) (cmd.ExecCommand, error) {
+func (target *sshTarget) Command(cmd string) (cmd.ExecCommand, error) {
 	if target.client == nil {
 		var e error
 		target.client, e = target.buildClient()
@@ -75,7 +76,7 @@ func (target *Target) Command(cmd string) (cmd.ExecCommand, error) {
 	return &sshCommand{command: cmd, session: ses}, nil
 }
 
-func (target *Target) buildClient() (*ssh.Client, error) {
+func (target *sshTarget) buildClient() (*ssh.Client, error) {
 	var e error
 	config := &ssh.ClientConfig{
 		User: target.user,
@@ -92,4 +93,49 @@ func (target *Target) buildClient() (*ssh.Client, error) {
 		return nil, e
 	}
 	return &ssh.Client{Conn: con}, nil
+}
+
+type sshCommand struct {
+	command string
+	session *ssh.Session
+}
+
+func (c *sshCommand) Close() error {
+	return c.session.Close()
+}
+
+func (c *sshCommand) StdinPipe() (io.Writer, error) {
+	return c.session.StdinPipe()
+}
+
+func (c *sshCommand) StdoutPipe() (io.Reader, error) {
+	return c.session.StdoutPipe()
+}
+
+func (c *sshCommand) StderrPipe() (io.Reader, error) {
+	return c.session.StderrPipe()
+}
+
+func (c *sshCommand) SetStdout(w io.Writer) {
+	c.session.Stdout = w
+}
+
+func (c *sshCommand) SetStderr(w io.Writer) {
+	c.session.Stderr = w
+}
+
+func (c *sshCommand) SetStdin(r io.Reader) {
+	c.session.Stdin = r
+}
+
+func (c *sshCommand) Run() error {
+	return c.session.Run(c.command)
+}
+
+func (c *sshCommand) Wait() error {
+	return c.session.Wait()
+}
+
+func (c *sshCommand) Start() error {
+	return c.session.Start(c.command)
 }

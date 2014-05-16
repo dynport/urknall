@@ -2,8 +2,7 @@ package urknall
 
 import (
 	"github.com/dynport/urknall/cmd"
-	"github.com/dynport/urknall/local"
-	"github.com/dynport/urknall/ssh"
+	"github.com/dynport/urknall/target"
 )
 
 type Target interface {
@@ -13,11 +12,11 @@ type Target interface {
 }
 
 func NewSshTarget(address string) (Target, error) {
-	return ssh.New(address)
+	return target.NewSshTarget(address)
 }
 
 func NewSshTargetWithPassword(address, password string) (Target, error) {
-	target, e := ssh.New(address)
+	target, e := target.NewSshTarget(address)
 	if e == nil {
 		target.Password = password
 	}
@@ -25,5 +24,5 @@ func NewSshTargetWithPassword(address, password string) (Target, error) {
 }
 
 func NewLocalTarget() (Target, error) {
-	return local.New(), nil
+	return target.NewLocalTarget(), nil
 }

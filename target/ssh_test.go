@@ -1,4 +1,4 @@
-package ssh
+package target
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ func shouldEqualError(t *testing.T, a, b interface{}) {
 	t.Errorf("expected %q to equal %q", a, b)
 }
 
-func TestNewHost(t *testing.T) {
+func TestNewTarget(t *testing.T) {
 	data := map[string]struct {
 		user, address string
 		port          int
@@ -24,37 +24,37 @@ func TestNewHost(t *testing.T) {
 	}
 
 	for address, expectation := range data {
-		host, e := New(address)
+		target, e := NewSshTarget(address)
 		if e != nil {
 			t.Fatalf("failed to parse address: %s", e)
 		}
 
-		if host.user != expectation.user {
-			shouldEqualError(t, host.user, expectation.user)
+		if target.user != expectation.user {
+			shouldEqualError(t, target.user, expectation.user)
 		}
 
-		if host.port != expectation.port {
-			shouldEqualError(t, host.port, expectation.port)
+		if target.port != expectation.port {
+			shouldEqualError(t, target.port, expectation.port)
 		}
 
-		if host.address != expectation.address {
-			shouldEqualError(t, host.address, expectation.address)
+		if target.address != expectation.address {
+			shouldEqualError(t, target.address, expectation.address)
 		}
 	}
 }
 
-func TestNewHostFailing(t *testing.T) {
+func TestNewTargetFailing(t *testing.T) {
 	data := map[string]string{
-		"":                        "empty address given for host",
-		":22":                     "empty address given for host",
-		"root@:22":                "empty address given for host",
+		"":                        "empty address given for target",
+		":22":                     "empty address given for target",
+		"root@:22":                "empty address given for target",
 		"example.com:foobar":      `port must be given as integer, got "foobar"`,
 		"example.com:22:23":       `port must be given as integer, got "22:23"`,
-		"root@foobar@example.com": "expected host address of the form '<user>@<host>', but was given: root@foobar@example.com",
+		"root@foobar@example.com": "expected target address of the form '<user>@<host>', but was given: root@foobar@example.com",
 	}
 
 	for address, expectedError := range data {
-		_, e := New(address)
+		_, e := NewSshTarget(address)
 		if e == nil {
 			t.Fatalf("address %q should've invoked error %q, but didn't", address, expectedError)
 		}
