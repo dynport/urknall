@@ -1,4 +1,4 @@
-.PHONY: deps test vet
+.PHONY: install deps test vet
 
 ASSETS      := $(shell find urknall/packages -type f)
 
@@ -10,6 +10,9 @@ PACKAGES    := $(filter-out $(IGN_PKGS),$(ALL_PKGS))
 
 ${GOPATH}/bin/urknall: urknall/assets.go urknall/*.go
 	@go install github.com/dynport/urknall/urknall
+
+install: deps urknall/assets.go vet test
+	go install github.com/dynport/urknall/urknall
 
 deps:
 	@for package in $(EXTRA_DEPS) $(DEPS); do \
