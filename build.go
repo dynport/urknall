@@ -214,9 +214,11 @@ func (build *Build) cleanUpRemainingCachedEntries(checksumDir string, checksumHa
 }
 
 func (build *Build) prepareCommand(cmd string) (cmd.ExecCommand, error) {
+	var sudo string
 	if build.User() != "root" {
-		cmd = fmt.Sprintf("sudo sh -c %q", cmd)
+		sudo = "sudo "
 	}
+	cmd = fmt.Sprintf(sudo+"sh -x -e <<EOC\n%s\nEOC\n", cmd)
 	return build.Command(cmd)
 }
 

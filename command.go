@@ -1,8 +1,6 @@
 package urknall
 
 import (
-	"fmt"
-
 	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/utils"
 )
@@ -14,7 +12,7 @@ type rawCommand struct {
 }
 
 func (cmd *rawCommand) execute(build *Build, checksumDir string) (e error) {
-	sCmd := fmt.Sprintf("sh -x -e -c %q", cmd.Shell())
+	sCmd := cmd.Shell()
 	for _, env := range build.Env {
 		sCmd = env + " " + sCmd
 	}
