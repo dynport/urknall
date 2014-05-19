@@ -106,7 +106,7 @@ func (runner *remoteTaskRunner) newLogWriter(path string, errors chan error) cha
 	logs := make(chan string)
 	go func() {
 		// so ugly, but: sudo not required and "sh -c" adds some escaping issues with the variables. This is why Command is called directly.
-		c, e := runner.build.Command("{ t=$(mktemp) || exit 1; } && cat - > $t && mv $t " + path + " && chgrp urknall " + path + " && chmod 0660 " + path)
+		c, e := runner.build.Command("cat - > " + path)
 		if e != nil {
 			errors <- e
 			return
