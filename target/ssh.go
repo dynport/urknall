@@ -76,6 +76,14 @@ func (target *sshTarget) Command(cmd string) (cmd.ExecCommand, error) {
 	return &sshCommand{command: cmd, session: ses}, nil
 }
 
+func (target *sshTarget) Reset() (e error) {
+	if target.client != nil {
+		e = target.client.Close()
+		target.client = nil
+	}
+	return e
+}
+
 func (target *sshTarget) buildClient() (*ssh.Client, error) {
 	var e error
 	config := &ssh.ClientConfig{

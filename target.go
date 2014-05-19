@@ -9,6 +9,7 @@ type Target interface {
 	Command(cmd string) (cmd.ExecCommand, error)
 	User() string
 	String() string
+	Reset() error
 }
 
 func NewSshTarget(address string) (Target, error) {

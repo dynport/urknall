@@ -45,6 +45,11 @@ func (c *localTarget) Command(cmd string) (cmd.ExecCommand, error) {
 	}, nil
 }
 
+func (c *localTarget) Reset() (e error) {
+	// TODO(gf) maybe required for setting the proper group?
+	return nil
+}
+
 type localCommand struct {
 	command *exec.Cmd
 }

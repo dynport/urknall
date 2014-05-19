@@ -65,6 +65,7 @@ func (build *Build) prepare() error {
 		if e := cmd.Run(); e != nil {
 			return fmt.Errorf("failed to initiate user %q for provisioning: %s, out=%q err=%q", build.User(), e, out.String(), err.String())
 		}
+		build.Reset()
 	}
 	return nil
 }
