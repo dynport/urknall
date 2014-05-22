@@ -100,8 +100,8 @@ func (pkg *packageImpl) addOne(name string, sth interface{}) {
 	}
 }
 
-func (pkg *packageImpl) AddPackage(name string, pkgBuilder Template) {
-	e := validatePackage(pkgBuilder)
+func (pkg *packageImpl) AddPackage(name string, tpl Template) {
+	e := validatePackage(tpl)
 	if e != nil {
 		panic(e)
 	}
@@ -109,8 +109,8 @@ func (pkg *packageImpl) AddPackage(name string, pkgBuilder Template) {
 		name = utils.MustRenderTemplate(name, pkg.reference)
 	}
 	pkg.validateTaskName(name)
-	child := &packageImpl{cacheKeyPrefix: name, reference: pkgBuilder}
-	pkgBuilder.Render(child)
+	child := &packageImpl{cacheKeyPrefix: name, reference: tpl}
+	tpl.Render(child)
 	for _, task := range child.Tasks() {
 		pkg.AddTask(task)
 	}

@@ -11,7 +11,7 @@ import (
 type BuildHost struct {
 }
 
-func (b *BuildHost) BuildPackage(p Package) {
+func (b *BuildHost) Render(p Package) {
 	p.Add("staging", &Staging{})
 }
 
@@ -19,7 +19,7 @@ type Staging struct {
 	RubyVersion string `urknall:"default=2.1.2"`
 }
 
-func (s *Staging) BuildPackage(p Package) {
+func (s *Staging) Render(p Package) {
 	p.Add("ruby-{{ .RubyVersion }}", &Ruby{Version: s.RubyVersion})
 	p.Add("es", &ElasticSearch{})
 }
@@ -31,7 +31,7 @@ type Ruby struct {
 type ElasticSearch struct {
 }
 
-func (e *ElasticSearch) BuildPackage(p Package) {
+func (e *ElasticSearch) Render(p Package) {
 	p.Add("install", []string{"apt-get install elasticsearch"})
 	p.Add("ruby", &Ruby{})
 }
@@ -52,9 +52,9 @@ func (c *testCommand) Render(i interface{}) {
 	c.cmd = utils.MustRenderTemplate(c.cmd, i)
 }
 
-func (r *Ruby) BuildPackage(p Package) {
+func (r *Ruby) Render(p Package) {
 	p.Add("install", []string{"apt-get update", "apt-get install ruby -v {{ .Version }}"})
-	p.Add("config", []Command{&testCommand{cmd: "echo {{ .Version }}"}})
+	p.Add("config", &testCommand{cmd: "echo {{ .Version }}"})
 	p.Add("plain", []string{"using version {{ .Version }}"})
 }
 

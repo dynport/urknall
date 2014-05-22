@@ -10,12 +10,16 @@ type testPackageBuilder struct {
 }
 
 func (t *testPackageBuilder) Build(p Package) {
-	p.AddTask(NewTask("base").Add("echo base {{ .Version }}"))
+	ts := NewTask()
+	ts.SetCacheKey("base")
+	ts.Add("echo base {{ .Version }}")
 }
 
 func TestBuildPackage(t *testing.T) {
 	Convey("Build package", t, func() {
-		task := NewTask("base").Add("apt-get update")
+		task := NewTask()
+		task.SetCacheKey("base")
+		task.Add("apt-get update")
 		So(task, ShouldNotBeNil)
 		pkg := &packageImpl{}
 		pkg.AddTask(task)

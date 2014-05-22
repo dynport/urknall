@@ -10,20 +10,19 @@ import (
 	"github.com/dynport/urknall/pubsub"
 )
 
-func Run(target Target, pkgBuilder Template) (e error) {
-	return (Build{Target: target, PkgBuilder: pkgBuilder}).Run()
+func Run(target Target, tpl Template) (e error) {
+	return (Build{Target: target, Template: tpl}).Run()
 }
 
 type Build struct {
 	Target
-	PkgBuilder Template
-	pkg        *packageImpl
-	DryRun     bool
-	Env        []string
+	Template
+	DryRun bool
+	Env    []string
 }
 
 func (b Build) Run() error {
-	pkg, e := build(b.PkgBuilder)
+	pkg, e := build(b.Template)
 	if e != nil {
 		return e
 	}
