@@ -11,7 +11,7 @@ type Base struct {
 }
 
 func (b *Base) Render(p urknall.Package) {
-	p.Add("base", "echo hello world")
+	p.AddCommands("base", Shell("echo hello world"))
 }
 
 func main() {

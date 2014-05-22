@@ -9,14 +9,14 @@ func TestPackageImpl(t *testing.T) {
 	Convey("Test packageImpl", t, func() {
 		Convey("add single arguments", func() {
 			pkg := &packageImpl{}
-			pkg.Add("test", "this is a test")
+			pkg.AddCommands("test", &testCommand{"this is a test"})
 			So(len(pkg.Tasks()), ShouldEqual, 1)
 
 			c, e := pkg.Tasks()[0].Commands()
 			So(e, ShouldBeNil)
 			So(c[0].Shell(), ShouldEqual, "this is a test")
 
-			pkg.Add("test2", &testCommand{"testcmd"})
+			pkg.AddCommands("test2", &testCommand{"testcmd"})
 			So(len(pkg.Tasks()), ShouldEqual, 2)
 
 			c, e = pkg.Tasks()[1].Commands()
@@ -26,7 +26,7 @@ func TestPackageImpl(t *testing.T) {
 
 		Convey("add multiple arguments", func() {
 			pkg := &packageImpl{}
-			pkg.Add("test", "echo hello", "echo world")
+			pkg.AddCommands("test", &testCommand{"echo hello"}, &testCommand{"echo world"})
 			tasks := pkg.Tasks()
 			So(len(tasks), ShouldEqual, 1)
 			task := tasks[0]
@@ -36,7 +36,7 @@ func TestPackageImpl(t *testing.T) {
 			So(c[0].Shell(), ShouldEqual, "echo hello")
 			So(c[1].Shell(), ShouldEqual, "echo world")
 
-			pkg.Add("test2", "echo hello", &testCommand{"echo cmd"})
+			pkg.AddCommands("test2", &testCommand{"echo cmd"})
 			tasks = pkg.Tasks()
 			So(len(tasks), ShouldEqual, 2)
 
@@ -44,8 +44,8 @@ func TestPackageImpl(t *testing.T) {
 			So(task.CacheKey(), ShouldEqual, "test2")
 			c, e = task.Commands()
 			So(e, ShouldBeNil)
-			So(len(c), ShouldEqual, 2)
-			So(c[1].Shell(), ShouldEqual, "echo cmd")
+			So(len(c), ShouldEqual, 1)
+			So(c[0].Shell(), ShouldEqual, "echo cmd")
 		})
 	})
 }

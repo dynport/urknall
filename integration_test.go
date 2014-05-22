@@ -12,7 +12,7 @@ type BuildHost struct {
 }
 
 func (b *BuildHost) Render(p Package) {
-	p.Add("staging", &Staging{})
+	p.AddTemplate("staging", &Staging{})
 }
 
 type Staging struct {
@@ -20,8 +20,8 @@ type Staging struct {
 }
 
 func (s *Staging) Render(p Package) {
-	p.Add("ruby-{{ .RubyVersion }}", &Ruby{Version: s.RubyVersion})
-	p.Add("es", &ElasticSearch{})
+	p.AddTemplate("ruby-{{ .RubyVersion }}", &Ruby{Version: s.RubyVersion})
+	p.AddTemplate("es", &ElasticSearch{})
 }
 
 type Ruby struct {
@@ -32,8 +32,8 @@ type ElasticSearch struct {
 }
 
 func (e *ElasticSearch) Render(p Package) {
-	p.Add("install", []string{"apt-get install elasticsearch"})
-	p.Add("ruby", &Ruby{})
+	p.AddCommands("install", &testCommand{cmd: "apt-get install elasticsearch"})
+	p.AddTemplate("ruby", &Ruby{})
 }
 
 type testCommand struct {
@@ -53,9 +53,11 @@ func (c *testCommand) Render(i interface{}) {
 }
 
 func (r *Ruby) Render(p Package) {
-	p.Add("install", []string{"apt-get update", "apt-get install ruby -v {{ .Version }}"})
-	p.Add("config", &testCommand{cmd: "echo {{ .Version }}"})
-	p.Add("plain", []string{"using version {{ .Version }}"})
+	t := NewTask()
+	t.SetCacheKey("install")
+	t.Add("apt-get update", "apt-get install ruby -v {{ .Version }}")
+	p.AddTask(t)
+	p.AddCommands("config", &testCommand{cmd: "echo {{ .Version }}"})
 }
 
 func rcover(t *testing.T) {
@@ -66,7 +68,6 @@ func rcover(t *testing.T) {
 
 func TestIntegration(t *testing.T) {
 	Convey("Integration test", t, func() {
-		defer rcover(t)
 		pkg := &BuildHost{}
 		p, e := build(pkg)
 		So(e, ShouldBeNil)
@@ -80,27 +81,21 @@ func TestIntegration(t *testing.T) {
 			names = append(names, task.CacheKey())
 		}
 
-		So(len(names), ShouldEqual, 7)
+		t.Logf("%#v", names)
+
+		So(len(names), ShouldEqual, 5)
 
 		sort.Strings(names)
 		So(names[0], ShouldEqual, "staging.es.install")
 		So(names[1], ShouldEqual, "staging.es.ruby.config")
 		So(names[2], ShouldEqual, "staging.es.ruby.install")
-		So(names[3], ShouldEqual, "staging.es.ruby.plain")
-		So(names[4], ShouldEqual, "staging.ruby-2.1.2.config")
-		So(names[5], ShouldEqual, "staging.ruby-2.1.2.install")
-		So(names[6], ShouldEqual, "staging.ruby-2.1.2.plain")
+		So(names[3], ShouldEqual, "staging.ruby-2.1.2.config")
+		So(names[4], ShouldEqual, "staging.ruby-2.1.2.install")
 
 		task := tasks["staging.ruby-2.1.2.config"]
 		commands, e := task.Commands()
 		So(e, ShouldBeNil)
 		So(len(commands), ShouldEqual, 1)
 		So(commands[0].Shell(), ShouldEqual, "echo 2.1.2")
-
-		task = tasks["staging.ruby-2.1.2.plain"]
-		commands, e = task.Commands()
-		So(e, ShouldBeNil)
-		So(len(commands), ShouldEqual, 1)
-		So(commands[0].Shell(), ShouldEqual, "using version 2.1.2")
 	})
 }

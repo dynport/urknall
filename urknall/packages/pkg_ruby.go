@@ -30,7 +30,7 @@ func (ruby *Ruby) Name() string {
 }
 
 func (ruby *Ruby) Render(r urknall.Package) {
-	r.Add("base",
+	r.AddCommands("base",
 		InstallPackages(
 			"curl", "build-essential", "libyaml-dev", "libxml2-dev", "libxslt1-dev", "libreadline-dev", "libssl-dev", "zlib1g-dev",
 		),
@@ -44,7 +44,7 @@ func (ruby *Ruby) Render(r urknall.Package) {
 	)
 
 	if ruby.WithBundler {
-		r.Add("{{ .InstallPath }}/bin/gem install bundler")
+		r.AddCommands("bundler", Shell("{{ .InstallPath }}/bin/gem install bundler"))
 	}
 }
 

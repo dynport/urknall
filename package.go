@@ -2,7 +2,6 @@ package urknall
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/dynport/urknall/utils"
@@ -13,7 +12,8 @@ type Template interface {
 }
 
 type Package interface {
-	Add(string, ...interface{})
+	AddTemplate(string, Template)
+	AddCommands(string, ...command)
 	AddTask(Task)
 	Tasks() []Task
 }
@@ -29,78 +29,26 @@ func (p *packageImpl) Tasks() []Task {
 	return p.tasks
 }
 
-func (pkg *packageImpl) Add(name string, v ...interface{}) {
+func (pkg *packageImpl) AddCommands(name string, cmds ...command) {
 	if pkg.cacheKeyPrefix != "" {
 		name = pkg.cacheKeyPrefix + "." + name
 	}
 	name = utils.MustRenderTemplate(name, pkg.reference)
-
-	if len(v) == 1 {
-		pkg.addOne(name, v[0])
-	} else {
-		pkg.addMany(name, v)
-	}
-}
-
-func (pkg *packageImpl) addMany(name string, v []interface{}) {
 	task := &taskImpl{name: name}
-	for _, sth := range v {
-		switch t := sth.(type) {
-		case string:
-			task.Add(utils.MustRenderTemplate(t, pkg.reference))
-		case command:
-			if r, ok := t.(renderer); ok {
-				r.Render(pkg.reference)
-			}
-			task.Add(t)
-		default:
-			log.Panicf("type %T %#v not supported ehen called with variadic arguments", sth, sth)
-		}
-	}
-	pkg.AddTask(task)
-}
-
-func (pkg *packageImpl) addOne(name string, sth interface{}) {
-	switch v := sth.(type) {
-	case *taskImpl:
-		v.name = name // safe to set it here
-		pkg.AddTask(v)
-	case Template:
-		pkg.AddPackage(name, v)
-	case string:
-		task := &taskImpl{name: name}
-		r := utils.MustRenderTemplate(v, pkg.reference)
-		task.Add(r)
-		pkg.AddTask(task)
-	case []string:
-		task := &taskImpl{name: name}
-		for _, s := range v {
-			r := utils.MustRenderTemplate(s, pkg.reference)
-			task.Add(r)
-		}
-		pkg.AddTask(task)
-	case command:
-		task := &taskImpl{name: name}
-		if r, ok := v.(renderer); ok {
+	for _, c := range cmds {
+		if r, ok := c.(renderer); ok {
 			r.Render(pkg.reference)
 		}
-		task.Add(v)
-		pkg.AddTask(task)
-	case []command:
-		task := &taskImpl{name: name}
-		for _, c := range v {
-			if r, ok := c.(renderer); ok {
-				r.Render(pkg.reference)
-			}
-			task.Add(c)
-		}
-		pkg.AddTask(task)
-	default:
-		panic(fmt.Sprintf("type %T not supported in Package.Add", sth))
+		task.Add(c)
 	}
+	pkg.addTask(task, false)
 }
 
-func (pkg *packageImpl) AddPackage(name string, tpl Template) {
+func (pkg *packageImpl) AddTemplate(name string, tpl Template) {
+	if pkg.cacheKeyPrefix != "" {
+		name = pkg.cacheKeyPrefix + "." + name
+	}
+	name = utils.MustRenderTemplate(name, pkg.reference)
 	e := validatePackage(tpl)
 	if e != nil {
 		panic(e)
@@ -112,14 +60,26 @@ func (pkg *packageImpl) AddPackage(name string, tpl Template) {
 	child := &packageImpl{cacheKeyPrefix: name, reference: tpl}
 	tpl.Render(child)
 	for _, task := range child.Tasks() {
-		pkg.AddTask(task)
+		pkg.addTask(task, false)
 	}
 }
 
-func (pkg *packageImpl) AddTask(task Task) {
+func (pkg *packageImpl) addTask(task Task, addPrefix bool) {
+	if addPrefix {
+		name := task.CacheKey()
+		if pkg.cacheKeyPrefix != "" {
+			name = pkg.cacheKeyPrefix + "." + task.CacheKey()
+		}
+		name = utils.MustRenderTemplate(name, pkg.reference)
+		task.SetCacheKey(name)
+	}
 	pkg.validateTaskName(task.CacheKey())
 	pkg.taskNames[task.CacheKey()] = struct{}{}
 	pkg.tasks = append(pkg.tasks, task)
+}
+
+func (pkg *packageImpl) AddTask(task Task) {
+	pkg.addTask(task, true)
 }
 
 func (pkg *packageImpl) precompile() (e error) {

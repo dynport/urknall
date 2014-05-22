@@ -17,7 +17,7 @@ func (ng *SyslogNg) url() string {
 }
 
 func (ng *SyslogNg) Render(r urknall.Package) {
-	r.Add("base",
+	r.AddCommands("base",
 		InstallPackages("build-essential", "libevtlog-dev", "pkg-config", "libglib2.0-dev"),
 		DownloadAndExtract(ng.url(), "/opt/src"),
 		And(
@@ -57,11 +57,11 @@ type SyslogNgReceiver struct {
 }
 
 func (p *SyslogNgReceiver) Render(r urknall.Package) {
-	r.Add("base",
-		&SyslogNg{Version: p.Version},
+	r.AddTemplate("base", &SyslogNg{Version: p.Version})
+	r.AddTemplate("symlink", &CreateHourlySymlinks{Root: p.LogsRoot})
+	r.AddCommands("config",
 		WriteFile("/usr/local/etc/syslog-ng.conf", syslogReceiver, "root", 0644),
-		&CreateHourlySymlinks{Root: p.LogsRoot},
-		syslogNgRestart,
+		Shell(syslogNgRestart),
 	)
 }
 
@@ -71,10 +71,12 @@ type SyslogNgSender struct {
 }
 
 func (s *SyslogNgSender) Render(r urknall.Package) {
-	r.Add("base",
+	r.AddTemplate("base",
 		&SyslogNg{Version: s.Version},
+	)
+	r.AddCommands("config",
 		WriteFile("/usr/local/etc/syslog-ng.conf", syslogNgSender, "root", 0644),
-		syslogNgRestart,
+		Shell(syslogNgRestart),
 	)
 }
 
@@ -123,7 +125,7 @@ type CreateHourlySymlinks struct {
 }
 
 func (*CreateHourlySymlinks) Render(r urknall.Package) {
-	r.Add("base",
+	r.AddCommands("base",
 		Mkdir("/opt/scripts", "root", 0755),
 		WriteFile("/opt/scripts/create_hourly_symlinks.sh", createHourlySymlinks, "root", 0755),
 		WriteFile("/etc/cron.d/create_hourly_symlinks", "* * * * * root /opt/scripts/create_hourly_symlinks.sh 2>&1 | logger -i -t create_hourly_symlinks\n", "root", 0644),

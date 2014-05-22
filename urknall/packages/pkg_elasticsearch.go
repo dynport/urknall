@@ -19,7 +19,7 @@ type ElasticSearch struct {
 }
 
 func (p *ElasticSearch) Render(r urknall.Package) {
-	r.Add("base",
+	r.AddCommands("base",
 		InstallPackages("openjdk-6-jdk"),
 		DownloadAndExtract(p.url(), "/opt/"),
 		AddUser("elasticsearch", true),

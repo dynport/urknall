@@ -20,7 +20,7 @@ func (p *Postgres) User() string {
 }
 
 func (pkg *Postgres) Render(r urknall.Package) {
-	r.Add("base",
+	r.AddCommands("base",
 		InstallPackages("build-essential", "openssl", "libssl-dev", "flex", "zlib1g-dev", "libxslt1-dev", "libxml2-dev", "python-dev", "libreadline-dev", "bison"),
 		Mkdir("/opt/src/", "root", 0755),
 		DownloadAndExtract(pkg.url(), "/opt/src/"),
@@ -108,10 +108,10 @@ func (g *PostGis) url() string {
 }
 
 func (g *PostGis) Render(r urknall.Package) {
-	r.Add("base",
+	r.AddCommands("base",
 		Mkdir("/opt/src", "root", 0755),
 		DownloadAndExtract(g.url(), "/opt/src/"),
 		InstallPackages("imagemagick", "libgeos-dev", "libproj-dev", "libgdal-dev"),
-		"cd /opt/src/postgis-{{ .Version }} && ./configure --with-pgconfig={{ .PostgresInstallDir }}/bin/pg_config --prefix=/opt/postgis-{{ .Version }} && make && make install",
+		Shell("cd /opt/src/postgis-{{ .Version }} && ./configure --with-pgconfig={{ .PostgresInstallDir }}/bin/pg_config --prefix=/opt/postgis-{{ .Version }} && make && make install"),
 	)
 }

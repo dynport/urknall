@@ -6,9 +6,9 @@ type Limits struct {
 }
 
 func (limits *Limits) Render(r urknall.Package) {
-	r.Add("base",
+	r.AddCommands("base",
 		WriteFile("/etc/security/limits.conf", limitsTpl, "root", 0644),
-		"ulimit -a",
+		Shell("ulimit -a"),
 	)
 }
 
@@ -24,9 +24,9 @@ type SysCtl struct {
 }
 
 func (sysctl *SysCtl) Render(r urknall.Package) {
-	r.Add("base",
+	r.AddCommands("base",
 		WriteFile("/etc/sysctl.conf", sysctlTpl, "root", 0644),
-		"sysctl -p",
+		Shell("sysctl -p"),
 	)
 }
 
@@ -58,9 +58,9 @@ type Timezone struct {
 }
 
 func (t *Timezone) Render(r urknall.Package) {
-	r.Add("base",
+	r.AddCommands("base",
 		WriteFile("/etc/timezone", t.Timezone, "root", 0644),
-		"dpkg-reconfigure --frontend noninteractive tzdata",
+		Shell("dpkg-reconfigure --frontend noninteractive tzdata"),
 	)
 }
 
@@ -69,10 +69,10 @@ type Hostname struct {
 }
 
 func (h *Hostname) Render(r urknall.Package) {
-	r.Add("base",
-		"hostname localhost", // Set hostname to make sudo happy.
+	r.AddCommands("base",
+		Shell("hostname localhost"), // Set hostname to make sudo happy.
 		&FileCommand{Path: "/etc/hostname", Content: h.Hostname},
 		&FileCommand{Path: "/etc/hosts", Content: "127.0.0.1 {{ .Hostname }} localhost"},
-		"hostname -F /etc/hostname",
+		Shell("hostname -F /etc/hostname"),
 	)
 }

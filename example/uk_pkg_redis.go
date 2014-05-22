@@ -18,10 +18,10 @@ func (r *Redis) InstallPath() string {
 	return "/opt/redis-" + r.Version
 }
 
-func (r *Redis) BuildPackage(pkg urknall.Package) {
-	pkg.Add("base", &RedisBase{RedisDir: r.InstallPath(), Version: r.Version})
-	pkg.Add("config", &RedisConfig{})
-	pkg.Add("upstart", &RedisUpstart{RedisDir: r.InstallPath(), Autostart: r.Autostart})
+func (r *Redis) Render(pkg urknall.Package) {
+	pkg.AddTemplate("base", &RedisBase{RedisDir: r.InstallPath(), Version: r.Version})
+	pkg.AddTemplate("config", &RedisConfig{})
+	pkg.AddTemplate("upstart", &RedisUpstart{RedisDir: r.InstallPath(), Autostart: r.Autostart})
 }
 
 func (r *Redis) WriteConfig(config string) cmd.Command {
@@ -33,8 +33,8 @@ type RedisBase struct {
 	RedisDir string
 }
 
-func (b *RedisBase) BuildTask(task urknall.Task) {
-	task.Add(
+func (b *RedisBase) Render(task urknall.Package) {
+	task.AddCommands("base",
 		InstallPackages("build-essential"),
 		Mkdir("/opt/src/", "root", 0755),
 		DownloadAndExtract(b.url(), "/opt/src/"),
@@ -56,8 +56,8 @@ type RedisConfig struct {
 	SyslogIdent string `urknall:"default=redis"`
 }
 
-func (c *RedisConfig) BuildTask(r urknall.Task) {
-	r.Add(
+func (c *RedisConfig) Render(r urknall.Package) {
+	r.AddCommands("base",
 		WriteFile(c.Path, redisCfg, "root", 0644),
 	)
 }
@@ -113,8 +113,8 @@ type RedisUpstart struct {
 	Autostart   bool
 }
 
-func (u *RedisUpstart) BuildTask(r urknall.Task) {
-	r.Add(
+func (u *RedisUpstart) Render(r urknall.Package) {
+	r.AddCommands("base",
 		WriteFile("/etc/init/{{ .Name }}.conf", redisUpstart, "root", 0644),
 	)
 	return

@@ -32,12 +32,12 @@ func (p *HAProxy) InstallPath() string {
 }
 
 func (p *HAProxy) Package(r urknall.Package) {
-	r.Add("base",
+	r.AddCommands("base",
 		InstallPackages("curl", "build-essential", "libpcre3-dev"),
 		Mkdir("/opt/src/", "root", 0755),
 		DownloadAndExtract(p.url(), "/opt/src/"),
 		Mkdir("{{ .InstallPath }}/sbin", "root", 0755),
-		"cd /opt/src/haproxy-{{ .Version }} && make TARGET=linux25 USER_STATIC_PCRE=1 && cp ./haproxy {{ .InstallPath }}/sbin/",
+		Shell("cd /opt/src/haproxy-{{ .Version }} && make TARGET=linux25 USER_STATIC_PCRE=1 && cp ./haproxy {{ .InstallPath }}/sbin/"),
 		WriteFile("/etc/init/haproxy.conf", initScript, "root", 0755),
 	)
 }

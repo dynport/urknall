@@ -14,7 +14,7 @@ func (pkg *Jenkins) Render(r urknall.Package) {
 	urlRoot := "http://mirrors.jenkins-ci.org"
 	url := urlRoot + "/war/" + pkg.Version + "/jenkins.war"
 
-	r.Add("base",
+	r.AddCommands("base",
 		InstallPackages("openjdk-6-jdk", "bzr", "git"),
 		DownloadToFile(url, "/opt/jenkins.war", "root", 0644),
 		Mkdir("/data/jenkins", "root", 0755),
@@ -27,7 +27,7 @@ func (pkg *Jenkins) Render(r urknall.Package) {
 	for _, plugin := range pkg.Plugins {
 		pSrc := urlRoot + "/plugins/" + plugin + "/latest/" + plugin + ".hpi"
 		pDest := "/data/jenkins/plugins/" + plugin + ".hpi"
-		r.Add("plugin-"+plugin, DownloadToFile(pSrc, pDest, "root", 0644))
+		r.AddCommands("plugin-"+plugin, DownloadToFile(pSrc, pDest, "root", 0644))
 	}
 }
 

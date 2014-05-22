@@ -61,9 +61,9 @@ type Example struct {
 // Tasks can either be created without configuration using the
 // NewTask function or with configuration as in System-Task example.
 func (ex *Example) Render(pkg urknall.Package) {
-	pkg.Add("update", UpdatePackages())
-	pkg.Add("hostname", &System{Hostname: ex.Hostname})
-	pkg.Add("srv", &Services{
+	pkg.AddCommands("update", UpdatePackages())
+	pkg.AddTemplate("hostname", &System{Hostname: ex.Hostname})
+	pkg.AddTemplate("srv", &Services{
 		NginxVersion: "1.4.4",
 		RedisVersion: "2.8.9",
 	})
@@ -78,12 +78,12 @@ type System struct {
 // Task builders must implement the TaskBuilder interface and thereby implement the
 // BuildTask method. It is called with a Task to which commands can be added similarly
 // as in the case of the Package above.
-func (sys *System) BuildTask(task urknall.Task) {
-	task.Add(
-		"hostname localhost", // Set hostname to make sudo happy.
+func (sys *System) Render(task urknall.Package) {
+	task.AddCommands("base",
+		Shell("hostname localhost"), // Set hostname to make sudo happy.
 		&FileCommand{Path: "/etc/hostname", Content: sys.Hostname},
 		&FileCommand{Path: "/etc/hosts", Content: "127.0.0.1 {{ .Hostname }} localhost"},
-		"hostname -F /etc/hostname",
+		Shell("hostname -F /etc/hostname"),
 	)
 }
 
@@ -94,7 +94,7 @@ type Services struct {
 	RedisVersion string `urknall:"default='2.8.8'"`
 }
 
-func (srv *Services) BuildPackage(pkg urknall.Package) {
-	pkg.Add("nginx", &Nginx{Version: srv.NginxVersion})
-	pkg.Add("redis", &Redis{Version: srv.RedisVersion})
+func (srv *Services) Render(pkg urknall.Package) {
+	pkg.AddTemplate("nginx", &Nginx{Version: srv.NginxVersion})
+	pkg.AddTemplate("redis", &Redis{Version: srv.RedisVersion})
 }

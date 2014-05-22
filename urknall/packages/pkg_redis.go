@@ -19,7 +19,7 @@ func (p *Redis) InstallPath() string {
 }
 
 func (p *Redis) Render(r urknall.Package) {
-	r.Add("base",
+	r.AddCommands("base",
 		InstallPackages("build-essential"),
 		Mkdir("/opt/src/", "root", 0755),
 		DownloadAndExtract(p.url(), "/opt/src/"),
@@ -29,9 +29,9 @@ func (p *Redis) Render(r urknall.Package) {
 			"PREFIX={{ .InstallPath }} make install",
 		),
 		Mkdir("/data/redis", "root", 0755),
-		&RedisConfig{},
-		&RedisUpstart{RedisDir: p.InstallPath(), Autostart: p.Autostart},
 	)
+	r.AddTemplate("config", &RedisConfig{})
+	r.AddTemplate("upstart", &RedisUpstart{RedisDir: p.InstallPath(), Autostart: p.Autostart})
 }
 
 func (p *Redis) WriteConfig(config string) cmd.Command {
@@ -49,7 +49,7 @@ type RedisConfig struct {
 }
 
 func (c *RedisConfig) Render(r urknall.Package) {
-	r.Add("base",
+	r.AddCommands("base",
 		WriteFile(c.Path, redisCfg, "root", 0644),
 	)
 }
@@ -106,7 +106,7 @@ type RedisUpstart struct {
 }
 
 func (u *RedisUpstart) Render(r urknall.Package) {
-	r.Add("base",
+	r.AddCommands("base",
 		WriteFile("/etc/init/{{ .Name }}.conf", redisUpstart, "root", 0644),
 	)
 	return

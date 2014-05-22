@@ -11,11 +11,11 @@ type RabbitMQ struct {
 }
 
 func (p *RabbitMQ) Render(r urknall.Package) {
-	r.Add("base",
+	r.AddCommands("base",
 		InstallPackages("erlang-nox", "erlang-reltool", "erlang-dev"),
 		Mkdir("/opt/src/", "root", 0755),
 		DownloadAndExtract(p.url(), "/opt/"),
-		"cd {{ .InstallPath }} && ./sbin/rabbitmq-plugins enable rabbitmq_management",
+		Shell("cd {{ .InstallPath }} && ./sbin/rabbitmq-plugins enable rabbitmq_management"),
 		WriteFile("/etc/init/rabbitmq.conf", "env HOME=/root\nexec {{ .InstallPath }}/sbin/rabbitmq-server\n", "root", 0644),
 	)
 }

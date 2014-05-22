@@ -55,6 +55,10 @@ func InstallPackages(pkg string, pkgs ...string) *ShellCommand {
 	}
 }
 
+func Shell(s string) *ShellCommand {
+	return &ShellCommand{Command: s}
+}
+
 // Combine the given commands with "and", i.e. all commands must succeed. Execution is stopped immediately if one of the
 // commands fails, the subsequent ones are not executed! If only one command is given nothing happens.
 func And(cmd interface{}, cmds ...interface{}) *ShellCommand {

@@ -46,7 +46,7 @@ func TestAddCommand(t *testing.T) {
 		Convey("Given a string command", func() {
 			baseCommand := stringCommand{cmd: `string with "{{ .SField }}" and "{{ .IField }}"`}
 
-			Convey("When it is added to the runlist by value", func() {
+			SkipConvey("When it is added to the runlist by value", func() {
 				f := func() { rl.Add(baseCommand) }
 
 				Convey("Then Add will panic", func() {

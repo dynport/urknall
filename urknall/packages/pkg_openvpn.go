@@ -40,19 +40,22 @@ func (p *OpenVPN) Render(r urknall.Package) {
 	if len(p.Province) != 2 {
 		panic("Province must be exactly 2 characters long")
 	}
-	r.Add("base",
+	r.AddCommands("base",
 		InstallPackages("openvpn", "iptables", "zip"),
-		"cp -R /usr/share/doc/openvpn/examples/easy-rsa/2.0 /etc/openvpn/easy-rsa/",
+		Shell("cp -R /usr/share/doc/openvpn/examples/easy-rsa/2.0 /etc/openvpn/easy-rsa/"),
 		WriteFile("/etc/openvpn/easy-rsa/vars", openVpnVars, "root", 0644),
-		"ln -nfs /etc/openvpn/easy-rsa/openssl-1.0.0.cnf /etc/openvpn/easy-rsa/openssl.cnf",
-		`bash -c "cd /etc/openvpn/easy-rsa && source ./vars && ./clean-all"`,
-		`bash -c "cd /etc/openvpn/easy-rsa && source ./vars && ./pkitool --initca"`,
-		`bash -c "cd /etc/openvpn/easy-rsa && source ./vars && ./pkitool --server {{ .Name }}"`,
-		`bash -c "cd /etc/openvpn/easy-rsa && source ./vars && ./build-dh"`,
-		`bash -c "cd /etc/openvpn/easy-rsa/keys && cp -v {{ .Name }}.{crt,key} ca.crt dh1024.pem /etc/openvpn/"`,
+		Shell("ln -nfs /etc/openvpn/easy-rsa/openssl-1.0.0.cnf /etc/openvpn/easy-rsa/openssl.cnf"),
+		And(
+			`bash -c "cd /etc/openvpn/easy-rsa && source ./vars`,
+			`./clean-all"`,
+			`./pkitool --initca"`,
+			`./pkitool --server {{ .Name }}"`,
+			`./build-dh"`,
+			`bash -c "cd /etc/openvpn/easy-rsa/keys && cp -v {{ .Name }}.{crt,key} ca.crt dh1024.pem /etc/openvpn/"`,
+		),
 		WriteFile("/etc/openvpn/server.conf", openvpnServerConfig, "root", 0644),
 		WriteFile(openVpnPackagePath, openVpnPackageKey, "root", 0755),
-		"{ /etc/init.d/openvpn status && /etc/init.d/openvpn restart; } || /etc/init.d/openvpn start",
+		Shell("{ /etc/init.d/openvpn status && /etc/init.d/openvpn restart; } || /etc/init.d/openvpn start"),
 	)
 }
 
@@ -152,9 +155,9 @@ export PKCS11_PIN=1234
 `
 
 func (u *OpenVpnUser) Package(r urknall.Package) {
-	r.Add("base",
-		addVpnUser,
-		openVpnPackagePath+" "+u.Login,
+	r.AddCommands("base",
+		&ShellCommand{Command: addVpnUser},
+		&ShellCommand{Command: openVpnPackagePath + " " + u.Login},
 	)
 }
 
@@ -178,9 +181,9 @@ type OpenVpnMasquerade struct {
 }
 
 func (*OpenVpnMasquerade) Render(r urknall.Package) {
-	r.Add("base",
+	r.AddCommands("base",
 		WriteFile("/etc/network/if-pre-up.d/iptables", ipUp, "root", 0744),
-		"IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables",
+		Shell("IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables"),
 	)
 }
 

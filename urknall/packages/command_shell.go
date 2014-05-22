@@ -79,6 +79,10 @@ func Or(cmd interface{}, cmds ...interface{}) *ShellCommand {
 	return &ShellCommand{Command: finalCommand}
 }
 
+func Shell(cmd string) *ShellCommand {
+	return &ShellCommand{Command: cmd}
+}
+
 func mergeSubCommands(cmd interface{}, cmds ...interface{}) (cs []string) {
 	cmdList := make([]interface{}, 0, len(cmds)+1)
 	cmdList = append(cmdList, cmd)
