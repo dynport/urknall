@@ -44,8 +44,8 @@ func (t *taskImpl) Commands() ([]cmd.Command, error) {
 }
 
 // Create a task from a set of commands without configuration.
-func NewTask(name string) Task {
-	return &taskImpl{name: name}
+func NewTask() Task {
+	return &taskImpl{}
 }
 
 func (task *taskImpl) Add(cmds ...interface{}) Task {

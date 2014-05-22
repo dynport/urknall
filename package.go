@@ -2,16 +2,18 @@ package urknall
 
 import (
 	"fmt"
+	"log"
 	"strings"
+
 	"github.com/dynport/urknall/utils"
 )
 
 type PackageBuilder interface {
-	BuildPackage(pkg Package)
+	Build(pkg Package)
 }
 
 type Package interface {
-	Add(string, interface{})
+	Add(string, ...interface{})
 	AddTask(Task)
 	Tasks() []Task
 }
@@ -27,28 +29,67 @@ func (p *packageImpl) Tasks() []Task {
 	return p.tasks
 }
 
-func (pkg *packageImpl) Add(name string, sth interface{}) {
+func (pkg *packageImpl) Add(name string, v ...interface{}) {
 	if pkg.cacheKeyPrefix != "" {
 		name = pkg.cacheKeyPrefix + "." + name
 	}
 	name = utils.MustRenderTemplate(name, pkg.reference)
+
+	if len(v) == 1 {
+		pkg.addOne(name, v[0])
+	} else {
+		pkg.addMany(name, v)
+	}
+}
+
+func (pkg *packageImpl) addMany(name string, v []interface{}) {
+	task := &taskImpl{name: name}
+	for _, sth := range v {
+		switch t := sth.(type) {
+		case string:
+			task.Add(utils.MustRenderTemplate(t, pkg.reference))
+		case command:
+			if r, ok := t.(renderer); ok {
+				r.Render(pkg.reference)
+			}
+			task.Add(t)
+		default:
+			log.Panicf("type %T %#v not supported ehen called with variadic arguments", sth, sth)
+		}
+	}
+	pkg.AddTask(task)
+}
+
+func (pkg *packageImpl) addOne(name string, sth interface{}) {
 	switch v := sth.(type) {
 	case *taskImpl:
 		v.name = name // safe to set it here
 		pkg.AddTask(v)
 	case PackageBuilder:
 		pkg.AddPackage(name, v)
+	case string:
+		task := &taskImpl{name: name}
+		r := utils.MustRenderTemplate(v, pkg.reference)
+		task.Add(r)
+		pkg.AddTask(task)
 	case []string:
-		task := NewTask(name)
+		task := &taskImpl{name: name}
 		for _, s := range v {
 			r := utils.MustRenderTemplate(s, pkg.reference)
 			task.Add(r)
 		}
 		pkg.AddTask(task)
-	case []Command:
-		task := NewTask(name)
+	case command:
+		task := &taskImpl{name: name}
+		if r, ok := v.(renderer); ok {
+			r.Render(pkg.reference)
+		}
+		task.Add(v)
+		pkg.AddTask(task)
+	case []command:
+		task := &taskImpl{name: name}
 		for _, c := range v {
-			if r, ok := c.(Renderer); ok {
+			if r, ok := c.(renderer); ok {
 				r.Render(pkg.reference)
 			}
 			task.Add(c)
@@ -69,7 +110,7 @@ func (pkg *packageImpl) AddPackage(name string, pkgBuilder PackageBuilder) {
 	}
 	pkg.validateTaskName(name)
 	child := &packageImpl{cacheKeyPrefix: name, reference: pkgBuilder}
-	pkgBuilder.BuildPackage(child)
+	pkgBuilder.Build(child)
 	for _, task := range child.Tasks() {
 		pkg.AddTask(task)
 	}

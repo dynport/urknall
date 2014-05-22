@@ -13,7 +13,7 @@ func build(builder PackageBuilder) (Package, error) {
 	if e != nil {
 		return nil, e
 	}
-	builder.BuildPackage(p)
+	builder.Build(p)
 	return p, nil
 }
 
