@@ -7,13 +7,13 @@ import (
 	"github.com/dynport/urknall/cmd"
 )
 
-func build(builder PackageBuilder) (Package, error) {
+func build(builder Template) (Package, error) {
 	p := &packageImpl{reference: builder}
 	e := validatePackage(builder)
 	if e != nil {
 		return nil, e
 	}
-	builder.Build(p)
+	builder.Render(p)
 	return p, nil
 }
 

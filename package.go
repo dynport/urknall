@@ -8,8 +8,8 @@ import (
 	"github.com/dynport/urknall/utils"
 )
 
-type PackageBuilder interface {
-	Build(pkg Package)
+type Template interface {
+	Render(pkg Package)
 }
 
 type Package interface {
@@ -65,7 +65,7 @@ func (pkg *packageImpl) addOne(name string, sth interface{}) {
 	case *taskImpl:
 		v.name = name // safe to set it here
 		pkg.AddTask(v)
-	case PackageBuilder:
+	case Template:
 		pkg.AddPackage(name, v)
 	case string:
 		task := &taskImpl{name: name}
@@ -100,7 +100,7 @@ func (pkg *packageImpl) addOne(name string, sth interface{}) {
 	}
 }
 
-func (pkg *packageImpl) AddPackage(name string, pkgBuilder PackageBuilder) {
+func (pkg *packageImpl) AddPackage(name string, pkgBuilder Template) {
 	e := validatePackage(pkgBuilder)
 	if e != nil {
 		panic(e)
@@ -110,7 +110,7 @@ func (pkg *packageImpl) AddPackage(name string, pkgBuilder PackageBuilder) {
 	}
 	pkg.validateTaskName(name)
 	child := &packageImpl{cacheKeyPrefix: name, reference: pkgBuilder}
-	pkgBuilder.Build(child)
+	pkgBuilder.Render(child)
 	for _, task := range child.Tasks() {
 		pkg.AddTask(task)
 	}

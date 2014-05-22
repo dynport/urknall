@@ -10,13 +10,13 @@ import (
 	"github.com/dynport/urknall/pubsub"
 )
 
-func Run(target Target, pkgBuilder PackageBuilder) (e error) {
+func Run(target Target, pkgBuilder Template) (e error) {
 	return (Build{Target: target, PkgBuilder: pkgBuilder}).Run()
 }
 
 type Build struct {
 	Target
-	PkgBuilder PackageBuilder
+	PkgBuilder Template
 	pkg        *packageImpl
 	DryRun     bool
 	Env        []string
