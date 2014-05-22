@@ -3,6 +3,7 @@ package urknall
 import (
 	"fmt"
 	"strings"
+	"github.com/dynport/urknall/utils"
 )
 
 type PackageBuilder interface {
@@ -10,53 +11,93 @@ type PackageBuilder interface {
 }
 
 type Package interface {
-	Add(name string, sth interface{})
+	Add(string, interface{})
+	AddTask(Task)
+	Tasks() []Task
 }
 
 type packageImpl struct {
-	tasks     []*taskImpl
-	taskNames map[string]struct{}
+	tasks          []Task
+	taskNames      map[string]struct{}
+	reference      interface{} // used for rendering
+	cacheKeyPrefix string
+}
+
+func (p *packageImpl) Tasks() []Task {
+	return p.tasks
 }
 
 func (pkg *packageImpl) Add(name string, sth interface{}) {
+	if pkg.cacheKeyPrefix != "" {
+		name = pkg.cacheKeyPrefix + "." + name
+	}
+	name = utils.MustRenderTemplate(name, pkg.reference)
 	switch v := sth.(type) {
 	case *taskImpl:
 		v.name = name // safe to set it here
-		pkg.addTask(v)
+		pkg.AddTask(v)
 	case PackageBuilder:
-		pkg.addPackage(name, v)
-	case TaskBuilder:
-		pkg.addTask(&taskImpl{name: name, taskBuilder: v})
+		pkg.AddPackage(name, v)
+	case []string:
+		task := NewTask(name)
+		for _, s := range v {
+			r := utils.MustRenderTemplate(s, pkg.reference)
+			task.Add(r)
+		}
+		pkg.AddTask(task)
+	case []Command:
+		task := NewTask(name)
+		for _, c := range v {
+			if r, ok := c.(Renderer); ok {
+				r.Render(pkg.reference)
+			}
+			task.Add(c)
+		}
+		pkg.AddTask(task)
 	default:
 		panic(fmt.Sprintf("type %T not supported in Package.Add", sth))
 	}
 }
 
-func (pkg *packageImpl) addPackage(name string, pkgBuilder PackageBuilder) {
+func (pkg *packageImpl) AddPackage(name string, pkgBuilder PackageBuilder) {
+	e := validatePackage(pkgBuilder)
+	if e != nil {
+		panic(e)
+	}
+	if pkg.reference != nil {
+		name = utils.MustRenderTemplate(name, pkg.reference)
+	}
 	pkg.validateTaskName(name)
-
-	child := &packageImpl{}
+	child := &packageImpl{cacheKeyPrefix: name, reference: pkgBuilder}
 	pkgBuilder.BuildPackage(child)
-	for _, task := range child.tasks {
-		newTask := &taskImpl{name: name + "." + task.name, taskBuilder: task.taskBuilder}
-		pkg.addTask(newTask)
+	for _, task := range child.Tasks() {
+		pkg.AddTask(task)
 	}
 }
 
-func (pkg *packageImpl) addTask(task *taskImpl) {
-	pkg.validateTaskName(task.name)
-	pkg.taskNames[task.name] = struct{}{}
+func (pkg *packageImpl) AddTask(task Task) {
+	pkg.validateTaskName(task.CacheKey())
+	pkg.taskNames[task.CacheKey()] = struct{}{}
 	pkg.tasks = append(pkg.tasks, task)
 }
 
 func (pkg *packageImpl) precompile() (e error) {
 	for _, task := range pkg.tasks {
-		if len(task.commands) > 0 {
-			return fmt.Errorf("pkg %q seems to be packaged already", task.name)
+		c, e := task.Commands()
+		if e != nil {
+			return e
+		}
+		if len(c) > 0 {
+			return fmt.Errorf("pkg %q seems to be packaged already", task.CacheKey())
 		}
 
-		if e = task.compile(); e != nil {
-			return e
+		if tc, ok := task.(interface {
+			Compile() error
+		}); ok {
+			e := tc.Compile()
+			if e != nil {
+				return e
+			}
 		}
 	}
 

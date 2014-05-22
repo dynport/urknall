@@ -7,13 +7,15 @@ import (
 	"log"
 	"sync"
 	"time"
+
+	"github.com/dynport/urknall/cmd"
 )
 
 type remoteTaskRunner struct {
-	build      *Build
-	cmd        string
-	dir        string
-	rawCommand *rawCommand
+	build   *Build
+	cmd     string
+	dir     string
+	command cmd.Command
 
 	started time.Time
 }
@@ -21,7 +23,7 @@ type remoteTaskRunner struct {
 func (runner *remoteTaskRunner) run() error {
 	runner.started = time.Now()
 
-	prefix := runner.dir + "/" + runner.rawCommand.checksum
+	prefix := runner.dir + "/" + commandChecksum(runner.command)
 
 	errors := make(chan error)
 	logs := runner.newLogWriter(prefix+".log", errors)
@@ -71,7 +73,7 @@ func (runner *remoteTaskRunner) writeChecksumFile(prefix string, e error) {
 		logError(e)
 		targetFile = prefix + ".failed"
 	}
-	cmd := fmt.Sprintf("echo %q > %s", runner.rawCommand.Shell(), targetFile)
+	cmd := fmt.Sprintf("echo %q > %s", runner.command.Shell(), targetFile)
 	c, e := runner.build.prepareCommand(cmd)
 	if e != nil {
 		panic(e.Error())
@@ -89,8 +91,8 @@ func logError(e error) {
 func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, wg *sync.WaitGroup, r io.Reader) {
 	defer wg.Done()
 
-	m := message("task.io", runner.build.hostname(), runner.rawCommand.task)
-	m.Message = runner.rawCommand.Logging()
+	m := message("task.io", runner.build.hostname(), taskNameOfCommand(runner.command))
+	m.Message = runner.command.Logging()
 	m.Stream = stream
 
 	scanner := bufio.NewScanner(r)

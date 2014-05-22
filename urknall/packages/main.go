@@ -2,17 +2,26 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/dynport/urknall"
-	"github.com/dynport/urknall/ssh"
 )
 
+type Base struct {
+}
+
+func (b *Base) BuildPackage(p urknall.Package) {
+	p.Add("base", urknall.NewTask("echo hello world"))
+}
+
 func main() {
-	defer urknall.OpenStdoutLogger().Close()
-	pkg := &urknall.Package{}
-	pkg.Add("pkg.hello", "echo hello world")
-	host := &ssh.Host{Address: "ubuntu@127.0.0.1"}
-	e := urknall.Provision(host, pkg)
+	defer urknall.OpenLogger(os.Stdout).Close()
+	target, e := urknall.NewSshTarget("ubuntu@127.0.0.1")
+	if e != nil {
+		log.Fatal(e)
+	}
+	pkg := &Base{}
+	e = urknall.Run(target, pkg)
 	if e != nil {
 		log.Fatal(e)
 	}

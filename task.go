@@ -1,7 +1,6 @@
 package urknall
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"log"
 	"runtime/debug"
@@ -11,7 +10,10 @@ import (
 )
 
 type Task interface {
-	Add(cmds ...interface{})
+	Add(cmds ...interface{}) Task
+	Commands() ([]cmd.Command, error)
+	CacheKey() string
+	SetCacheKey(string)
 }
 
 // A runlist is a container for commands. Use the following methods to add new commands.
@@ -19,31 +21,34 @@ type taskImpl struct {
 	commands []cmd.Command
 
 	name        string      // Name of the compilable.
-	taskBuilder TaskBuilder // only used for rendering templates TODO(gf): rename
+	taskBuilder interface{} // only used for rendering templates TODO(gf): rename
+
+	compiled  bool
+	validated bool
 }
 
-type TaskBuilder interface {
-	BuildTask(Task)
+func (t *taskImpl) SetCacheKey(key string) {
+	t.name = key
+}
+
+func (t *taskImpl) CacheKey() string {
+	return t.name
+}
+
+func (t *taskImpl) Commands() ([]cmd.Command, error) {
+	e := t.Compile()
+	if e != nil {
+		return nil, e
+	}
+	return t.commands, nil
 }
 
 // Create a task from a set of commands without configuration.
-func NewTask(cmds ...interface{}) Task {
-	return &taskImpl{taskBuilder: &anonymousTask{cmds: cmds}}
+func NewTask(name string) Task {
+	return &taskImpl{name: name}
 }
 
-func (task *taskImpl) rawCommands() []*rawCommand {
-	rawCommands := make([]*rawCommand, 0, len(task.commands))
-
-	cmdHash := sha256.New()
-	for i := range task.commands {
-		cmdHash.Write([]byte(task.commands[i].Shell()))
-		rawCmd := &rawCommand{task: task, Command: task.commands[i], checksum: fmt.Sprintf("%x", cmdHash.Sum(nil))}
-		rawCommands = append(rawCommands, rawCmd)
-	}
-	return rawCommands
-}
-
-func (task *taskImpl) Add(cmds ...interface{}) {
+func (task *taskImpl) Add(cmds ...interface{}) Task {
 	for _, c := range cmds {
 		switch t := c.(type) {
 		case string:
@@ -56,11 +61,30 @@ func (task *taskImpl) Add(cmds ...interface{}) {
 			panic(fmt.Sprintf("type %T not supported!", t))
 		}
 	}
+	return task
+}
+
+func (task *taskImpl) validate() error {
+	if !task.validated {
+		if task.taskBuilder == nil {
+			return nil
+		}
+		e := validatePackage(task.taskBuilder)
+		if e != nil {
+			return e
+		}
+		task.validated = true
+	}
+	return nil
 }
 
 // Add the given command to the runlist.
 func (task *taskImpl) addCommand(c cmd.Command) {
 	if task.taskBuilder != nil {
+		e := task.validate()
+		if e != nil {
+			panic(e.Error())
+		}
 		if renderer, ok := c.(cmd.Renderer); ok {
 			renderer.Render(task.taskBuilder)
 		}
@@ -73,7 +97,10 @@ func (task *taskImpl) addCommand(c cmd.Command) {
 	task.commands = append(task.commands, c)
 }
 
-func (task *taskImpl) compile() (e error) {
+func (task *taskImpl) Compile() (e error) {
+	if task.compiled {
+		return nil
+	}
 	m := &pubsub.Message{RunlistName: task.name, Key: pubsub.MessageRunlistsPrecompile}
 	m.Publish("started")
 	defer func() {
@@ -91,11 +118,12 @@ func (task *taskImpl) compile() (e error) {
 		}
 	}()
 
-	if e = validatePackage(task.taskBuilder); e != nil {
+	e = task.validate()
+	if e != nil {
 		return e
 	}
-	task.taskBuilder.BuildTask(task) // TODO(gf): ouch
 	m.Publish("finished")
+	task.compiled = true
 	return nil
 }
 

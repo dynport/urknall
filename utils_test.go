@@ -1,0 +1,36 @@
+package urknall
+
+import (
+	"testing"
+	. "github.com/smartystreets/goconvey/convey"
+)
+
+func (c *testCommand) TaskName() string {
+	return "taskname"
+}
+
+type testCommandCustomChecksum struct {
+	*testCommand
+}
+
+func (c *testCommandCustomChecksum) Checksum() string {
+	return "default checksum"
+}
+
+func TestUtils(t *testing.T) {
+	c := &testCommand{}
+	Convey("Command checksum", t, func() {
+		Convey("for default commands", func() {
+			So(commandChecksum(c), ShouldEqual, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+		})
+		Convey("for custom checksums", func() {
+			c := &testCommandCustomChecksum{c}
+			So(commandChecksum(c), ShouldEqual, "default checksum")
+		})
+	})
+
+	Convey("taskNameOfCommand", t, func() {
+		So(taskNameOfCommand(""), ShouldEqual, "")
+		So(taskNameOfCommand(c), ShouldEqual, "taskname")
+	})
+}

@@ -6,10 +6,10 @@ import (
 	"github.com/dynport/urknall/pubsub"
 )
 
-func message(key string, hostname string, pkg *taskImpl) (msg *pubsub.Message) {
+func message(key string, hostname string, taskName string) (msg *pubsub.Message) {
 	runlistName := ""
-	if pkg != nil {
-		runlistName = pkg.name
+	if taskName != "" {
+		runlistName = taskName
 	}
 
 	return &pubsub.Message{Key: key, StartedAt: time.Now(), Hostname: hostname, RunlistName: runlistName}

@@ -22,20 +22,12 @@ type Build struct {
 	Env        []string
 }
 
-func (build Build) Run() error {
-	build.pkg = &packageImpl{}
-	build.PkgBuilder.BuildPackage(build.pkg)
-
-	e := build.pkg.precompile()
+func (b Build) Run() error {
+	pkg, e := build(b.PkgBuilder)
 	if e != nil {
 		return e
 	}
-
-	e = build.prepare()
-	if e != nil {
-		return e
-	}
-	return build.run()
+	return b.buildPackage(pkg)
 }
 
 func (build *Build) prepare() error {
@@ -70,17 +62,16 @@ func (build *Build) prepare() error {
 	return nil
 }
 
-func (build *Build) run() (e error) {
+func (build *Build) buildPackage(pkg Package) (e error) {
 	ct, e := build.buildChecksumTree()
 	if e != nil {
 		return e
 	}
 
-	for i := range build.pkg.tasks {
-		task := build.pkg.tasks[i]
+	for _, task := range pkg.Tasks() {
 		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvision, Hostname: build.hostname()}
 		m.Publish("started")
-		if e = build.provisionRunlist(task, ct); e != nil {
+		if e = build.buildTask(task, ct); e != nil {
 			m.PublishError(e)
 			return e
 		}
@@ -89,16 +80,22 @@ func (build *Build) run() (e error) {
 	return nil
 }
 
-func (build *Build) provisionRunlist(task *taskImpl, ct checksumTree) (e error) {
-	commands := task.rawCommands()
-
-	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", task.name)
+func (build *Build) buildTask(task Task, ct checksumTree) (e error) {
+	commands, e := task.Commands()
+	if e != nil {
+		return e
+	}
+	cacheKey := task.CacheKey()
+	if cacheKey == "" {
+		return fmt.Errorf("CacheKey must not be empty")
+	}
+	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", task.CacheKey())
 
 	var found bool
 	var checksumHash map[string]struct{}
-	if checksumHash, found = ct[task.name]; !found {
-		ct[task.name] = map[string]struct{}{}
-		checksumHash = ct[task.name]
+	if checksumHash, found = ct[cacheKey]; !found {
+		ct[cacheKey] = map[string]struct{}{}
+		checksumHash = ct[cacheKey]
 
 		// Create checksum dir and set group bit (all new files will inherit the directory's group). This allows for
 		// different users (being part of that group) to create, modify and delete the contained checksum and log files.
@@ -119,11 +116,12 @@ func (build *Build) provisionRunlist(task *taskImpl, ct checksumTree) (e error) 
 
 	for _, cmd := range commands {
 		logMsg := cmd.Logging()
-		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvisionTask, TaskChecksum: cmd.checksum, Message: logMsg, Hostname: build.hostname(), RunlistName: task.name}
-		if _, found := checksumHash[cmd.checksum]; found { // Task is cached.
+		checksum := commandChecksum(cmd)
+		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvisionTask, TaskChecksum: checksum, Message: logMsg, Hostname: build.hostname(), RunlistName: cacheKey}
+		if _, found := checksumHash[checksum]; found { // Task is cached.
 			m.ExecStatus = pubsub.StatusCached
 			m.Publish("finished")
-			delete(checksumHash, cmd.checksum) // Delete checksums of cached tasks from hash.
+			delete(checksumHash, checksum) // Delete checksums of cached tasks from hash.
 			continue
 		}
 
@@ -138,7 +136,7 @@ func (build *Build) provisionRunlist(task *taskImpl, ct checksumTree) (e error) 
 			m.Publish("executed")
 		} else {
 			m.Publish("started")
-			e = cmd.execute(build, checksumDir)
+			e = executeCommand(cmd, build, checksumDir)
 			m.Error = e
 			m.ExecStatus = pubsub.StatusExecFinished
 			m.Publish("finished")
