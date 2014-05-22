@@ -10,8 +10,8 @@ type RabbitMQ struct {
 	Version string `urknall:"default=3.2.1"`
 }
 
-func (p *RabbitMQ) Package(r *urknall.Task) {
-	r.Add(
+func (p *RabbitMQ) Render(r urknall.Package) {
+	r.Add("base",
 		InstallPackages("erlang-nox", "erlang-reltool", "erlang-dev"),
 		Mkdir("/opt/src/", "root", 0755),
 		DownloadAndExtract(p.url(), "/opt/"),

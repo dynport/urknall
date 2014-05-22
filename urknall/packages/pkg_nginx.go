@@ -18,10 +18,10 @@ type Nginx struct {
 	Autostart          bool
 }
 
-func (pkg *Nginx) Package(r *urknall.Task) {
+func (pkg *Nginx) Render(r urknall.Package) {
 	syslogPatchPath := "/tmp/nginx_syslog_patch"
 	fileName := "syslog_{{ .SyslogPatchVersion }}.patch"
-	r.Add(
+	r.Add("base",
 		InstallPackages("build-essential", "curl", "libpcre3", "libpcre3-dev", "libssl-dev", "libpcrecpp0", "zlib1g-dev", "libgd2-xpm-dev"),
 		DownloadAndExtract(pkg.url(), "/opt/src"),
 		Mkdir(syslogPatchPath, "root", 0755),

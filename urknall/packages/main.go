@@ -10,8 +10,8 @@ import (
 type Base struct {
 }
 
-func (b *Base) BuildPackage(p urknall.Package) {
-	p.Add("base", urknall.NewTask("echo hello world"))
+func (b *Base) Render(p urknall.Package) {
+	p.Add("base", "echo hello world")
 }
 
 func main() {

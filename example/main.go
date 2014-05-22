@@ -60,8 +60,8 @@ type Example struct {
 // the resulting hierarchy (note the first column of the logged output).
 // Tasks can either be created without configuration using the
 // NewTask function or with configuration as in System-Task example.
-func (ex *Example) BuildPackage(pkg urknall.Package) {
-	pkg.Add("update", urknall.NewTask(UpdatePackages()))
+func (ex *Example) Render(pkg urknall.Package) {
+	pkg.Add("update", UpdatePackages())
 	pkg.Add("hostname", &System{Hostname: ex.Hostname})
 	pkg.Add("srv", &Services{
 		NginxVersion: "1.4.4",

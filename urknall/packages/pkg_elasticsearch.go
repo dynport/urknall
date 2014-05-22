@@ -18,8 +18,8 @@ type ElasticSearch struct {
 	NodeName       string
 }
 
-func (p *ElasticSearch) Package(r *urknall.Task) {
-	r.Add(
+func (p *ElasticSearch) Render(r urknall.Package) {
+	r.Add("base",
 		InstallPackages("openjdk-6-jdk"),
 		DownloadAndExtract(p.url(), "/opt/"),
 		AddUser("elasticsearch", true),

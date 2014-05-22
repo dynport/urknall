@@ -33,14 +33,14 @@ func (p *OpenVPN) PublicIp() string {
 	}
 }
 
-func (p *OpenVPN) Package(r *urknall.Task) {
+func (p *OpenVPN) Render(r urknall.Package) {
 	if len(p.Country) != 2 {
 		panic("Country must be exactly 2 characters long")
 	}
 	if len(p.Province) != 2 {
 		panic("Province must be exactly 2 characters long")
 	}
-	r.Add(
+	r.Add("base",
 		InstallPackages("openvpn", "iptables", "zip"),
 		"cp -R /usr/share/doc/openvpn/examples/easy-rsa/2.0 /etc/openvpn/easy-rsa/",
 		WriteFile("/etc/openvpn/easy-rsa/vars", openVpnVars, "root", 0644),
@@ -151,8 +151,8 @@ export PKCS11_MODULE_PATH=changeme
 export PKCS11_PIN=1234
 `
 
-func (u *OpenVpnUser) Package(r *urknall.Task) {
-	r.Add(
+func (u *OpenVpnUser) Package(r urknall.Package) {
+	r.Add("base",
 		addVpnUser,
 		openVpnPackagePath+" "+u.Login,
 	)
@@ -177,8 +177,8 @@ type OpenVpnMasquerade struct {
 	Interface string `urknall:"required=true"`
 }
 
-func (*OpenVpnMasquerade) Package(r *urknall.Task) {
-	r.Add(
+func (*OpenVpnMasquerade) Render(r urknall.Package) {
+	r.Add("base",
 		WriteFile("/etc/network/if-pre-up.d/iptables", ipUp, "root", 0744),
 		"IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables",
 	)

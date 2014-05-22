@@ -12,9 +12,9 @@ func NewGolang(version string) *Golang {
 	return &Golang{Version: version}
 }
 
-func (pkg *Golang) Package(r *urknall.Task) {
+func (pkg *Golang) Render(r urknall.Package) {
 	url := "http://go.googlecode.com/files/go{{ .Version }}.linux-amd64.tar.gz"
-	r.Add(
+	r.Add("base",
 		InstallPackages("build-essential", "curl", "bzr", "mercurial", "git-core"),
 		Mkdir("/opt/go-{{ .Version }}", "root", 0755),
 		DownloadAndExtract(url, "/opt/go-{{ .Version }}/"),

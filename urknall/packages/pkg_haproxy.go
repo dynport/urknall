@@ -31,8 +31,8 @@ func (p *HAProxy) InstallPath() string {
 	return "/opt/haproxy-" + p.Version
 }
 
-func (p *HAProxy) Package(r *urknall.Task) {
-	r.Add(
+func (p *HAProxy) Package(r urknall.Package) {
+	r.Add("base",
 		InstallPackages("curl", "build-essential", "libpcre3-dev"),
 		Mkdir("/opt/src/", "root", 0755),
 		DownloadAndExtract(p.url(), "/opt/src/"),

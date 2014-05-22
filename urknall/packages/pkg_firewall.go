@@ -16,20 +16,23 @@ type Firewall struct {
 	IPSets    []*FirewallIPSet // List of ipsets for the firewall.
 }
 
-func (f *Firewall) Package(r *urknall.Task) {
-	r.Add(
+func (f *Firewall) Render(r urknall.Package) {
+	t := urknall.NewTask()
+	t.SetCacheKey("base")
+	t.Add(
 		InstallPackages("iptables", "ipset"),
 		WriteFile("/etc/network/if-pre-up.d/iptables", firewallUpstart, "root", 0744),
 	)
 	if len(f.IPSets) > 0 {
-		r.Add(WriteFile("/etc/iptables/ipsets", fwIpset, "root", 0644))
+		t.Add(WriteFile("/etc/iptables/ipsets", fwIpset, "root", 0644))
 	}
-	r.Add(
+	t.Add(
 		WriteFile("/etc/iptables/rules_ipv4", fw_rules_ipv4, "root", 0644),
 		WriteFile("/etc/iptables/rules_ipv6", fw_rules_ipv6, "root", 0644),
 		"{ modprobe iptable_filter && modprobe iptable_nat; }; /bin/true", // here to make sure next command succeeds.
 		"IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables",
 	)
+	r.AddTask(t)
 }
 
 // IPSets are the possibility to change a rule, without actually rewriting the rules. That is they add some sort of

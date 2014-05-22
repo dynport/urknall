@@ -29,8 +29,8 @@ func (ruby *Ruby) Name() string {
 	return "ruby"
 }
 
-func (ruby *Ruby) Package(r *urknall.Task) {
-	r.Add(
+func (ruby *Ruby) Render(r urknall.Package) {
+	r.Add("base",
 		InstallPackages(
 			"curl", "build-essential", "libyaml-dev", "libxml2-dev", "libxslt1-dev", "libreadline-dev", "libssl-dev", "zlib1g-dev",
 		),
