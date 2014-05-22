@@ -54,7 +54,7 @@ func (c *testCommand) Render(i interface{}) {
 
 func (r *Ruby) Render(p Package) {
 	t := NewTask()
-	t.SetCacheKey("install")
+	t.SetKey("install")
 	t.Add("apt-get update", "apt-get install ruby -v {{ .Version }}")
 	p.AddTask(t)
 	p.AddCommands("config", &testCommand{cmd: "echo {{ .Version }}"})
@@ -77,8 +77,8 @@ func TestIntegration(t *testing.T) {
 
 		tasks := map[string]Task{}
 		for _, task := range p.Tasks() {
-			tasks[task.CacheKey()] = task
-			names = append(names, task.CacheKey())
+			tasks[task.Key()] = task
+			names = append(names, task.Key())
 		}
 
 		t.Logf("%#v", names)

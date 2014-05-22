@@ -66,15 +66,15 @@ func (pkg *packageImpl) AddTemplate(name string, tpl Template) {
 
 func (pkg *packageImpl) addTask(task Task, addPrefix bool) {
 	if addPrefix {
-		name := task.CacheKey()
+		name := task.Key()
 		if pkg.cacheKeyPrefix != "" {
-			name = pkg.cacheKeyPrefix + "." + task.CacheKey()
+			name = pkg.cacheKeyPrefix + "." + task.Key()
 		}
 		name = utils.MustRenderTemplate(name, pkg.reference)
-		task.SetCacheKey(name)
+		task.SetKey(name)
 	}
-	pkg.validateTaskName(task.CacheKey())
-	pkg.taskNames[task.CacheKey()] = struct{}{}
+	pkg.validateTaskName(task.Key())
+	pkg.taskNames[task.Key()] = struct{}{}
 	pkg.tasks = append(pkg.tasks, task)
 }
 
@@ -89,7 +89,7 @@ func (pkg *packageImpl) precompile() (e error) {
 			return e
 		}
 		if len(c) > 0 {
-			return fmt.Errorf("pkg %q seems to be packaged already", task.CacheKey())
+			return fmt.Errorf("pkg %q seems to be packaged already", task.Key())
 		}
 
 		if tc, ok := task.(interface {

@@ -30,7 +30,7 @@ func TestPackageImpl(t *testing.T) {
 			tasks := pkg.Tasks()
 			So(len(tasks), ShouldEqual, 1)
 			task := tasks[0]
-			So(task.CacheKey(), ShouldEqual, "test")
+			So(task.Key(), ShouldEqual, "test")
 			c, e := task.Commands()
 			So(e, ShouldBeNil)
 			So(c[0].Shell(), ShouldEqual, "echo hello")
@@ -41,7 +41,7 @@ func TestPackageImpl(t *testing.T) {
 			So(len(tasks), ShouldEqual, 2)
 
 			task = tasks[1]
-			So(task.CacheKey(), ShouldEqual, "test2")
+			So(task.Key(), ShouldEqual, "test2")
 			c, e = task.Commands()
 			So(e, ShouldBeNil)
 			So(len(c), ShouldEqual, 1)

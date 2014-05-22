@@ -18,7 +18,7 @@ type Firewall struct {
 
 func (f *Firewall) Render(r urknall.Package) {
 	t := urknall.NewTask()
-	t.SetCacheKey("base")
+	t.SetKey("base")
 	t.Add(
 		InstallPackages("iptables", "ipset"),
 		WriteFile("/etc/network/if-pre-up.d/iptables", firewallUpstart, "root", 0744),

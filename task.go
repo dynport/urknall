@@ -12,8 +12,8 @@ import (
 type Task interface {
 	Add(cmds ...interface{}) Task
 	Commands() ([]cmd.Command, error)
-	CacheKey() string
-	SetCacheKey(string)
+	Key() string
+	SetKey(string)
 }
 
 // A runlist is a container for commands. Use the following methods to add new commands.
@@ -27,11 +27,11 @@ type taskImpl struct {
 	validated bool
 }
 
-func (t *taskImpl) SetCacheKey(key string) {
+func (t *taskImpl) SetKey(key string) {
 	t.name = key
 }
 
-func (t *taskImpl) CacheKey() string {
+func (t *taskImpl) Key() string {
 	return t.name
 }
 

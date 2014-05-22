@@ -84,11 +84,11 @@ func (build *Build) buildTask(task Task, ct checksumTree) (e error) {
 	if e != nil {
 		return e
 	}
-	cacheKey := task.CacheKey()
+	cacheKey := task.Key()
 	if cacheKey == "" {
 		return fmt.Errorf("CacheKey must not be empty")
 	}
-	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", task.CacheKey())
+	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", task.Key())
 
 	var found bool
 	var checksumHash map[string]struct{}
