@@ -21,7 +21,7 @@ type somePackage struct {
 	IField int
 }
 
-func (sp *somePackage) BuildTask(task Task) {
+func (sp *somePackage) Render(Package) {
 }
 
 func TestAddCommand(t *testing.T) {

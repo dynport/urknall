@@ -5,9 +5,16 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+type vers struct {
+	Version string
+}
+
+func (v *vers) Render(Package) {
+}
+
 func TestTaskImpl(t *testing.T) {
 	Convey("Task Impl", t, func() {
-		reference := struct{ Version string }{"1.2"}
+		reference := &vers{"1.2"}
 		i := &task{taskBuilder: reference, name: "base"}
 		i.Add("echo 1", "echo {{ .Version }}")
 		cmds, e := i.Commands()
@@ -24,6 +31,7 @@ func TestTaskImpl(t *testing.T) {
 
 		Convey("not being valid", func() {
 			reference := &struct {
+				genericPkg
 				Version string `urknall:"default=1.3"`
 			}{}
 			i := &task{taskBuilder: reference}
