@@ -18,7 +18,6 @@ type Firewall struct {
 
 func (f *Firewall) Render(r urknall.Package) {
 	t := urknall.NewTask()
-	t.SetKey("base")
 	t.Add(
 		InstallPackages("iptables", "ipset"),
 		WriteFile("/etc/network/if-pre-up.d/iptables", firewallUpstart, "root", 0744),
@@ -32,7 +31,7 @@ func (f *Firewall) Render(r urknall.Package) {
 		"{ modprobe iptable_filter && modprobe iptable_nat; }; /bin/true", // here to make sure next command succeeds.
 		"IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables",
 	)
-	r.AddTask(t)
+	r.AddTask("base", t)
 }
 
 // IPSets are the possibility to change a rule, without actually rewriting the rules. That is they add some sort of

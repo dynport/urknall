@@ -12,8 +12,11 @@ import (
 type Task interface {
 	Add(cmds ...interface{}) Task
 	Commands() ([]cmd.Command, error)
-	Key() string
-	SetKey(string)
+}
+
+// Create a task from a set of commands without configuration.
+func NewTask() Task {
+	return &task{}
 }
 
 // A runlist is a container for commands. Use the following methods to add new commands.
@@ -27,25 +30,12 @@ type task struct {
 	validated bool
 }
 
-func (t *task) SetKey(key string) {
-	t.name = key
-}
-
-func (t *task) Key() string {
-	return t.name
-}
-
 func (t *task) Commands() ([]cmd.Command, error) {
 	e := t.Compile()
 	if e != nil {
 		return nil, e
 	}
 	return t.commands, nil
-}
-
-// Create a task from a set of commands without configuration.
-func NewTask() Task {
-	return &task{}
 }
 
 func (task *task) Add(cmds ...interface{}) Task {

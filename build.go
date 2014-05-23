@@ -61,16 +61,16 @@ func (build *Build) prepare() error {
 	return nil
 }
 
-func (build *Build) buildTask(task Task, ct checksumTree) (e error) {
-	commands, e := task.Commands()
+func (build *Build) buildTask(tsk *task, ct checksumTree) (e error) {
+	commands, e := tsk.Commands()
 	if e != nil {
 		return e
 	}
-	cacheKey := task.Key()
+	cacheKey := tsk.name
 	if cacheKey == "" {
 		return fmt.Errorf("CacheKey must not be empty")
 	}
-	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", task.Key())
+	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", tsk.name)
 
 	var found bool
 	var checksumHash map[string]struct{}

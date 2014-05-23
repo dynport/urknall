@@ -15,13 +15,13 @@ type Template interface {
 type Package interface {
 	AddTemplate(string, Template)
 	AddCommands(string, ...command)
-	AddTask(Task)
+	AddTask(string, Task)
 
 	Build(*Build) error
 }
 
 type packageImpl struct {
-	tasks          []Task
+	tasks          []*task
 	taskNames      map[string]struct{}
 	reference      interface{} // used for rendering
 	cacheKeyPrefix string
@@ -57,7 +57,7 @@ func (pkg *packageImpl) AddCommands(name string, cmds ...command) {
 		}
 		t.Add(c)
 	}
-	pkg.addTask(t, false)
+	pkg.addTask(t)
 }
 
 func (pkg *packageImpl) AddTemplate(name string, tpl Template) {
@@ -76,26 +76,30 @@ func (pkg *packageImpl) AddTemplate(name string, tpl Template) {
 	child := &packageImpl{cacheKeyPrefix: name, reference: tpl}
 	tpl.Render(child)
 	for _, task := range child.tasks {
-		pkg.addTask(task, false)
+		pkg.addTask(task)
 	}
 }
 
-func (pkg *packageImpl) addTask(task Task, addPrefix bool) {
-	if addPrefix {
-		name := task.Key()
-		if pkg.cacheKeyPrefix != "" {
-			name = pkg.cacheKeyPrefix + "." + task.Key()
-		}
-		name = utils.MustRenderTemplate(name, pkg.reference)
-		task.SetKey(name)
+func (pkg *packageImpl) AddTask(name string, tsk Task) {
+	if pkg.cacheKeyPrefix != "" {
+		name = pkg.cacheKeyPrefix + "." + name
 	}
-	pkg.validateTaskName(task.Key())
-	pkg.taskNames[task.Key()] = struct{}{}
+	name = utils.MustRenderTemplate(name, pkg.reference)
+	t := &task{name: name}
+	cmds, e := tsk.Commands()
+	if e != nil {
+		panic(e)
+	}
+	for _, c := range cmds {
+		t.Add(c)
+	}
+	pkg.addTask(t)
+}
+
+func (pkg *packageImpl) addTask(task *task) {
+	pkg.validateTaskName(task.name)
+	pkg.taskNames[task.name] = struct{}{}
 	pkg.tasks = append(pkg.tasks, task)
-}
-
-func (pkg *packageImpl) AddTask(task Task) {
-	pkg.addTask(task, true)
 }
 
 func (pkg *packageImpl) precompile() (e error) {
@@ -105,16 +109,12 @@ func (pkg *packageImpl) precompile() (e error) {
 			return e
 		}
 		if len(c) > 0 {
-			return fmt.Errorf("pkg %q seems to be packaged already", task.Key())
+			return fmt.Errorf("pkg %q seems to be packaged already", task.name)
 		}
 
-		if tc, ok := task.(interface {
-			Compile() error
-		}); ok {
-			e := tc.Compile()
-			if e != nil {
-				return e
-			}
+		e = task.Compile()
+		if e != nil {
+			return e
 		}
 	}
 
