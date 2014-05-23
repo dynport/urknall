@@ -17,7 +17,7 @@ type Task interface {
 }
 
 // A runlist is a container for commands. Use the following methods to add new commands.
-type taskImpl struct {
+type task struct {
 	commands []cmd.Command
 
 	name        string      // Name of the compilable.
@@ -27,15 +27,15 @@ type taskImpl struct {
 	validated bool
 }
 
-func (t *taskImpl) SetKey(key string) {
+func (t *task) SetKey(key string) {
 	t.name = key
 }
 
-func (t *taskImpl) Key() string {
+func (t *task) Key() string {
 	return t.name
 }
 
-func (t *taskImpl) Commands() ([]cmd.Command, error) {
+func (t *task) Commands() ([]cmd.Command, error) {
 	e := t.Compile()
 	if e != nil {
 		return nil, e
@@ -45,10 +45,10 @@ func (t *taskImpl) Commands() ([]cmd.Command, error) {
 
 // Create a task from a set of commands without configuration.
 func NewTask() Task {
-	return &taskImpl{}
+	return &task{}
 }
 
-func (task *taskImpl) Add(cmds ...interface{}) Task {
+func (task *task) Add(cmds ...interface{}) Task {
 	for _, c := range cmds {
 		switch t := c.(type) {
 		case string:
@@ -64,7 +64,7 @@ func (task *taskImpl) Add(cmds ...interface{}) Task {
 	return task
 }
 
-func (task *taskImpl) validate() error {
+func (task *task) validate() error {
 	if !task.validated {
 		if task.taskBuilder == nil {
 			return nil
@@ -79,7 +79,7 @@ func (task *taskImpl) validate() error {
 }
 
 // Add the given command to the runlist.
-func (task *taskImpl) addCommand(c cmd.Command) {
+func (task *task) addCommand(c cmd.Command) {
 	if task.taskBuilder != nil {
 		e := task.validate()
 		if e != nil {
@@ -97,7 +97,7 @@ func (task *taskImpl) addCommand(c cmd.Command) {
 	task.commands = append(task.commands, c)
 }
 
-func (task *taskImpl) Compile() (e error) {
+func (task *task) Compile() (e error) {
 	if task.compiled {
 		return nil
 	}

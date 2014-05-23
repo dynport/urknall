@@ -8,7 +8,7 @@ import (
 func TestTaskImpl(t *testing.T) {
 	Convey("Task Impl", t, func() {
 		reference := struct{ Version string }{"1.2"}
-		i := &taskImpl{taskBuilder: reference, name: "base"}
+		i := &task{taskBuilder: reference, name: "base"}
 		i.Add("echo 1", "echo {{ .Version }}")
 		cmds, e := i.Commands()
 		So(e, ShouldBeNil)
@@ -26,7 +26,7 @@ func TestTaskImpl(t *testing.T) {
 			reference := &struct {
 				Version string `urknall:"default=1.3"`
 			}{}
-			i := &taskImpl{taskBuilder: reference}
+			i := &task{taskBuilder: reference}
 			i.Add("echo 1", "echo {{ .Version }}")
 			cmds, e := i.Commands()
 			So(e, ShouldBeNil)

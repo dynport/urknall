@@ -34,14 +34,14 @@ func (pkg *packageImpl) AddCommands(name string, cmds ...command) {
 		name = pkg.cacheKeyPrefix + "." + name
 	}
 	name = utils.MustRenderTemplate(name, pkg.reference)
-	task := &taskImpl{name: name}
+	t := &task{name: name}
 	for _, c := range cmds {
 		if r, ok := c.(renderer); ok {
 			r.Render(pkg.reference)
 		}
-		task.Add(c)
+		t.Add(c)
 	}
-	pkg.addTask(task, false)
+	pkg.addTask(t, false)
 }
 
 func (pkg *packageImpl) AddTemplate(name string, tpl Template) {
