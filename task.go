@@ -23,8 +23,8 @@ func NewTask() Task {
 type task struct {
 	commands []cmd.Command
 
-	name        string      // Name of the compilable.
-	taskBuilder interface{} // only used for rendering templates TODO(gf): rename
+	name        string   // Name of the compilable.
+	taskBuilder Template // only used for rendering templates TODO(gf): rename
 
 	compiled  bool
 	validated bool
@@ -59,7 +59,7 @@ func (task *task) validate() error {
 		if task.taskBuilder == nil {
 			return nil
 		}
-		e := validatePackage(task.taskBuilder)
+		e := validateTemplate(task.taskBuilder)
 		if e != nil {
 			return e
 		}

@@ -21,14 +21,14 @@ type validationOptions struct {
 	max          int64
 }
 
-func validatePackage(pkg interface{}) error {
+func validateTemplate(pkg Template) error {
 	v := reflect.ValueOf(pkg)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
 
 	if v.Kind() != reflect.Struct {
-		return fmt.Errorf(`value is not a package, but of type "%T"`, pkg)
+		return nil
 	}
 
 	for i := 0; i < v.NumField(); i++ {

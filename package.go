@@ -65,7 +65,7 @@ func (pkg *packageImpl) AddTemplate(name string, tpl Template) {
 		name = pkg.cacheKeyPrefix + "." + name
 	}
 	name = utils.MustRenderTemplate(name, pkg.reference)
-	e := validatePackage(tpl)
+	e := validateTemplate(tpl)
 	if e != nil {
 		panic(e)
 	}

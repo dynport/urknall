@@ -9,7 +9,7 @@ import (
 
 func renderTemplate(builder Template) (Package, error) {
 	p := &packageImpl{reference: builder}
-	e := validatePackage(builder)
+	e := validateTemplate(builder)
 	if e != nil {
 		return nil, e
 	}
