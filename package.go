@@ -14,7 +14,7 @@ type Template interface {
 
 type Package interface {
 	AddTemplate(string, Template)
-	AddCommands(string, ...command)
+	AddCommands(string, ...Command)
 	AddTask(string, Task)
 
 	Build(*Build) error
@@ -45,7 +45,7 @@ func (pkg *packageImpl) Build(build *Build) error {
 	return nil
 }
 
-func (pkg *packageImpl) AddCommands(name string, cmds ...command) {
+func (pkg *packageImpl) AddCommands(name string, cmds ...Command) {
 	if pkg.cacheKeyPrefix != "" {
 		name = pkg.cacheKeyPrefix + "." + name
 	}
