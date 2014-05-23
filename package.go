@@ -28,9 +28,13 @@ type packageImpl struct {
 }
 
 func (pkg *packageImpl) Build(build *Build) error {
-	ct, e := build.buildChecksumTree()
+	e := build.prepare()
 	if e != nil {
 		return e
+	}
+	ct, e := build.buildChecksumTree()
+	if e != nil {
+		return fmt.Errorf("error building checksum tree: %s", e.Error())
 	}
 
 	for _, task := range pkg.tasks {
