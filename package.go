@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/dynport/urknall/pubsub"
 	"github.com/dynport/urknall/utils"
 )
 
@@ -15,7 +16,8 @@ type Package interface {
 	AddTemplate(string, Template)
 	AddCommands(string, ...command)
 	AddTask(Task)
-	Tasks() []Task
+
+	Build(*Build) error
 }
 
 type packageImpl struct {
@@ -25,8 +27,22 @@ type packageImpl struct {
 	cacheKeyPrefix string
 }
 
-func (p *packageImpl) Tasks() []Task {
-	return p.tasks
+func (pkg *packageImpl) Build(build *Build) error {
+	ct, e := build.buildChecksumTree()
+	if e != nil {
+		return e
+	}
+
+	for _, task := range pkg.tasks {
+		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvision, Hostname: build.hostname()}
+		m.Publish("started")
+		if e = build.buildTask(task, ct); e != nil {
+			m.PublishError(e)
+			return e
+		}
+		m.Publish("finished")
+	}
+	return nil
 }
 
 func (pkg *packageImpl) AddCommands(name string, cmds ...command) {
@@ -59,7 +75,7 @@ func (pkg *packageImpl) AddTemplate(name string, tpl Template) {
 	pkg.validateTaskName(name)
 	child := &packageImpl{cacheKeyPrefix: name, reference: tpl}
 	tpl.Render(child)
-	for _, task := range child.Tasks() {
+	for _, task := range child.tasks {
 		pkg.addTask(task, false)
 	}
 }

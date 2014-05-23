@@ -24,7 +24,7 @@ func TestBuildPackage(t *testing.T) {
 		pkg := &packageImpl{}
 		pkg.AddTask(task)
 
-		So(len(pkg.Tasks()), ShouldEqual, 1)
+		So(len(pkg.tasks), ShouldEqual, 1)
 		t.Log(task.Commands())
 	})
 }

@@ -11,7 +11,7 @@ import (
 )
 
 func Run(target Target, tpl Template) (e error) {
-	return (Build{Target: target, Template: tpl}).Run()
+	return (&Build{Target: target, Template: tpl}).Run()
 }
 
 type Build struct {
@@ -21,12 +21,12 @@ type Build struct {
 	Env    []string
 }
 
-func (b Build) Run() error {
-	pkg, e := build(b.Template)
+func (b *Build) Run() error {
+	pkg, e := renderTemplate(b.Template)
 	if e != nil {
 		return e
 	}
-	return b.buildPackage(pkg)
+	return pkg.Build(b)
 }
 
 func (build *Build) prepare() error {
@@ -57,24 +57,6 @@ func (build *Build) prepare() error {
 			return fmt.Errorf("failed to initiate user %q for provisioning: %s, out=%q err=%q", build.User(), e, out.String(), err.String())
 		}
 		build.Reset()
-	}
-	return nil
-}
-
-func (build *Build) buildPackage(pkg Package) (e error) {
-	ct, e := build.buildChecksumTree()
-	if e != nil {
-		return e
-	}
-
-	for _, task := range pkg.Tasks() {
-		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvision, Hostname: build.hostname()}
-		m.Publish("started")
-		if e = build.buildTask(task, ct); e != nil {
-			m.PublishError(e)
-			return e
-		}
-		m.Publish("finished")
 	}
 	return nil
 }
