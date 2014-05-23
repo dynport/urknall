@@ -16,11 +16,16 @@ func (init *Init) Run() error {
 			continue
 		}
 		if strings.HasPrefix(name, "command") {
-			init.writeAsset(name)
+			e := init.writeAsset(name)
+			if e != nil {
+				logger.Printf("ERROR writing asset %s: %s", name, e)
+			}
 		}
 	}
-	init.writeAsset("main.go")
-	//init.build()
+	e := init.writeAsset("main.go")
+	if e != nil {
+		logger.Printf("ERROR writing asset %s: %s", "main", e)
+	}
 	return nil
 }
 

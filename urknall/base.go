@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -43,5 +42,10 @@ func (init *base) writeAsset(name string) error {
 	if e != nil {
 		return fmt.Errorf("unable to read asset %s: %s", name, e.Error())
 	}
-	return ioutil.WriteFile(dst, b, 0644)
+	f, e := os.OpenFile(dst, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0644)
+	if e != nil {
+		return e
+	}
+	_, e = f.Write(b)
+	return e
 }
