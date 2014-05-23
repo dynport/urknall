@@ -146,7 +146,7 @@ func (build *Build) buildChecksumTree() (ct checksumTree, e error) {
 	cmd.SetStderr(err)
 
 	if e := cmd.Run(); e != nil {
-		return nil, e
+		return nil, fmt.Errorf("%s: out=%s err=%s", e.Error(), out.String(), err.String())
 	}
 	for _, line := range strings.Split(out.String(), "\n") {
 		line = strings.TrimSpace(line)
