@@ -9,17 +9,22 @@ import (
 	"github.com/dynport/urknall/pubsub"
 )
 
+// A task is a list of commands. Each task is cached internally, i.e. if an
+// command has been executed already, none of the preceding tasks has changed
+// and neither the command itself, then it won't be executed again. This
+// enhances performance and removes the burden of writing idempotent commands.
 type Task interface {
 	Add(cmds ...interface{}) Task
 	Commands() ([]cmd.Command, error)
 }
 
-// Create a task from a set of commands without configuration.
+// Create a task. This is available to provide maximum flexibility, but
+// shouldn't be required in most cases. The resulting task can be registered to
+// an package using the AddTask method.
 func NewTask() Task {
 	return &task{}
 }
 
-// A runlist is a container for commands. Use the following methods to add new commands.
 type task struct {
 	commands []cmd.Command
 

@@ -10,17 +10,23 @@ import (
 	"github.com/dynport/urknall/pubsub"
 )
 
+// A shortcut creating a build from the given target and template. The
+// resulting build is run immediately and the return value returned.
 func Run(target Target, tpl Template) (e error) {
 	return (&Build{Target: target, Template: tpl}).Run()
 }
 
+// A build is the glue between a target and template. It contains the basic
+// parameters required for actually doing something. The example below contains
+// most of the basic functionality urknall provides.
 type Build struct {
-	Target
-	Template
-	DryRun bool
-	Env    []string
+	Target            // Where to run the build.
+	Template          // What to actually build.
+	DryRun   bool     // Should the commands actually be executed.
+	Env      []string // Environment variables in the form `KEY=VALUE`.
 }
 
+// This will render the build's template into a package and run all its tasks.
 func (b *Build) Run() error {
 	pkg, e := renderTemplate(b.Template)
 	if e != nil {

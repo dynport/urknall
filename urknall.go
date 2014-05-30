@@ -1,32 +1,16 @@
-// urknall is a different approach towards the provisioning problem. It is based on the experience that the generic
-// solutions available don't actually work. Everything generic must compromise here and there. It also requires taking
-// into account a multitude of problems and thereby getting pretty complex soon. And with all these compromises and
-// complexity comes the problem of being highly error prone and not being quite right anyway.
+// The Urknall Library
 //
-// urknall is different as it is a set of tools to easily set up and maintain tools for provisioning machines. It helps
-// to bootstrap such a tool easily, but gets out the way as much as possible. This is done by having a library that will
-// manage everything required to actually execute stuff on a machine, adding a layer of "caching" that will only do what
-// needs to be done, and having some decent logging. The other part is a binary that will help you bootstrap a new
-// project (adding template code to a new directory) and adding template commands and packages (those will be explained
-// soon).
+// This is the urknall library. The core action it provides is building a
+// target with a package. The target could be a host reached via SSH for
+// example. A package contains tasks, containing the commands executed on
+// the target. Each task has a caching layer, that prevents commands from being
+// executed if they have been executed before and none of the preceding
+// commands has changed.
 //
-// The problem with the generic solution problem is solved using different tools. First everything is written in golang,
-// a language with pretty decent tooling like a blazing fast compiler, working "go to definition" tools for many
-// editors, and many more. On the other hand the templates provided are just that templates. As they reside in the
-// user's project he can adopt them as much as he likes (using "rpm" instead of "deb" for package management for
-// example).
+// A quick example can be found at the Build type documentation. A more real
+// life example is located in the example directory.
 //
-// The core building block of urknall is the `Host` datastructure that defines the machine to provision. It has
-// information how to access the machine, but also the knowledge what to actually do on it. This latter is added using
-// commands and packages.
-//
-// A command is just a simple bash command executed on the remote host. A package is a set of commands combined with
-// some configuration which allows for reuse of the same commands, for example to install different versions of the same
-// program. Commands are collected in runlists. One runlist per package or command registered at the host. It must be
-// given an unique name. Internally urknall will maintain the state of the runlist's commands already run. Only if a
-// command hasn't been executed yet, or one of the predecessors changed, it will be run. This is a simple but very
-// effective caching mechanism. Additionally urknall has the possibility to display which commands would actually be
-// executed, i.e. a dry run.
+// TODO(gf): Add reference to the website with more general information.
 package urknall
 
 import (
@@ -35,8 +19,10 @@ import (
 	"github.com/dynport/urknall/pubsub"
 )
 
-// Create a logging facility for urknall using urknall's default formatter.
-// Note that this resource must be closed afterwards!
+// Create a logging facility for urknall using the given writer for output.
+// Note that this resource must be closed afterwards! The following pattern is
+// idiomatic:
+//   defer urknall.OpenLogger(os.Stdout).Close()
 func OpenLogger(w io.Writer) io.Closer {
 	return pubsub.OpenLogger(w)
 }
