@@ -16,6 +16,14 @@ func Run(target Target, tpl Template) (e error) {
 	return (&Build{Target: target, Template: tpl}).Run()
 }
 
+// A shortcut creating a build from the given target and template with the
+// DryRun flag set to true. The resulting build is run immediately and the
+// return value returned. This is quite helpful to actually see which commands
+// would be exeucted in the current setting, without actually doing anything.
+func DryRun(target Target, tpl Template) (e error) {
+	return (&Build{Target: target, Template: tpl, DryRun: true}).Run()
+}
+
 // A build is the glue between a target and template. It contains the basic
 // parameters required for actually doing something. The example below contains
 // most of the basic functionality urknall provides.
