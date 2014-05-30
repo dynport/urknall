@@ -70,7 +70,7 @@ func (build *Build) prepare() error {
 		if e := cmd.Run(); e != nil {
 			return fmt.Errorf("failed to initiate user %q for provisioning: %s, out=%q err=%q", build.User(), e, out.String(), err.String())
 		}
-		build.Reset()
+		return build.Reset()
 	}
 	return nil
 }
@@ -111,7 +111,10 @@ func (build *Build) buildTask(tsk *task, ct checksumTree) (e error) {
 
 	for _, cmd := range commands {
 		logMsg := cmd.Logging()
-		checksum := commandChecksum(cmd)
+		checksum, e := commandChecksum(cmd)
+		if e != nil {
+			return e
+		}
 		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvisionTask, TaskChecksum: checksum, Message: logMsg, Hostname: build.hostname(), RunlistName: cacheKey}
 		if _, found := checksumHash[checksum]; found { // Task is cached.
 			m.ExecStatus = pubsub.StatusCached

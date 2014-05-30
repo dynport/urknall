@@ -23,7 +23,11 @@ type remoteTaskRunner struct {
 func (runner *remoteTaskRunner) run() error {
 	runner.started = time.Now()
 
-	prefix := runner.dir + "/" + commandChecksum(runner.command)
+	checksum, e := commandChecksum(runner.command)
+	if e != nil {
+		return e
+	}
+	prefix := runner.dir + "/" + checksum
 
 	errors := make(chan error)
 	logs := runner.newLogWriter(prefix+".log", errors)
@@ -131,11 +135,15 @@ func (runner *remoteTaskRunner) newLogWriter(path string, errors chan error) cha
 
 		// Send all messages from logs to the stdin of the new session.
 		for log := range logs {
-			io.WriteString(in, log+"\n")
+			if _, e = io.WriteString(in, log+"\n"); e != nil {
+				errors <- e
+			}
 		}
 
 		if in, ok := in.(io.WriteCloser); ok {
-			in.Close()
+			if e = in.Close(); e != nil {
+				errors <- e
+			}
 		}
 
 		// Close the stdin pipe of the above command (terminating that).

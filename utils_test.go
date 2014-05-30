@@ -21,11 +21,15 @@ func TestUtils(t *testing.T) {
 	c := &testCommand{}
 	Convey("Command checksum", t, func() {
 		Convey("for default commands", func() {
-			So(commandChecksum(c), ShouldEqual, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+			checksum, e := commandChecksum(c)
+			So(e, ShouldBeNil)
+			So(checksum, ShouldEqual, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
 		})
 		Convey("for custom checksums", func() {
 			c := &testCommandCustomChecksum{c}
-			So(commandChecksum(c), ShouldEqual, "default checksum")
+			checksum, e := commandChecksum(c)
+			So(e, ShouldBeNil)
+			So(checksum, ShouldEqual, "default checksum")
 		})
 	})
 

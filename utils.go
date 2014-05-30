@@ -26,15 +26,17 @@ func executeCommand(cmd cmd.Command, build *Build, checksumDir string) (e error)
 	return r.run()
 }
 
-func commandChecksum(c cmd.Command) string {
+func commandChecksum(c cmd.Command) (string, error) {
 	if c, ok := c.(interface {
 		Checksum() string
 	}); ok {
-		return c.Checksum()
+		return c.Checksum(), nil
 	}
 	s := sha256.New()
-	s.Write([]byte(c.Shell()))
-	return fmt.Sprintf("%x", s.Sum(nil))
+	if _, e := s.Write([]byte(c.Shell())); e != nil {
+		return "", e
+	}
+	return fmt.Sprintf("%x", s.Sum(nil)), nil
 }
 
 func taskNameOfCommand(i interface{}) string {
