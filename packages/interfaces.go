@@ -1,4 +1,4 @@
-package main
+package packages
 
 type Command interface {
 	Shell() string   // Used for executing the action in a shell (locally or via ssh).
