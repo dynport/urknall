@@ -1,5 +1,7 @@
 # urknall
 
+urknall is a go automation library
+
 ## Hello world
 
 	package main
