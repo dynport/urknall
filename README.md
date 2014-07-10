@@ -41,4 +41,5 @@
 
 ## Examples
 
-See `examples` for a list of more advanced examples.
+See [examples](examples) for a list of more advanced examples.
+
