@@ -2,10 +2,6 @@ package main
 
 import "github.com/dynport/urknall"
 
-func NewRabbitMQ(version string) *RabbitMQ {
-	return &RabbitMQ{Version: version}
-}
-
 type RabbitMQ struct {
 	Version string `urknall:"default=3.2.1"`
 }

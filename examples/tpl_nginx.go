@@ -6,10 +6,6 @@ import (
 	"github.com/dynport/urknall/utils"
 )
 
-func NewNginx(version string) *Nginx {
-	return &Nginx{Version: version}
-}
-
 type Nginx struct {
 	Version            string `urknall:"default=1.4.4"`
 	HeadersMoreVersion string `urknall:"default=0.24"`

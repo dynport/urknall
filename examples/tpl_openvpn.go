@@ -2,10 +2,6 @@ package main
 
 import "github.com/dynport/urknall"
 
-func NewOpenVPN() *OpenVPN {
-	return &OpenVPN{}
-}
-
 type OpenVPN struct {
 	Country        string `urknall:"required=true"`
 	Province       string `urknall:"required=true"`

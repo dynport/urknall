@@ -7,10 +7,6 @@ import (
 	"github.com/dynport/urknall"
 )
 
-func NewRuby(version string) *Ruby {
-	return &Ruby{Version: version}
-}
-
 // The Ruby package is used to provision ruby on a host.
 //
 // Ruby will be downloaded, extracted, configured, built, and installed to `/opt/ruby-{{ .Version }}`. If the `Bundle`

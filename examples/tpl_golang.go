@@ -8,10 +8,6 @@ type Golang struct {
 	Version string `urknall:"default=1.2"`
 }
 
-func NewGolang(version string) *Golang {
-	return &Golang{Version: version}
-}
-
 func (pkg *Golang) Render(r urknall.Package) {
 	url := "http://go.googlecode.com/files/go{{ .Version }}.linux-amd64.tar.gz"
 	r.AddCommands("base",

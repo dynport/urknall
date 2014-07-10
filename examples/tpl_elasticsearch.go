@@ -2,10 +2,6 @@ package main
 
 import "github.com/dynport/urknall"
 
-func NewElasticSearch(version string) *ElasticSearch {
-	return &ElasticSearch{Version: version}
-}
-
 type ElasticSearch struct {
 	Version     string `urknall:"default=0.90.9"`
 	ClusterName string `urknall:"default=elasticsearch"`

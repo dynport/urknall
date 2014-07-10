@@ -11,10 +11,6 @@ type HAProxy struct {
 	Version string `urknall:"default=1.4.24"`
 }
 
-func NewHAProxy(version string) *HAProxy {
-	return &HAProxy{Version: version}
-}
-
 func (p *HAProxy) url() string {
 	return "http://haproxy.1wt.eu/download/1.4/src/haproxy-" + p.Version + ".tar.gz"
 }

@@ -2,10 +2,6 @@ package main
 
 import "github.com/dynport/urknall"
 
-func NewSyslogNg(version string) *SyslogNg {
-	return &SyslogNg{Version: version}
-}
-
 const syslogNgRestart = "{ status syslog-ng | grep running && restart syslog-ng; } || start syslog-ng"
 
 type SyslogNg struct {

@@ -6,10 +6,6 @@ import (
 	"github.com/dynport/urknall/utils"
 )
 
-func NewPostgres(version string) *Postgres {
-	return &Postgres{Version: version}
-}
-
 type Postgres struct {
 	Version string `urknall:"default=9.3.3"`
 	DataDir string `urknall:"default=/data/postgres"`

@@ -5,10 +5,6 @@ import (
 	"github.com/dynport/urknall/cmd"
 )
 
-func NewRedis(version string) *Redis {
-	return &Redis{Version: version}
-}
-
 type Redis struct {
 	Version   string `urknall:"default=2.8.3"`
 	Autostart bool
