@@ -1,4 +1,4 @@
-package packages
+package main
 
 import "github.com/dynport/urknall"
 
@@ -16,7 +16,7 @@ func (pkg *Jenkins) Render(r urknall.Package) {
 
 	r.AddCommands("base",
 		InstallPackages("openjdk-6-jdk", "bzr", "git"),
-		DownloadToFile(url, "/opt/jenkins.war", "root", 0644),
+		Download(url, "/opt/jenkins.war", "root", 0644),
 		Mkdir("/data/jenkins", "root", 0755),
 		Mkdir("/data/jenkins/plugins", "root", 0755),
 		WriteFile(
@@ -27,7 +27,7 @@ func (pkg *Jenkins) Render(r urknall.Package) {
 	for _, plugin := range pkg.Plugins {
 		pSrc := urlRoot + "/plugins/" + plugin + "/latest/" + plugin + ".hpi"
 		pDest := "/data/jenkins/plugins/" + plugin + ".hpi"
-		r.AddCommands("plugin-"+plugin, DownloadToFile(pSrc, pDest, "root", 0644))
+		r.AddCommands("plugin-"+plugin, Download(pSrc, pDest, "root", 0644))
 	}
 }
 

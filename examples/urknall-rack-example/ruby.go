@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/dynport/urknall"
-	"github.com/dynport/urknall/packages"
 )
 
 // Ruby is a urknall.Template to install ruby from source
@@ -18,7 +17,7 @@ type Ruby struct {
 // steps taken from from https://gorails.com/setup/ubuntu/14.04 ("from source")
 func (tpl *Ruby) Render(p urknall.Package) {
 	// install packages required by ruby/rails
-	p.AddCommands("packages", packages.InstallPackages(
+	p.AddCommands("packages", InstallPackages(
 		"git-core", "curl", "zlib1g-dev", "build-essential", "libssl-dev",
 		"libreadline-dev", "libyaml-dev", "libsqlite3-dev", "sqlite3",
 		"libxml2-dev", "libxslt1-dev", "libcurl4-openssl-dev", "python-software-properties",
@@ -26,10 +25,10 @@ func (tpl *Ruby) Render(p urknall.Package) {
 	)
 	p.AddCommands("download",
 		// create src directory
-		packages.Mkdir("/opt/src/", "root", 0755),
+		Mkdir("/opt/src/", "root", 0755),
 
 		// download ruby source to /opt/src/ with user=root and chmod=0644
-		packages.DownloadToFile( //
+		Download( //
 			"http://ftp.ruby-lang.org/pub/ruby/{{ .MinorVersion }}/ruby-{{ .Version }}.tar.gz",
 			"/opt/src/",
 			"root", 644,
@@ -38,7 +37,7 @@ func (tpl *Ruby) Render(p urknall.Package) {
 
 	// execute the build steps in one concatenated command (with &&)
 	p.AddCommands("build",
-		packages.And(
+		And(
 			"cd /opt/src/",
 			"tar xvfz ruby-{{ .Version }}.tar.gz",
 			"cd ruby-{{ .Version }}",

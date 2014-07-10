@@ -1,4 +1,4 @@
-package packages
+package main
 
 import (
 	"github.com/dynport/urknall"
@@ -25,13 +25,13 @@ func (pkg *Nginx) Render(r urknall.Package) {
 		InstallPackages("build-essential", "curl", "libpcre3", "libpcre3-dev", "libssl-dev", "libpcrecpp0", "zlib1g-dev", "libgd2-xpm-dev"),
 		DownloadAndExtract(pkg.url(), "/opt/src"),
 		Mkdir(syslogPatchPath, "root", 0755),
-		DownloadToFile("https://raw.github.com/yaoweibin/nginx_syslog_patch/master/config", syslogPatchPath+"/config", "root", 0644),
-		DownloadToFile("https://raw.github.com/yaoweibin/nginx_syslog_patch/master/"+fileName, syslogPatchPath+"/"+fileName, "root", 0644),
+		Download("https://raw.github.com/yaoweibin/nginx_syslog_patch/master/config", syslogPatchPath+"/config", "root", 0644),
+		Download("https://raw.github.com/yaoweibin/nginx_syslog_patch/master/"+fileName, syslogPatchPath+"/"+fileName, "root", 0644),
 		And(
 			"cd /opt/src/nginx-{{ .Version }}",
 			"patch -p1 < "+syslogPatchPath+"/"+fileName,
 		),
-		DownloadToFile("https://github.com/agentzh/headers-more-nginx-module/archive/v{{ .HeadersMoreVersion }}.tar.gz", "/opt/src/headers-more-nginx-module-{{ .HeadersMoreVersion }}.tar.gz", "root", 0644),
+		Download("https://github.com/agentzh/headers-more-nginx-module/archive/v{{ .HeadersMoreVersion }}.tar.gz", "/opt/src/headers-more-nginx-module-{{ .HeadersMoreVersion }}.tar.gz", "root", 0644),
 		And(
 			"cd /opt/src",
 			"tar xvfz headers-more-nginx-module-{{ .HeadersMoreVersion }}.tar.gz",

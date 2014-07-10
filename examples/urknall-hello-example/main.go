@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/dynport/urknall"
-	"github.com/dynport/urknall/packages"
 )
 
 func main() {
@@ -21,7 +20,7 @@ func provision() error {
 	// create a basic urknall.Template
 	// executes "echo hello world" as user ubuntu on the provided host
 	tpl := urknall.TemplateFunc(func(p urknall.Package) {
-		p.AddCommands("run", packages.Shell("echo hello world"))
+		p.AddCommands("run", Shell("echo hello world"))
 	})
 
 	// create provisioning target for provisioning via ssh with
