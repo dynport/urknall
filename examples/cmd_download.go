@@ -64,7 +64,7 @@ func (dc *DownloadCommand) Shell() string {
 	case dc.Extract && dc.Destination == "":
 		panic(fmt.Errorf("shall extract, but don't know where (i.e. destination field is empty"))
 	case dc.Extract:
-		cmd = append(cmd, ExtractFile(destination, dc.Destination).Shell())
+		cmd = append(cmd, Extract(destination, dc.Destination).Shell())
 	case dc.Destination != "":
 		cmd = append(cmd, fmt.Sprintf("mv %s %s", destination, dc.Destination))
 		destination = dc.Destination
