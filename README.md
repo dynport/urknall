@@ -38,7 +38,7 @@ Infrastructure should be describe in a type safe programming language.
 
 __YAML is neither type safe, nor a programming language__
 
-Choosing a purely declarative approach or even domain specific languages to infrastructure definition leaves room for interpretation and therefor misunderstanding.
+Choosing a purely declarative or even domain specific language approach to infrastructure definition leaves room for interpretation and therefor misunderstanding. We try to stick to the go basics.
 
 ### Pragmatic
 
