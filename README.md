@@ -1,6 +1,6 @@
 # urknall
 
-urknall is a library written in go for automated provisioning of servers.
+urknall is a library written in go for the automated provisioning of servers.
 
 The primary use case for urknall is automated execution of commands on linux (ubuntu) hosts, either locally or via ssh.
 
