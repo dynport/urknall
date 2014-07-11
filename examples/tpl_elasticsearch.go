@@ -15,7 +15,7 @@ type ElasticSearch struct {
 }
 
 func (p *ElasticSearch) Render(r urknall.Package) {
-	r.AddCommands("packages",
+	r.AddCommands("java7",
 		InstallPackages("openjdk-7-jdk"),
 		Shell("update-alternatives --set java /usr/lib/jvm/java-7-openjdk-amd64/jre/bin/java"),
 	)
