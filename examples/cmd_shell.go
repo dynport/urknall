@@ -22,6 +22,9 @@ type ShellCommand struct {
 
 func (cmd *ShellCommand) Render(i interface{}) {
 	cmd.Command = utils.MustRenderTemplate(cmd.Command, i)
+	if cmd.user != "" {
+		cmd.user = utils.MustRenderTemplate(cmd.user, i)
+	}
 }
 
 func Shell(cmd string) *ShellCommand {
