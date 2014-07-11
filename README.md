@@ -6,7 +6,7 @@ The primary use case for urknall is automated execution of commands on linux (ub
 
 urknall does not require any extra software to be installed on the target host (except bash) and has no dependencies. It's designed to be used and shipped as a standalone binary (executable).
 
-urknall __is not a framework__ but a library. There is no (and probably never will be) `urknall provision <my host>` binary. We are also keen on providing building blocks that simplify the life of developers and system operators, but not give them a copy&paste-blueprint for a complex setup that will hardly ever fit their need completely.
+urknall __is not a framework__ but a library. There is no (and probably never will be) `urknall provision <my host>` binary. We are also keen on providing building blocks that simplify the life of developers and system operators rather than giving out blueprint-recipes for complex setups that will hardly ever fit their needs completely.
 
 To use urknall you need start with creating a __custom go application__ (either binary or script) and adding the commands which are executed on targets step by step.
 
