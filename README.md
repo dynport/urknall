@@ -1,18 +1,20 @@
 # urknall
 
-urknall is a go automation library.
+urknall is a library written in go for automated provisioning of servers.
 
-The primary use case for urknall is automated execution of commands on linux (ubuntu) hosts, either locally or with ssh.
+The primary use case for urknall is automated execution of commands on linux (ubuntu) hosts, either locally or via ssh.
 
-urknall does not require any extra software to be installed on the target host (except bash).
+urknall does not require any extra software to be installed on the target host (except bash) and has no dependencies. It's designed to be used and shipped as a standalone binary (executable).
 
-urknall __is not a framework__ but a libary. There is no (and probably never will be) a `urknall provision <my host>` binary.
+urknall __is not a framework__ but a libary. There is no (and probably never will be) `urknall provision <my host>` binary. We are also keen on providing building blocks that simplify the life of developers and system operators, but not give them a copy&paste-blueprint for a complex setup that will hardly ever fit the
 
-To use urknall you need to create a __custom go application__ (either binary or script) which configures the commands which are executed on targets.
+To use urknall you need start with creating a __custom go application__ (either binary or script) and adding the commands which are executed on targets step by step.
 
-## Philosophie
+## Philosophy
 
-### Single binary
+The philosophy behind urknall reflects our design choices while building urknall and improving it over time. We do not deem them to be exclusive or even objective, but it's the principles and ideas our team shares about provisioning and software design.
+
+### Single binary (executable)
 
 All necessary resources (except e.g. credentials) should be compiled into a single, statically linked binary.
 
@@ -22,23 +24,25 @@ Examples:
 * recipes/cookbooks/playbooks/etc.
 * template -> target mappings (see Building Blocks)
 
-To allow your team to e.g. provision a new server you only need to share a single binary. There should be no need to install any software (ruby, python, etc.), libraries (gems, pip packages, etc) or have a checkout of a repository for e.g. config templates.
+To allow your teammates to provision a new server you only need to share one single binary. There should be no need to install any software (ruby, python, etc.), libraries (gems, pip packages, etc) or have a checkout of a repository for config templates.
 
-You can (and should) add checks which make sure that you always use the most recent version of the binary (to avoid regressions) by e.g. validating the build revision of the binary with a remote service.
+You can (and should) add checks which make sure that you always use the most recent version of the binary (to avoid regressions) by e.g. validating the build revision of the binary with a remote service. Having a single file to maintain reduces the complexity of this chure.
 
 
 ### Type safety
-Infrastructure should be describe in a type safe porgramming language.
+Infrastructure should be describe in a type safe programming language.
 
-* compiler support: catch bugs/typos/etc early (not when doing the provisioning)
-* allows refactorings, cleaning up, drying up of your configuration
-* allows reducing of duplications
+* compiler support: catch bugs/typos/etc early (even before doing any provisioning)
+* easier refactorings, cleaning up, drying up of your configuration
+* reduce duplication and clutter
 
 __YAML is neither type safe, nor a programming language__
 
+Choosing a purely declarative approach or even domain specific languages to infrastructure definition leaves room for interpretation and therefor misunderstanding.
+
 ### Pragmatic
 
-urknall Templates (see Buildling Blocks) should not be too generic. They should not include all the nobs to e.g. configure your database server. They should also not support multiple linux distributions etc. If you feel that need, urknall is not the right library for you.
+urknall Templates (see Buildling Blocks) should not be too generic. They should not include all the nobs to configure your database server. They should also not support multiple linux distributions as you will rarely need to switch your OS platform. If you feel that need, urknall is not the right library for you.
     
 
 ## Building Blocks
@@ -49,12 +53,12 @@ Execution of a `template` on a `target`
 
 ### Target
 
-Remote (via ssh) or local host
+Host to be provisioned (remote (via ssh) or local)
 
 ### Template
 
-* hold variables
-* are rendered to `packages`
+* holds variables
+* is rendered to `packages`
 
 ### Package
 
@@ -62,13 +66,13 @@ Remote (via ssh) or local host
 
 ### Task
 
-* list of `commands
-* have unique names (used for Caching)
+* list of `commands`
+* has unique name (used for Caching)
 * unit of caching (see Caching)
 
 ### Command
 
-* atomic-ish* execution of linux commands
+* atomic-ish* linux command
 
 Examples:
 
@@ -80,9 +84,9 @@ Examples:
 
 ## Caching
 
-urknall uses statement based caching (similar to building docker images) on a `task` level. 
+urknall uses statement-based caching (similar to building docker images) on a `task` level. 
 
-The checksums of all commands which are executed for a task are written into a tree structure __on the target__. The next time a task is executed on a target the current checksums of the task are compared with the checksums on the target. If the checksum of a command changes all commands including that command will be re-executed and the tree is updated. Unchanged commands before the first changed commands will not be executed.
+The checksums of all commands that are executed for a task are written into a tree structure __on the target__. The next time a task is supposed to be executed on a target the current checksums of the task are compared with the checksums of already executed commands on the target. If the checksum of a command changes all commands including that command will be re-executed and the tree is updated. Unchanged commands before the first changed command will not be executed again.
 
 ## Hello world
 
