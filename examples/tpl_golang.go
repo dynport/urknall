@@ -5,18 +5,17 @@ import (
 )
 
 type Golang struct {
-	Version string `urknall:"default=1.2"`
+	Version string `urknall:"required=true"`
 }
 
 func (pkg *Golang) Render(r urknall.Package) {
-	url := "http://go.googlecode.com/files/go{{ .Version }}.linux-amd64.tar.gz"
-	r.AddCommands("base",
-		InstallPackages("build-essential", "curl", "bzr", "mercurial", "git-core"),
-		Mkdir("/opt/go-{{ .Version }}", "root", 0755),
-		DownloadAndExtract(url, "/opt/go-{{ .Version }}/"),
+	r.AddCommands("packages", InstallPackages("build-essential", "curl", "bzr", "mercurial", "git-core"))
+	r.AddCommands("mkdir", Mkdir("{{ .InstallPath }}", "root", 0755))
+	r.AddCommands("download",
+		DownloadAndExtract("https://storage.googleapis.com/golang/go{{ .Version }}.linux-amd64.tar.gz", "{{ .InstallPath }}"),
 	)
 }
 
-func (pkg *Golang) Goroot() string {
-	return "/opt/go-" + pkg.Version + "/go"
+func (tpl *Golang) InstallPath() string {
+	return "/opt/go-{{ .Version }}"
 }

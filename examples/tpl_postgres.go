@@ -1,46 +1,48 @@
 package main
 
-import (
-	"github.com/dynport/urknall"
-	"github.com/dynport/urknall/cmd"
-	"github.com/dynport/urknall/utils"
-)
+import "github.com/dynport/urknall"
 
 type Postgres struct {
 	Version string `urknall:"default=9.3.3"`
 	DataDir string `urknall:"default=/data/postgres"`
-}
+	User    string `urknall:"default=postgres"`
 
-func (p *Postgres) User() string {
-	return "postgres"
+	InitDb bool
 }
 
 func (pkg *Postgres) Render(r urknall.Package) {
-	r.AddCommands("base",
+	r.AddCommands("packages",
 		InstallPackages("build-essential", "openssl", "libssl-dev", "flex", "zlib1g-dev", "libxslt1-dev", "libxml2-dev", "python-dev", "libreadline-dev", "bison"),
-		Mkdir("/opt/src/", "root", 0755),
-		DownloadAndExtract(pkg.url(), "/opt/src/"),
+	)
+	r.AddCommands("download", DownloadAndExtract("{{ .Url }}", "/opt/src/"))
+	r.AddCommands("user", AddUser("{{ .User }}", true))
+	r.AddCommands("build",
 		And(
 			"cd /opt/src/postgresql-{{ .Version }}",
-			"./configure --prefix="+pkg.InstallDir(),
+			"./configure --prefix={{ .InstallDir }}",
 			"make",
 			"make install",
 		),
-		AddUser(pkg.User(), true),
 	)
+	r.AddCommands("upstart",
+		WriteFile("/etc/init/postgres.conf", postgresUpstart, "root", 0644),
+	)
+	if pkg.InitDb {
+		r.AddCommands("init_db",
+			Mkdir(pkg.DataDir, "{{ .User }}", 0755),
+			AsUser("{{ .User }}", "{{ .InstallDir }}/bin/initdb -D {{ .DataDir }} -E utf8 --auth-local=trust"),
+		)
+	}
 }
 
 func (p *Postgres) InstallDir() string {
+	if p.Version == "" {
+		panic("Version must be set")
+	}
 	return "/opt/postgresql-" + p.Version
 }
 
-func (pkg *Postgres) InitDbCommand() cmd.Command {
-	return And(
-		Mkdir(pkg.DataDir, pkg.User(), 0755),
-		"su -l "+pkg.User()+" -c '"+pkg.InstallDir()+"/bin/initdb -D "+pkg.DataDir+" -E utf8 --auth-local=trust'",
-	)
-}
-
+// some helpers for e.g. database creation
 type PostgresDatabase struct {
 	Name  string
 	Owner string
@@ -75,10 +77,6 @@ func (pkg *Postgres) CreateUserCommand(user *PostgresUser) string {
 	return pkg.InstallDir() + "/bin/" + `psql -U postgres -c "` + user.CreateCommand() + `"`
 }
 
-func (pkg *Postgres) UpstartExecCommand() cmd.Command {
-	return WriteFile("/etc/init/postgres.conf", utils.MustRenderTemplate(postgresUpstart, pkg), "root", 0644)
-}
-
 const postgresUpstart = `
 start on runlevel [2345]
 stop on runlevel [!2345]
@@ -86,28 +84,6 @@ setuid {{ .User }}
 exec {{ .InstallDir }}/bin/postgres -D {{ .DataDir }}
 `
 
-func (pkg *Postgres) url() string {
+func (pkg *Postgres) Url() string {
 	return "http://ftp.postgresql.org/pub/source/v{{ .Version }}/postgresql-{{ .Version }}.tar.gz"
-}
-
-func (pkg *Postgres) installDir() string {
-	return utils.MustRenderTemplate("/opt/postgresql-{{ .Version }}", pkg)
-}
-
-type PostGis struct {
-	Version            string `urknall:"default=2.1.1"`
-	PostgresInstallDir string `urknall:"required=true"`
-}
-
-func (g *PostGis) url() string {
-	return "http://download.osgeo.org/postgis/source/postgis-{{ .Version }}.tar.gz"
-}
-
-func (g *PostGis) Render(r urknall.Package) {
-	r.AddCommands("base",
-		Mkdir("/opt/src", "root", 0755),
-		DownloadAndExtract(g.url(), "/opt/src/"),
-		InstallPackages("imagemagick", "libgeos-dev", "libproj-dev", "libgdal-dev"),
-		Shell("cd /opt/src/postgis-{{ .Version }} && ./configure --with-pgconfig={{ .PostgresInstallDir }}/bin/pg_config --prefix=/opt/postgis-{{ .Version }} && make && make install"),
-	)
 }

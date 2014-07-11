@@ -5,28 +5,30 @@ import "github.com/dynport/urknall"
 const syslogNgRestart = "{ status syslog-ng | grep running && restart syslog-ng; } || start syslog-ng"
 
 type SyslogNg struct {
-	Version string `urknall:"default=3.5.1"`
+	Version string `urknall:"required=true"`
 }
 
-func (ng *SyslogNg) url() string {
+func (ng *SyslogNg) Url() string {
 	return "http://www.balabit.com/downloads/files/syslog-ng/open-source-edition/{{ .Version }}/source/syslog-ng_{{ .Version }}.tar.gz"
 }
 
 func (ng *SyslogNg) Render(r urknall.Package) {
-	r.AddCommands("base",
+	r.AddCommands("packages",
 		InstallPackages("build-essential", "libevtlog-dev", "pkg-config", "libglib2.0-dev"),
-		DownloadAndExtract(ng.url(), "/opt/src"),
+	)
+	r.AddCommands("download", DownloadAndExtract("{{ .Url }}", "/opt/src"))
+	r.AddCommands("build",
 		And(
-			"cd {{ .InstallPath }}",
+			"cd {{ .SrcDir }}",
 			"./configure",
 			"make",
 			"make install",
 		),
-		WriteFile("/etc/init/syslog-ng.conf", syslogNgUpstart, "root", 0644),
 	)
+	r.AddCommands("upstart", WriteFile("/etc/init/syslog-ng.conf", syslogNgUpstart, "root", 0644))
 }
 
-func (ng *SyslogNg) InstallPath() string {
+func (ng *SyslogNg) SrcDir() string {
 	return "/opt/src/syslog-ng-{{ .Version }}"
 }
 

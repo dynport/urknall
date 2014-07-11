@@ -3,7 +3,7 @@ package main
 import "github.com/dynport/urknall"
 
 type ElasticSearch struct {
-	Version     string `urknall:"default=0.90.9"`
+	Version     string `urknall:"required=true"`
 	ClusterName string `urknall:"default=elasticsearch"`
 	DataPath    string `urknall:"default=/data/elasticsearch"`
 
@@ -15,23 +15,26 @@ type ElasticSearch struct {
 }
 
 func (p *ElasticSearch) Render(r urknall.Package) {
-	r.AddCommands("base",
-		InstallPackages("openjdk-6-jdk"),
-		DownloadAndExtract(p.url(), "/opt/"),
-		AddUser("elasticsearch", true),
-		Mkdir(p.DataPath, "elasticsearch", 0755),
+	r.AddCommands("packages",
+		InstallPackages("openjdk-7-jdk"),
+		Shell("update-alternatives --set java /usr/lib/jvm/java-7-openjdk-amd64/jre/bin/java"),
+	)
+	r.AddCommands("download", DownloadAndExtract("{{ .Url }}", "/opt/"))
+	r.AddCommands("user", AddUser("elasticsearch", true))
+	r.AddCommands("mkdir", Mkdir(p.DataPath, "elasticsearch", 0755))
+	r.AddCommands("config",
 		WriteFile("{{ .InstallPath }}/config/elasticsearch.yml", config, "root", 0644),
 		WriteFile("{{ .InstallPath }}/config/logging.yml", configLogger, "root", 0644),
 		WriteFile("/etc/init/elasticsearch.conf", elasticSearchUpstart, "root", 0644),
 	)
 }
 
-func (p *ElasticSearch) url() string {
+func (p *ElasticSearch) Url() string {
 	return "https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-{{ .Version }}.tar.gz"
 }
 
 func (p *ElasticSearch) InstallPath() string {
-	return "/opt/elasticsearch-" + p.Version
+	return "/opt/elasticsearch-{{ .Version }}"
 }
 
 const elasticSearchUpstart = `

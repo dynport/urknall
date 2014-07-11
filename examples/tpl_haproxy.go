@@ -8,14 +8,14 @@ import (
 )
 
 type HAProxy struct {
-	Version string `urknall:"default=1.4.24"`
+	Version string `urknall:"required=true"`
 }
 
 func (p *HAProxy) url() string {
-	return "http://haproxy.1wt.eu/download/1.4/src/haproxy-" + p.Version + ".tar.gz"
+	return "http://haproxy.1wt.eu/download/{{ .MinorVersion }}/src/haproxy-{{ .Version }}.tar.gz"
 }
 
-func (p *HAProxy) minorVersion() string {
+func (p *HAProxy) MinorVersion() string {
 	parts := strings.Split(p.Version, ".")
 	if len(parts) == 3 {
 		return strings.Join(parts[0:2], ".")
@@ -24,10 +24,10 @@ func (p *HAProxy) minorVersion() string {
 }
 
 func (p *HAProxy) InstallPath() string {
-	return "/opt/haproxy-" + p.Version
+	return "/opt/haproxy-{{ .Version }}"
 }
 
-func (p *HAProxy) Package(r urknall.Package) {
+func (p *HAProxy) Render(r urknall.Package) {
 	r.AddCommands("base",
 		InstallPackages("curl", "build-essential", "libpcre3-dev"),
 		Mkdir("/opt/src/", "root", 0755),

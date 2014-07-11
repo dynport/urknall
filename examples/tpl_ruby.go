@@ -1,36 +1,28 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/dynport/urknall"
 )
 
-// The Ruby package is used to provision ruby on a host.
+// Ruby compiles and installs ruby from source
 //
 // Ruby will be downloaded, extracted, configured, built, and installed to `/opt/ruby-{{ .Version }}`. If the `Bundle`
 // flag is set, bundler will be installed.
 type Ruby struct {
-	Version     string `urknall:"default=2.0.0-p247"`
-	WithBundler bool
-	Local       bool // install to /usr/local/bin
-}
-
-func (ruby *Ruby) PkgVersion() string {
-	return ruby.Version
-}
-
-func (ruby *Ruby) Name() string {
-	return "ruby"
+	Version string `urknall:"required=true"`
+	Local   bool   // install to /usr/local/bin
 }
 
 func (ruby *Ruby) Render(r urknall.Package) {
-	r.AddCommands("base",
+	r.AddCommands("packages",
 		InstallPackages(
 			"curl", "build-essential", "libyaml-dev", "libxml2-dev", "libxslt1-dev", "libreadline-dev", "libssl-dev", "zlib1g-dev",
 		),
-		DownloadAndExtract(ruby.downloadURL(), "/opt/src"),
+	)
+	r.AddCommands("download", DownloadAndExtract("{{ .Url }}", "/opt/src"))
+	r.AddCommands("build",
 		And(
 			"cd {{ .SourcePath }}",
 			"./configure --disable-install-doc --prefix={{ .InstallPath }}",
@@ -38,24 +30,23 @@ func (ruby *Ruby) Render(r urknall.Package) {
 			"make install",
 		),
 	)
-
-	if ruby.WithBundler {
-		r.AddCommands("bundler", Shell("{{ .InstallPath }}/bin/gem install bundler"))
-	}
 }
 
-func (ruby *Ruby) downloadURL() string {
-	majorVersion := strings.Join(strings.Split(ruby.Version, ".")[0:2], ".")
-	return fmt.Sprintf("http://ftp.ruby-lang.org/pub/ruby/%s/ruby-%s.tar.gz", majorVersion, ruby.Version)
+func (ruby *Ruby) Url() string {
+	return "http://ftp.ruby-lang.org/pub/ruby/{{ .MinorVersion }}/ruby-{{ .Version }}.tar.gz"
+}
+
+func (ruby *Ruby) MinorVersion() string {
+	return strings.Join(strings.Split(ruby.Version, ".")[0:2], ".")
 }
 
 func (ruby *Ruby) InstallPath() string {
 	if ruby.Local {
 		return "/usr/local"
 	}
-	return fmt.Sprintf("/opt/ruby-%s", ruby.Version)
+	return "/opt/ruby-{{ .Version }}"
 }
 
 func (ruby *Ruby) SourcePath() string {
-	return fmt.Sprintf("/opt/src/ruby-%s", ruby.Version)
+	return "/opt/src/ruby-{{ .Version }}"
 }
