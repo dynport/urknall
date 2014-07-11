@@ -4,7 +4,7 @@ urknall is a library written in go for the automated provisioning of servers.
 
 The primary use case for urknall is automated execution of commands on linux (ubuntu) hosts, either locally or via ssh.
 
-urknall does not require any extra software to be installed on the target host (except bash) and has no dependencies. It's designed to be used and shipped as a standalone binary (executable).
+urknall does not require any extra software to be installed on the target host (except bash) and has no dependencies. It's designed to be used and shipped as a custom-built standalone binary (executable).
 
 urknall __is not a framework__ but a library. There is no (and probably never will be) `urknall provision <my host>` binary. We are also keen on providing building blocks that simplify the life of developers and system operators rather than giving out blueprint-recipes for complex setups that will hardly ever fit their needs completely.
 
