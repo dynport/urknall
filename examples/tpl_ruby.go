@@ -24,8 +24,8 @@ func (ruby *Ruby) Render(r urknall.Package) {
 	r.AddCommands("download", DownloadAndExtract("{{ .Url }}", "/opt/src"))
 	r.AddCommands("build",
 		And(
-			"cd {{ .SourcePath }}",
-			"./configure --disable-install-doc --prefix={{ .InstallPath }}",
+			"cd {{ .SourceDir }}",
+			"./configure --disable-install-doc --prefix={{ .InstallDir }}",
 			"make",
 			"make install",
 		),
@@ -40,13 +40,16 @@ func (ruby *Ruby) MinorVersion() string {
 	return strings.Join(strings.Split(ruby.Version, ".")[0:2], ".")
 }
 
-func (ruby *Ruby) InstallPath() string {
+func (ruby *Ruby) InstallDir() string {
 	if ruby.Local {
 		return "/usr/local"
 	}
-	return "/opt/ruby-{{ .Version }}"
+	if ruby.Version == "" {
+		panic("Version must be set")
+	}
+	return "/opt/ruby-" + ruby.Version
 }
 
-func (ruby *Ruby) SourcePath() string {
+func (ruby *Ruby) SourceDir() string {
 	return "/opt/src/ruby-{{ .Version }}"
 }

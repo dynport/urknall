@@ -7,19 +7,27 @@ type RabbitMQ struct {
 }
 
 func (p *RabbitMQ) Render(r urknall.Package) {
-	r.AddCommands("base",
+	r.AddCommands("packages",
 		InstallPackages("erlang-nox", "erlang-reltool", "erlang-dev"),
-		Mkdir("/opt/src/", "root", 0755),
-		DownloadAndExtract(p.url(), "/opt/"),
-		Shell("cd {{ .InstallPath }} && ./sbin/rabbitmq-plugins enable rabbitmq_management"),
-		WriteFile("/etc/init/rabbitmq.conf", "env HOME=/root\nexec {{ .InstallPath }}/sbin/rabbitmq-server\n", "root", 0644),
+	)
+	r.AddCommands("download",
+		DownloadAndExtract("{{ .Url }}", "/opt/"),
+	)
+	r.AddCommands("enable_management",
+		Shell("cd {{ .InstallDir }} && ./sbin/rabbitmq-plugins enable rabbitmq_management"),
+	)
+	r.AddCommands("config",
+		WriteFile("/etc/init/rabbitmq.conf", "env HOME=/root\nexec {{ .InstallDir }}/sbin/rabbitmq-server\n", "root", 0644),
 	)
 }
 
-func (p *RabbitMQ) InstallPath() string {
-	return "/opt/rabbitmq_server-{{ .Version }}"
+func (p *RabbitMQ) InstallDir() string {
+	if p.Version == "" {
+		panic("Version must be set")
+	}
+	return "/opt/rabbitmq_server-" + p.Version
 }
 
-func (p *RabbitMQ) url() string {
+func (p *RabbitMQ) Url() string {
 	return "http://www.rabbitmq.com/releases/rabbitmq-server/v{{ .Version }}/rabbitmq-server-generic-unix-{{ .Version }}.tar.gz"
 }

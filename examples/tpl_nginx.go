@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/dynport/urknall"
-	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/utils"
 )
 
@@ -34,7 +33,7 @@ func (pkg *Nginx) Render(r urknall.Package) {
 		),
 		And(
 			"cd /opt/src/nginx-{{ .Version }}",
-			"./configure --with-http_ssl_module --with-http_gzip_static_module --with-http_stub_status_module --with-http_spdy_module --add-module=/tmp/nginx_syslog_patch --add-module=/opt/src/headers-more-nginx-module-{{ .HeadersMoreVersion }} --prefix={{ .InstallPath }}",
+			"./configure --with-http_ssl_module --with-http_gzip_static_module --with-http_stub_status_module --with-http_spdy_module --add-module=/tmp/nginx_syslog_patch --add-module=/opt/src/headers-more-nginx-module-{{ .HeadersMoreVersion }} --prefix={{ .InstallDir }}",
 			"make",
 			"make install",
 		),
@@ -42,19 +41,18 @@ func (pkg *Nginx) Render(r urknall.Package) {
 	)
 }
 
-func (pkg *Nginx) InstallPath() string {
+func (pkg *Nginx) InstallDir() string {
 	if pkg.Local {
 		return "/usr/local/nginx"
+	}
+	if pkg.Version == "" {
+		panic("Version must be set")
 	}
 	return "/opt/nginx-" + pkg.Version
 }
 
-func (pkg *Nginx) WriteConfigCommand(b []byte) cmd.Command {
-	return WriteFile(pkg.InstallPath()+"/conf/nginx.conf", string(b), "root", 0644)
-}
-
 func (pkg *Nginx) BinPath() string {
-	return pkg.InstallPath() + "/sbin/nginx"
+	return pkg.InstallDir() + "/sbin/nginx"
 }
 
 func (pkg *Nginx) ReloadCommand() string {
@@ -71,7 +69,7 @@ start on (filesystem and net-device-up IFACE=lo)
 stop on runlevel [!2345]
 {{ end }}
  
-env DAEMON={{ .InstallPath }}/sbin/nginx
+env DAEMON={{ .InstallDir }}/sbin/nginx
 env PID=/var/run/nginx.pid
  
 respawn

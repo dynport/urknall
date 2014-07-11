@@ -23,8 +23,8 @@ func (p *ElasticSearch) Render(r urknall.Package) {
 	r.AddCommands("user", AddUser("elasticsearch", true))
 	r.AddCommands("mkdir", Mkdir(p.DataPath, "elasticsearch", 0755))
 	r.AddCommands("config",
-		WriteFile("{{ .InstallPath }}/config/elasticsearch.yml", config, "root", 0644),
-		WriteFile("{{ .InstallPath }}/config/logging.yml", configLogger, "root", 0644),
+		WriteFile("{{ .InstallDir }}/config/elasticsearch.yml", config, "root", 0644),
+		WriteFile("{{ .InstallDir }}/config/logging.yml", configLogger, "root", 0644),
 		WriteFile("/etc/init/elasticsearch.conf", elasticSearchUpstart, "root", 0644),
 	)
 }
@@ -33,8 +33,11 @@ func (p *ElasticSearch) Url() string {
 	return "https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-{{ .Version }}.tar.gz"
 }
 
-func (p *ElasticSearch) InstallPath() string {
-	return "/opt/elasticsearch-{{ .Version }}"
+func (p *ElasticSearch) InstallDir() string {
+	if p.Version == "" {
+		panic("Version must be set")
+	}
+	return "/opt/elasticsearch-" + p.Version
 }
 
 const elasticSearchUpstart = `
@@ -44,7 +47,7 @@ pre-start script
 end script
 {{ end }}
 
-exec {{ .InstallPath }}/bin/elasticsearch -f
+exec {{ .InstallDir }}/bin/elasticsearch -f
 `
 
 const configLogger = `

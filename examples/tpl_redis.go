@@ -10,7 +10,10 @@ type Redis struct {
 	Autostart bool
 }
 
-func (p *Redis) InstallPath() string {
+func (p *Redis) InstallDir() string {
+	if p.Version == "" {
+		panic("Version must be set")
+	}
 	return "/opt/redis-" + p.Version
 }
 
@@ -22,12 +25,12 @@ func (p *Redis) Render(r urknall.Package) {
 		And(
 			"cd /opt/src/redis-{{ .Version }}",
 			"make",
-			"PREFIX={{ .InstallPath }} make install",
+			"PREFIX={{ .InstallDir }} make install",
 		),
 		Mkdir("/data/redis", "root", 0755),
 	)
 	r.AddTemplate("config", &RedisConfig{})
-	r.AddTemplate("upstart", &RedisUpstart{RedisDir: p.InstallPath(), Autostart: p.Autostart})
+	r.AddTemplate("upstart", &RedisUpstart{RedisDir: p.InstallDir(), Autostart: p.Autostart})
 }
 
 func (p *Redis) WriteConfig(config string) cmd.Command {
