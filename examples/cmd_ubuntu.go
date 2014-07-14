@@ -16,3 +16,13 @@ func InstallPackages(pkg string, pkgs ...string) *ShellCommand {
 		Command: fmt.Sprintf("DEBIAN_FRONTEND=noninteractive apt-get install -y %s %s", pkg, strings.Join(pkgs, " ")),
 	}
 }
+
+// PinPackage pins package via dpkg --set-selections
+func PinPackage(name string) *ShellCommand {
+	return Shell(fmt.Sprintf(`echo "%s hold" | dpkg --set-selections`, name))
+}
+
+// StartOrRestart starts or restarts a service configured with upstart
+func StartOrRestart(service string) *ShellCommand {
+	return Shell(fmt.Sprintf("if status %s | grep running; then reload %s ; else start %s; fi", service, service, service))
+}
