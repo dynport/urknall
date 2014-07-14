@@ -10,7 +10,7 @@ func WaitForFile(path string, timeout time.Duration) *ShellCommand {
 	t := 10 * timeout.Seconds()
 	cmd := fmt.Sprintf(
 		"x=0; while ((x<%d)) && [ ! -e %s ]; do x=\\$((x+1)); sleep .1; done && { ((x<%d)) || { echo \"file %s did not appear\" 1>&2 && exit 1; }; }",
-		t, path, t, path)
+		int64(t), path, int64(t), path)
 	return &ShellCommand{
 		Command: cmd,
 	}
@@ -21,7 +21,7 @@ func WaitForUnixSocket(path string, timeout time.Duration) *ShellCommand {
 	t := 10 * timeout.Seconds()
 	cmd := fmt.Sprintf(
 		"x=0; while ((x<%d)) && ! { netstat -lx | grep \"%s$\"; }; do x=\\$((x+1)); sleep .1; done && { ((x<%d)) || { echo \"socket %s did not appear\" 1>&2 && exit 1; }; }",
-		t, path, t, path)
+		int64(t), path, int64(t), path)
 	return &ShellCommand{
 		Command: cmd,
 	}
