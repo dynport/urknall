@@ -6,7 +6,7 @@ import (
 )
 
 type Nginx struct {
-	Version            string `urknall:"required=true"`
+	Version            string `urknall:"required=true"` // e.g. 1.4.7
 	HeadersMoreVersion string `urknall:"default=0.24"`
 	SyslogPatchVersion string `urknall:"default=1.3.14"`
 	Local              bool   // install to /usr/local/nginx

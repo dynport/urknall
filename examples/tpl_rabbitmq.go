@@ -3,7 +3,7 @@ package main
 import "github.com/dynport/urknall"
 
 type RabbitMQ struct {
-	Version string `urknall:"default=3.2.1"`
+	Version string `urknall:"required=true"` // e.g. 3.3.4
 }
 
 func (p *RabbitMQ) Render(r urknall.Package) {

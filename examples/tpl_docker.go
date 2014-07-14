@@ -3,7 +3,7 @@ package main
 import "github.com/dynport/urknall"
 
 type Docker struct {
-	Version string `urknall:"required=true"`
+	Version string `urknall:"required=true"` // e.g. 1.1.0
 }
 
 func (tpl *Docker) Render(p urknall.Package) {

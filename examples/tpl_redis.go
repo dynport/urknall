@@ -6,7 +6,7 @@ import (
 )
 
 type Redis struct {
-	Version   string `urknall:"default=2.8.3"`
+	Version   string `urknall:"required=true"` // e.g. 2.8.12
 	Autostart bool
 }
 

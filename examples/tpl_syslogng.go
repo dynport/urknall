@@ -49,7 +49,7 @@ exec syslog-ng -F
 `
 
 type SyslogNgReceiver struct {
-	Version  string `urknall:"default=3.5.1"`
+	Version  string `urknall:"required=true"` // e.g. 3.5.4.1
 	LogsRoot string `urknall:"default=/var/log/hourly"`
 	AmqpHost string
 }
@@ -65,7 +65,7 @@ func (p *SyslogNgReceiver) Render(r urknall.Package) {
 
 type SyslogNgSender struct {
 	Receiver string
-	Version  string `urknall:"default=3.5"`
+	Version  string `urknall:"required=true"` // e.g. 3.5.4.1
 }
 
 func (s *SyslogNgSender) Render(r urknall.Package) {

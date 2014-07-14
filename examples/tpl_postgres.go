@@ -3,7 +3,7 @@ package main
 import "github.com/dynport/urknall"
 
 type Postgres struct {
-	Version string `urknall:"default=9.3.3"`
+	Version string `urknall:"required=true"` // 9.3.4
 	DataDir string `urknall:"default=/data/postgres"`
 	User    string `urknall:"default=postgres"`
 
