@@ -93,42 +93,49 @@ The checksums of all commands that are executed for a task are written into a tr
 This is the "hello world" of urknall. This program can be either executed with `go run <file.go>` or compiled to a binary `go build -o ./urknall-test <file.go>`.
 
 
-	package main
+    package main
 
-	import (
-		"log"
-		"os"
+    import (
+      "log"
+      "os"
 
-		"github.com/dynport/urknall"
-		"github.com/dynport/urknall/packages"
-	)
+      "github.com/dynport/urknall"
+    )
 
-	func main() {
-		if e := provision(); e != nil {
-			log.Fatal(e)
-		}
-	}
+    func main() {
+      if e := provision(); e != nil {
+        log.Fatal(e)
+      }
+    }
 
-	func provision() error {
-		// setup logging to stdout
-		defer urknall.OpenLogger(os.Stdout).Close()
+    type command struct {
+      cmd string
+    }
 
-		// create a basic urknall.Template
-		// executes "echo hello world" as user ubuntu on the provided host
-		tpl := urknall.TemplateFunc(func(p urknall.Package) {
-			p.AddCommands("run", packages.Shell("echo hello world"))
-		})
+    func (c *command) Shell() string {
+      return c.cmd
+    }
 
-		// create provisioning target for provisioning via ssh with
-		// user=ubuntu
-		// host=172.16.223.142
-		// password=ubuntu
-		target, e := urknall.NewSshTargetWithPassword("ubuntu@172.16.223.142", "ubuntu")
-		if e != nil {
-			return e
-		}
-		return urknall.Run(target, tpl)
-	}
+    func provision() error {
+      // setup logging to stdout
+      defer urknall.OpenLogger(os.Stdout).Close()
+
+      // create a basic urknall.Template
+      // executes "echo hello world" as user ubuntu on the provided host
+      tpl := urknall.TemplateFunc(func(p urknall.Package) {
+        p.AddCommands("run", &command{cmd: "echo hello world"})
+      })
+
+      // create provisioning target for provisioning via ssh with
+      // user=ubuntu
+      // host=172.16.223.142
+      // password=ubuntu
+      target, e := urknall.NewSshTargetWithPassword("ubuntu@172.16.223.142", "ubuntu")
+      if e != nil {
+        return e
+      }
+      return urknall.Run(target, tpl)
+    }
 
 When compiled to a binary this program __does not need any runtime dependencies__ as go statically links all dependencies.
 
