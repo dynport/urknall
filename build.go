@@ -109,9 +109,13 @@ func (build *Build) buildTask(tsk *task, ct checksumTree) (e error) {
 		}
 	}
 
-	for _, cmd := range commands {
-		logMsg := cmd.Logging()
-		checksum, e := commandChecksum(cmd)
+	for _, command := range commands {
+		logMsg := command.Shell()
+		if logger, ok := command.(cmd.Logger); ok {
+			logMsg = logger.Logging()
+		}
+
+		checksum, e := commandChecksum(command)
 		if e != nil {
 			return e
 		}
@@ -134,7 +138,7 @@ func (build *Build) buildTask(tsk *task, ct checksumTree) (e error) {
 			m.Publish("executed")
 		} else {
 			m.Publish("started")
-			e = executeCommand(cmd, build, checksumDir)
+			e = executeCommand(command, build, checksumDir)
 			m.Error = e
 			m.ExecStatus = pubsub.StatusExecFinished
 			m.Publish("finished")

@@ -96,7 +96,10 @@ func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, w
 	defer wg.Done()
 
 	m := message("task.io", runner.build.hostname(), taskNameOfCommand(runner.command))
-	m.Message = runner.command.Logging()
+	m.Message = runner.command.Shell()
+	if logger, ok := runner.command.(cmd.Logger); ok {
+		m.Message = logger.Logging()
+	}
 	m.Stream = stream
 
 	scanner := bufio.NewScanner(r)

@@ -4,8 +4,7 @@ package urknall
 // commands available in the templates provided by the urknall binary. It's
 // also possible to write your own commands, of course.
 type Command interface {
-	Shell() string   // Used for executing the action in a shell (locally or via ssh).
-	Logging() string // Get string used for logging.
+	Shell() string // Used for executing the action in a shell (locally or via ssh).
 }
 
 type renderer interface {
