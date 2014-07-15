@@ -38,7 +38,7 @@ func (init *base) writeAsset(name string) error {
 			return e
 		}
 	}
-	b, e := readAsset(name)
+	b, e := []byte{}, nil
 	if e != nil {
 		return fmt.Errorf("unable to read asset %s: %s", name, e.Error())
 	}

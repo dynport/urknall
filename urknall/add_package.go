@@ -1,16 +1,18 @@
 package main
 
-import (
-	"fmt"
-	"strings"
-)
+import "fmt"
 
 type AddPackage struct {
-	base
+	*base
 	Names []string `cli:"arg required"`
 }
 
 func (a *AddPackage) Run() error {
+	var e error
+	a.base, e = loadBase()
+	if e != nil {
+		return e
+	}
 	all := allPackages()
 	notExisting := []string{}
 	for _, name := range a.Names {
@@ -31,12 +33,5 @@ func (a *AddPackage) Run() error {
 }
 
 func allPackages() packages {
-	m := packages{}
-	for _, file := range assetNames() {
-		if strings.HasPrefix(file, "pkg_") {
-			name := strings.TrimSuffix(strings.TrimPrefix(file, "pkg_"), ".go")
-			m[name] = struct{}{}
-		}
-	}
-	return m
+	return packages{}
 }
