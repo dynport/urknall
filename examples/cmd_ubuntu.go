@@ -24,5 +24,5 @@ func PinPackage(name string) *ShellCommand {
 
 // StartOrRestart starts or restarts a service configured with upstart
 func StartOrRestart(service string) *ShellCommand {
-	return Shell(fmt.Sprintf("if status %s | grep running; then reload %s ; else start %s; fi", service, service, service))
+	return Shell(fmt.Sprintf("if status %s | grep running; then restart %s ; else start %s; fi", service, service, service))
 }
