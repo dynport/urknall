@@ -138,7 +138,7 @@ func (build *Build) buildTask(tsk *task, ct checksumTree) (e error) {
 			m.Publish("executed")
 		} else {
 			m.Publish("started")
-			e = executeCommand(command, build, checksumDir)
+			e = executeCommand(command, build, checksumDir, tsk.name)
 			m.Error = e
 			m.ExecStatus = pubsub.StatusExecFinished
 			m.Publish("finished")

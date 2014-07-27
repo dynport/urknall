@@ -12,10 +12,11 @@ import (
 )
 
 type remoteTaskRunner struct {
-	build   *Build
-	cmd     string
-	dir     string
-	command cmd.Command
+	build    *Build
+	cmd      string
+	dir      string
+	command  cmd.Command
+	taskName string
 
 	started time.Time
 }
@@ -95,7 +96,7 @@ func logError(e error) {
 func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, wg *sync.WaitGroup, r io.Reader) {
 	defer wg.Done()
 
-	m := message("task.io", runner.build.hostname(), taskNameOfCommand(runner.command))
+	m := message("task.io", runner.build.hostname(), runner.taskName)
 	m.Message = runner.command.Shell()
 	if logger, ok := runner.command.(cmd.Logger); ok {
 		m.Message = logger.Logging()
