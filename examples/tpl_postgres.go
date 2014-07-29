@@ -28,9 +28,13 @@ func (pkg *Postgres) Render(r urknall.Package) {
 		WriteFile("/etc/init/postgres.conf", postgresUpstart, "root", 0644),
 	)
 	if pkg.InitDb {
+		user := pkg.User
+		if user == "" {
+			user = "postgres"
+		}
 		r.AddCommands("init_db",
 			Mkdir(pkg.DataDir, "{{ .User }}", 0755),
-			AsUser("{{ .User }}", "{{ .InstallDir }}/bin/initdb -D {{ .DataDir }} -E utf8 --auth-local=trust"),
+			AsUser(user, "{{ .InstallDir }}/bin/initdb -D {{ .DataDir }} -E utf8 --auth-local=trust"),
 		)
 	}
 }
