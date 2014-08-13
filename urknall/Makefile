@@ -1,8 +1,5 @@
-.PHONY: assets
+.PHONY: build
 
-build: assets
+build:
 	go get ./...
 
-assets:
-	rm -f assets.go packages/*.test
-	goassets packages

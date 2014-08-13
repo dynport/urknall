@@ -2,16 +2,16 @@
 
 ASSETS      := $(shell find urknall/packages -type f)
 
-EXTRA_DEPS  := github.com/dynport/dgtk/goassets github.com/smartystreets/goconvey github.com/jacobsa/oglematchers
+EXTRA_DEPS  := github.com/smartystreets/goconvey github.com/jacobsa/oglematchers
 DEPS        := $(shell go list ./... | xargs go list -f '{{join .Deps "\n"}}' | grep -e "$github.com\|code.google.com\|launchpad.net" | sort | uniq | grep -v "github.com/dynport/urknall")
 IGN_PKGS    := github.com/dynport/urknall/urknall/packages github.com/dynport/urknall/example
 ALL_PKGS    := $(shell go list ./...)
 PACKAGES    := $(filter-out $(IGN_PKGS),$(ALL_PKGS))
 
-${GOPATH}/bin/urknall: urknall/assets.go urknall/*.go
+${GOPATH}/bin/urknall: urknall/*.go
 	@go install github.com/dynport/urknall/urknall
 
-install: deps urknall/assets.go vet test
+install: deps vet test
 	go install github.com/dynport/urknall/urknall
 
 deps:
@@ -25,8 +25,4 @@ test:
 
 vet:
 	@go vet $(PACKAGES)
-
-urknall/assets.go: $(ASSETS)
-	@rm -f $@
-	@cd urknall && goassets packages > /dev/null 2>&1
 
