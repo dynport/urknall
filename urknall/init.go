@@ -14,7 +14,7 @@ import (
 	"github.com/dynport/dgtk/github"
 )
 
-type Init struct {
+type initProject struct {
 	Dir string `cli:"arg required"`
 }
 
@@ -92,7 +92,7 @@ func exampleFiles() ([]*content, error) {
 	return contents, e
 }
 
-func (init *Init) Run() error {
+func (init *initProject) Run() error {
 	dir, e := filepath.Abs(init.Dir)
 	if e != nil {
 		return e
