@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/dynport/dgtk/pubsub"
-	"github.com/dynport/gocli"
 )
 
 const (
@@ -56,7 +55,7 @@ func (logger *logger) formatCommandOuput(message *Message) string {
 	prefix := fmt.Sprintf("[%s][%s][%s]", formatIp(message.Hostname), formatRunlistName(message.RunlistName, 12), formatDuration(logger.sinceStarted()))
 	line := message.Line
 	if message.IsStderr() {
-		line = gocli.Red(line)
+		line = colorize(1, line)
 	}
 	return prefix + " " + line
 }
@@ -113,7 +112,7 @@ func (logger *logger) DefaultFormatter(message *Message) string {
 	}
 	execStatus := fmt.Sprintf("%-8s", message.ExecStatus)
 	if color := colorMapping[message.ExecStatus]; color > 0 {
-		execStatus = gocli.Colorize(color, execStatus)
+		execStatus = colorize(color, execStatus)
 	}
 	parts := []string{
 		fmt.Sprintf("[%s][%s][%s][%s]%s",
@@ -167,4 +166,8 @@ func (logger *logger) Close() (e error) {
 		return IgnoredMessagesError
 	}
 	return e
+}
+
+func colorize(c int, s string) string {
+	return fmt.Sprintf("\033[38;5;%dm%s\033[0m", c, s)
 }
