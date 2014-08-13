@@ -1,10 +1,8 @@
-.PHONY: install deps test vet
-
-ASSETS      := $(shell find urknall/packages -type f)
+.PHONY: clean install deps test vet
 
 EXTRA_DEPS  := github.com/smartystreets/goconvey github.com/jacobsa/oglematchers
 DEPS        := $(shell go list ./... | xargs go list -f '{{join .Deps "\n"}}' | grep -e "$github.com\|code.google.com\|launchpad.net" | sort | uniq | grep -v "github.com/dynport/urknall")
-IGN_PKGS    := github.com/dynport/urknall/urknall/packages github.com/dynport/urknall/example
+IGN_PKGS    := github.com/dynport/urknall/example
 ALL_PKGS    := $(shell go list ./...)
 PACKAGES    := $(filter-out $(IGN_PKGS),$(ALL_PKGS))
 
@@ -26,3 +24,5 @@ test:
 vet:
 	@go vet $(PACKAGES)
 
+clean:
+	rm -f ${GOPATH}/bin/urknall
