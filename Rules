@@ -13,31 +13,38 @@
 #   item, use the pattern “/about/*/”; “/about/*” will also select the parent,
 #   because “*” matches zero or more characters.
 
+compile '/static/*' do
+end
+
 compile '*' do
-  if item[:extension] == 'md'
-    filter :kramdown
-    layout 'default'
-  elsif item[:extension] == 'css'
-    # don’t filter stylesheets
-  elsif item.binary?
-    # don’t filter binary items
-  else
-    filter :erb
-    layout 'default'
-  end
+	if item[:extension] == 'md'
+		filter :kramdown
+		layout item[:layout] || 'default'
+	elsif item[:extension] == 'css'
+		# don’t filter stylesheets
+	elsif item.binary?
+		# don’t filter binary items
+	else
+		filter :erb
+		layout item[:layout] || 'default'
+	end
+end
+
+route '/static/*' do
+	item.identifier[7..-2]
 end
 
 route '*' do
-  if item[:extension] == 'css'
-    # Write item with identifier /foo/ to /foo.css
-    item.identifier.chop + '.css'
-  elsif item.binary?
-    # Write item with identifier /foo/ to /foo.ext
-    item.identifier.chop + '.' + item[:extension]
-  else
-    # Write item with identifier /foo/ to /foo/index.html
-    item.identifier + 'index.html'
-  end
+	if item[:extension] == 'css'
+		# Write item with identifier /foo/ to /foo.css
+		item.identifier.chop + '.css'
+	elsif item.binary?
+		# Write item with identifier /foo/ to /foo.ext
+		item.identifier.chop + '.' + item[:extension]
+	else
+		# Write item with identifier /foo/ to /foo/index.html
+		item.identifier + 'index.html'
+	end
 end
 
 layout '*', :erb
