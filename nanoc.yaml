@@ -62,6 +62,10 @@ data_sources:
     # UTF-8 (which they should be!), change this.
     encoding: utf-8
 
+  -
+   type: static
+   items_root: /static
+
 # Configuration for the “check” command, which run unit tests on the site.
 checks:
   # Configuration for the “internal_links” checker, which checks whether all
