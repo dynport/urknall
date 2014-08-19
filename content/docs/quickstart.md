@@ -6,44 +6,51 @@ layout: default
 # Getting Started
 {:.no_toc}
 
-This guide will help you to create a basic provisioning tool (for a simple
-example application) and show you the nuts and bolts of urknall.
+This guide will help you to create a basic provisioning tool to deploy this
+documentation into a fresh host, thereby showing you the nuts and bolts of
+urknall.
 
 * TOC
 {:toc}
 
+
 ## Requirements
 
+To reproduce the steps of this quickstart guide the following requirements must
+be met. First and foremost you need [go](http://www.golang.org) installed and
+configured properly. The documentation provided with
+[go](http://www.golang.org) is excellent and especially the [tour of
+go](http://tour.golang.org/#1) is helpful if you don't have any experience with
+go yet.
 
-For testing the tools a target to be built needs to be available. A virtual
-machine running Ubuntu 14.04 (that's what this guide is built against) is
-sufficient.
-
-Such a VM could be built using VirtualBox or VMWare. Take into account the
-following points to prevent problems:
-
-* Make sure you know the username and password of a user on the box. If this
-  user is not `root` he must be allowed to run commands using `sudo` without
-  being asked for a password (see [this section](#sudo-without-password)).
-* There must be an SSH server running and accessible from your host. Remember
-  the IP address assigned.
-
-It is required that you have the [go](http://www.golang.org) environment
-installed and configured on your machine. An introduction to _go_ is out of
-scope for this guide. See the linked page's Tour to _go_.
-
-Urknall must be installed first. This can be done using
+When go is up and running you need to install urknall itself. Installation is
+as easy as running the following command.
 
 	go get github.com/dynport/urknall/urknall
 
-Just make sure that the urknall binary `urknall` is located in your `PATH`
-environment variable. It can be found in `$GOPATH/bin/`.
+This will download the source to `$GOPATH/src/github.com/dynport/urknall` and
+install the [urknall binary](/binary) to `$GOPATH/bin` (which should be in your
+`$PATH` environment for best experience).
+
+The example built here is best provisioned into a fresh Ubuntu Trusty 14.04
+based machine. Creating a local virtual machine (using something like
+[VirtualBox](https://www.virtualbox.org) or [VMWare](http://www.vmware.com)) is
+the best option for testing. But using a cloud instance (like from Amazon's
+AWS, JiffyBox, etc.) or even bare metal is possbile, too.
+
+The target machine must provide the following features:
+
+* The machine must be accesible via SSH, i.e. the SSH server must be running
+  and you must know the IP of the machine.
+* You must know the username (and if required the password) of a user on the
+  machine. If this user is not `root` he must be allowed to run commands using
+  `sudo` without being asked for a password, as described in the next section.
 
 
 ## Sudo Without Password
 
-Urknall must be able to execute a lot of commands like installing packages or
-creating users, which require `root` permissions. If you're not provisioning
+Urknall must be able to execute commands like installing packages or creating
+users, which require `root` permissions. If you're not provisioning
 using the `root` user the `sudo` mechanism is required. As manual entry of
 passwords is tedious it is required that the user is allowed sudo without
 password. This can be achieved by adding the following setting (make sure you
@@ -51,21 +58,25 @@ change the username from 'ubuntu' to whatever suits you):
 
 	echo "ubuntu ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/90-nopassword
 
-Now verify that there is no password required on running commands with `sudo`.
+Now you should verify that there is no password required on running commands
+with `sudo`.
 
 
 ## Creating The Basic Project
 
-The urknall binary helps with creating the basic structure of a provisioning
-project. This can be done using the `init` command of `urknall`
+Urknall comes in two parts: a library and a binary. While the library provides
+the actual mechanisms for provisioning the binary helps with setting up and
+managing urknall based projects. Especially the template mechanism is based on
+this tool.
+
+The basic structure of an urknall provisioning tool can be created using the
+`init` command of `urknall`:
 
 	urknall init $GOPATH/src/github.com/dynport/example
 
 Make sure to replace `dynport` with your github's username. While this is not
-that essential for this guide it's good style regarding _go_ applications.
-
-This will create a set of initial files. That should be best added to a git
-repository.
+essential for this guide it's good style regarding _go_ applications. A set of
+initial files will be created, that should be added to a git repository.
 
 	git init . && git add . && git commit -m "initial commit"
 
@@ -77,15 +88,16 @@ use them.
 
 Now lets inspect the files that were added by the urknall binary.
 
-* `main.go`: This is the main binary that initializes, configures and runs
-             urknall.
-* `cmd_*.go`: These are the command definitions. Urknall uses the `command`
-              abstraction to run model different commands types.
+* `cmd_*.go`: These are the [command](/docs/glossary/#command) definitions. As
+			  they are part of your project you're free to change them to your
+			  needs.
 
-Let's have closer look at the `main.go` file first and modify the relevant bits
-to make the example work.
+The `main.go` file contains the `main` function executed initially. The code in
+the `run` function initializes urknall, configures the target to be provisioned
+and finally builds this target:
 
-<pre><code class="language-golang">func run() error {
+~~~ golang
+func run() error {
   defer urknall.OpenLogger(os.Stdout).Close()
   var target urknall.Target
   var e error
@@ -100,35 +112,37 @@ to make the example work.
     return e
   }
   return urknall.Run(target, &Template{})
-}</code></pre>
+}
+~~~
 
-The following steps are performed:
+First urknall's logger is configured to use standard output for logging. The
+creation and immediate closing of the logger inside the `defer` statement might
+seem awkward first, but allows for a pretty concise formulation of the problem.
 
-* First urknall's logger is configured to use standard output for logging. The
-  creation and immediate closing of the logger inside the `defer` statement
-  might seem awkward first, but allows for a pretty concise formulation of the
-  problem.
-* Next the target is configured. Make sure to enter the proper value for `uri`
-  and `password`. If no password is specified urknall will try to use
-  public-key based login, which is the recommended way of handling login, as no
-  password must be stored and communicated.
-* The last step is calling urknall's `Run` function, that will render the given
-  template `Template` (described next) to the target we built in the previous
-  step.
+Next the target is configured using the `urknall.NewSshTarget` or
+`urknall.NewSshTargetWithPassword` respectively if public-key authentication is
+not usable.  Make sure you add the proper values for `uri` consisting of the
+username and IP address of the machine you use for this quickstart guide. Also
+set the `password` if required.
 
-The specification of the actions to perform on the target are described in a
-template. The following template will just `echo` the `hello world` string.
+The last line does two things. First a [template](/docs/glossary/#template) is
+instantiated and given to urknall's `Run` function, which will render it to the
+target built in the previous step. The template is the specification of the
+actions to perform on the target. The example template will just `echo` the
+`hello world` string.
 
-<pre><code class="language-golang">type Template struct {
+~~~ golang
+type Template struct {
 }
 
 func (tpl *Template) Render(p urknall.Package) {
   p.AddCommands("hello", Shell("echo hello world"))
-}</code></pre>
+}
+~~~
 
 Every template must implement the `Renderer` interface. The `Render` method
 implemented is given a package that commands are added to. This is where the
-commands from all the `cmd_*.go` file come into play. For a detailed
+commands from all the `cmd_*.go` files come into play. For a detailed
 introduction of the commands see the [binary's documentation](/docs/binary).
 
 After changing the `uri` and `password` variables' value you can compile and
@@ -148,7 +162,7 @@ Now try to run the binary a second time. Notice the difference in the output:
 	[ubuntu@192.168.56.10:22][hello       ][  0.257][CACHED  ][COMMAND] # echo hello world
 
 This shows the caching mechanism in effect. As the command was already executed
-and neither itself or noen of its predecessors (there actually are none as it
+and neither itself or none of its predecessors (there actually are none as it
 is the only command there) changed nothing had to be done. Next have look into
 the possibilities of extending the basic template.
 
@@ -158,17 +172,23 @@ the possibilities of extending the basic template.
 The basic template just renders a single `echo` command to the target. Let's go
 and build something more meaningful. As an example we will deploy nginx hosting
 the [nanoc documentation](http://nanoc.ws/docs/). This will require the
-installation of nginx and ruby.
+installation of nginx and ruby. Finally the documentation repository must be
+cloned, built and nginx be configured to serve the static pages generated.
+
+_TODO_: Actually the example should deploy the urknall documentation to the
+host, but this requires the repository to be public first.
 
 
 ### Installing Templates
 
-First we need some templates for ruby and nginx. urknall provides a basic set
-of templates. Using the `urknall templates list` command the available
-templates are list. Please note this list is assembled using the content of the
-`examples` folder of the [github repository](https://github.com/dynport/urknall/tree/master/examples).
+First we need some templates for ruby and nginx. Urknall provides a basic set
+of templates, that can be listed and installed using the urknall binary. Please
+note are taken from the `examples` folder of urknall's
+[github repository](https://github.com/dynport/urknall/tree/master/examples),
+so a network connection is required!
 
-This is the currently available list of templates:
+The `urknall templates list` command lists the available templates, and those
+are the templates available at the time of the writing of this guide:
 
 ~~~ bash
 $ urknall templates list
@@ -190,22 +210,26 @@ available packages:
 * system
 ~~~
 
-Luckily there are templates for the required packages, so we just need to add
+Luckily there are templates for the packages we require, so we just need to add
 those to get at least something. The `urknall template add` can be used to
 download and add templates:
 
 ~~~ bash
-$ urknall templ add nginx ruby
+$ urknall templates add nginx ruby
 loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/tpl_nginx.go?ref=master"
 loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/tpl_ruby.go?ref=master"
 ~~~
 
 Now there are two files `tpl_nginx.go` and `tpl_ruby.go` that can be used as
-blueprint for our requirements. You should use a version control system like
+rough sketch for our requirements. You should use a version control system like
 [git](http://git-scm.org) and add and commit these templates. This way changes
-to the upstream templates can be easily verified by again loading the template
-and reviewing the changes to the local version. Now lets inspect the loaded
-files and get a grip on the template mechanism.
+to the upstream templates can be easily verified by loading the template again
+and diff to the local version. As these templates reside locally in your
+repository you have maximum flexibility, as you can easily modify them to suite
+your needs.
+
+For our little project here no modifications are required, so lets inspect the
+downloaded files and get a grip on the template mechanism.
 
 
 ### Inspecting Installed Templates
