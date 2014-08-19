@@ -1,5 +1,5 @@
 ---
-title: Urknall Library
+title: Library
 ---
 
 # Urknall Library

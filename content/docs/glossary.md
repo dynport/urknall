@@ -1,5 +1,5 @@
 ---
-title: Urknall Glossary
+title: Glossary
 layout: default
 ---
 

@@ -1,5 +1,5 @@
 ---
-title: Urknall Binary
+title: Binary
 ---
 
 # Urknall Binary
