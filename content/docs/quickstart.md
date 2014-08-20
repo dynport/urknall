@@ -298,22 +298,26 @@ type Template struct {
 }
 ~~~
 
-Next the template's `Render` method is modified to add the
-templates. Additionally some additional commands are added to make sure that
-the system's package cache is updated and the installed packages are upgraded
-at least once a day (whenever the provisioning tool is called). This
-demonstrates how the `Packages.AddCommands` method can be used.
+Next the template's `Render` method is modified to add the templates.
+Additionally a command is added to make sure that the system's package
+cache is updated and the installed packages are upgraded. This prevents errors
+when installing packages fails as the package cache is outdated.
 
 ~~~ golang
-	timeString := time.Now().UTC().Format("2006-01-02")
-	p.AddCommands("base", Shell("# "+timeString), UpdatePackages())
+	p.AddCommands("pkg-update", UpdatePackages())
 
 	p.AddTemplate("ruby", &Ruby{Version: tpl.RubyVersion})
 	p.AddTemplate("nginx", &Nginx{Version: tpl.NginxVersion})
 ~~~
 
-Additionally the ruby version must be given when instantiating the root
-template, as it is set as required in the annotations.
+The `AddCommands` and `AddTemplate` are given a string first, that is used to
+generate identifiers for the different tasks and used internally to do
+bookkeeping on which commands have already been executed. For a deep hierarchy
+the segments given with each call to `AddTemplate` are concatenated using a
+".".
+
+The last thing to do is specifying the ruby version, that must be given when
+instantiating the root template, as it is set as required in the annotations.
 
 ~~~ golang
 func run() error {
