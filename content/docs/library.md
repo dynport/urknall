@@ -25,3 +25,19 @@ support for remote execution using SSH and running commands locally.
 ## Tasks
 
 
+## Sudo Without Password
+
+Urknall must be able to execute commands like installing packages or creating
+users, which require `root` permissions. If you're not provisioning
+using the `root` user the `sudo` mechanism is required. As manual entry of
+passwords is tedious it is required that the user is allowed sudo without
+password. This can be achieved by adding the following setting (make sure you
+change the username from 'ubuntu' to whatever suits you):
+
+	echo "ubuntu ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/90-nopassword
+
+Now you should verify that there is no password required on running commands
+with `sudo`.
+
+
+

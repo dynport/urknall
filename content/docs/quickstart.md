@@ -17,11 +17,10 @@ urknall.
 ## Requirements
 
 To reproduce the steps of this quickstart guide the following requirements must
-be met. First and foremost you need [go](http://www.golang.org) installed and
-configured properly. The documentation provided with
-[go](http://www.golang.org) is excellent and especially the [tour of
-go](http://tour.golang.org/#1) is helpful if you don't have any experience with
-go yet.
+be met. First and foremost [go](http://www.golang.org) must be installed and
+configured properly. See the documentation provided for details on how to do
+that. If you don't have any experience with the go language itselff, then the
+[tour of go](http://tour.golang.org/#1) is quite helpful.
 
 When go is up and running you need to install urknall itself. Installation is
 as easy as running the following command.
@@ -30,71 +29,66 @@ as easy as running the following command.
 
 This will download the source to `$GOPATH/src/github.com/dynport/urknall` and
 install the [urknall binary](/binary) to `$GOPATH/bin` (which should be in your
-`$PATH` environment for best experience).
+`$PATH` environment for best experience) and [urknall library](/library) to the
+subtree in `$GOPATH/pkg`.
 
-The example built here is best provisioned into a fresh Ubuntu Trusty 14.04
-based machine. Creating a local virtual machine (using something like
+This quickstart guide will work with an example that needs to be provisioned. A
+fresh Ubuntu Trusty 14.04 based machine should be used to repeat the steps.
+Creating a local virtual machine (using something like
 [VirtualBox](https://www.virtualbox.org) or [VMWare](http://www.vmware.com)) is
 the best option for testing. But using a cloud instance (like from Amazon's
-AWS, JiffyBox, etc.) or even bare metal is possbile, too.
+AWS, JiffyBox, etc.) or even bare metal is possible, too. The only requirements
+to the target machine are the following:
 
-The target machine must provide the following features:
-
-* The machine must be accesible via SSH, i.e. the SSH server must be running
+* The machine must be accessible via SSH, i.e. the SSH server must be running
   and you must know the IP of the machine.
 * You must know the username (and if required the password) of a user on the
   machine. If this user is not `root` he must be allowed to run commands using
-  `sudo` without being asked for a password, as described in the next section.
-
-
-## Sudo Without Password
-
-Urknall must be able to execute commands like installing packages or creating
-users, which require `root` permissions. If you're not provisioning
-using the `root` user the `sudo` mechanism is required. As manual entry of
-passwords is tedious it is required that the user is allowed sudo without
-password. This can be achieved by adding the following setting (make sure you
-change the username from 'ubuntu' to whatever suits you):
-
-	echo "ubuntu ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/90-nopassword
-
-Now you should verify that there is no password required on running commands
-with `sudo`.
+  `sudo` without being asked for a password, as described in [here](/docs/library/#sudo_without_password).
 
 
 ## Creating The Basic Project
 
-Urknall comes in two parts: a library and a binary. While the library provides
-the actual mechanisms for provisioning the binary helps with setting up and
-managing urknall based projects. Especially the template mechanism is based on
-this tool.
+Urknall comes in two parts: a library and a binary. The _library_ provides the
+actual mechanisms for provisioning, like creating a connection to the remote
+machine, handling the cache that decides which commands must be executed and
+executing them.
 
-The basic structure of an urknall provisioning tool can be created using the
-`init` command of `urknall`:
+The _binary_ can be used to create a basic structure of an urknall provisioning
+tool in a given directory using the `init` command:
 
-	urknall init $GOPATH/src/github.com/dynport/example
+	urknall init example
 
-Make sure to replace `dynport` with your github's username. While this is not
-essential for this guide it's good style regarding _go_ applications. A set of
-initial files will be created, that should be added to a git repository.
+While not strictly necessary for this simple example you should consider to
+stick with go's convention to create source in a directory like
+`$GOPATH/src/github.com/<username>/<project>` where `<username>` is your
+username on github and `<project>` the name of the project you created. This
+will simplify sharing and installing the sources using the go tooling (like `go
+get` or `goimports`).
 
-	git init . && git add . && git commit -m "initial commit"
+The `urknall init` command creates a lot of files that should be explained
+next. The `main.go` will be explained in greater detail below. The `cmd_*.go`
+files contain [command](/docs/glossary/#command) definitions. These are
+abstractions that allow to specify commands that should be executed on the
+remote machine.
 
-In the next section we will have a look what files were generated and how to
-use them.
+~~~ golang
+Shell("echo -n hello && echo world")
+WriteFile("/tmp/foo", "some content", "root", 0644)
+~~~
 
+The first example show a simple shell command, that will be executed directly
+on the machine. The second example is much more elaborate, as it will be
+expanded into a series of commands that will create a file `/tmp/foo`
+containing the line `some content` with owner set to `root` and permissions set
+to `0644`. This mechanism has the benefit that code is better readable, the
+compiler can support with types and internally logging can be modified to be
+more specific on what a series of commands actually does.
 
-## The Urknall Basic Project And How To Run It
-
-Now lets inspect the files that were added by the urknall binary.
-
-* `cmd_*.go`: These are the [command](/docs/glossary/#command) definitions. As
-			  they are part of your project you're free to change them to your
-			  needs.
-
-The `main.go` file contains the `main` function executed initially. The code in
-the `run` function initializes urknall, configures the target to be provisioned
-and finally builds this target:
+The `main.go` file contains the `main` function executed initially. The
+relevant part of code for this quickstart guide is in the `run` function, that
+initializes urknall, configures the target to be provisioned and finally does
+the actual build.
 
 ~~~ golang
 func run() error {
@@ -121,15 +115,15 @@ seem awkward first, but allows for a pretty concise formulation of the problem.
 
 Next the target is configured using the `urknall.NewSshTarget` or
 `urknall.NewSshTargetWithPassword` respectively if public-key authentication is
-not usable.  Make sure you add the proper values for `uri` consisting of the
+not usable. Make sure you add the proper values for `uri` consisting of the
 username and IP address of the machine you use for this quickstart guide. Also
 set the `password` if required.
 
-The last line does two things. First a [template](/docs/glossary/#template) is
+The last line does two things. A [template](/docs/glossary/#template) is
 instantiated and given to urknall's `Run` function, which will render it to the
 target built in the previous step. The template is the specification of the
 actions to perform on the target. The example template will just `echo` the
-`hello world` string.
+famous `hello world` string.
 
 ~~~ golang
 type Template struct {
@@ -145,50 +139,66 @@ implemented is given a package that commands are added to. This is where the
 commands from all the `cmd_*.go` files come into play. For a detailed
 introduction of the commands see the [binary's documentation](/docs/binary).
 
-After changing the `uri` and `password` variables' value you can compile and
-run the example:
 
-	go get . && example
+## Running The Basic Example
 
-The output should look something like this:
+After changing the `uri` and `password` variables' value the example can be
+compiled and run.
 
-	[ubuntu@192.168.56.10:22][hello       ][  0.600][EXEC    ][COMMAND] # echo hello world
-	[ubuntu@192.168.56.10:22][hello       ][  0.610] + echo hello world
-	[ubuntu@192.168.56.10:22][hello       ][  0.610] hello world
-	[ubuntu@192.168.56.10:22][hello       ][  0.621][FINISHED][COMMAND] # echo hello world
+~~~ bash
+$ go get . && example
+[ubuntu@192.168.56.10:22][hello       ][  0.600][EXEC    ][COMMAND] # echo hello world
+[ubuntu@192.168.56.10:22][hello       ][  0.610] + echo hello world
+[ubuntu@192.168.56.10:22][hello       ][  0.610] hello world
+[ubuntu@192.168.56.10:22][hello       ][  0.621][FINISHED][COMMAND] # echo hello world
+~~~
 
-Now try to run the binary a second time. Notice the difference in the output:
+The output shows the command run, the single steps (like in the using the `-x`
+flag on `bash`) and a line when the command was finished. This way the exact
+runtime can be seen and all intermediate steps a more complicated command may
+take. If the example is run a second time the output changes:
 
-	[ubuntu@192.168.56.10:22][hello       ][  0.257][CACHED  ][COMMAND] # echo hello world
+~~~ bash
+$ go get . && example
+[ubuntu@192.168.56.10:22][hello       ][  0.257][CACHED  ][COMMAND] # echo hello world
+~~~
 
-This shows the caching mechanism in effect. As the command was already executed
-and neither itself or none of its predecessors (there actually are none as it
-is the only command there) changed nothing had to be done. Next have look into
-the possibilities of extending the basic template.
+This shows the caching mechanism in effect (notice the "CACHED" mark in the
+fourth field). As the command was already executed and neither itself nor one
+of its (non existing as it is the only command) predecessors changed nothing
+had to be done. The next section will show the possibilities of extending the
+basic template.
 
 
 ## Extending The Basic Project
 
-The basic template just renders a single `echo` command to the target. Let's go
-and build something more meaningful. As an example we will deploy nginx hosting
-the [nanoc documentation](http://nanoc.ws/docs/). This will require the
-installation of nginx and ruby. Finally the documentation repository must be
-cloned, built and nginx be configured to serve the static pages generated.
+The basic template just renders a single `echo` command to the target. To do
+something more meaningful the basic example should be extended to provision a
+host that serves the [nanoc documentation](http://nanoc.ws/docs/). This
+requires the installation of nginx and ruby. Finally the documentation's
+repository must be cloned, the static pages be built and nginx be configured to
+serve them.
 
 _TODO_: Actually the example should deploy the urknall documentation to the
 host, but this requires the repository to be public first.
 
 
-### Installing Templates
+### The Templating System
 
-First we need some templates for ruby and nginx. Urknall provides a basic set
-of templates, that can be listed and installed using the urknall binary. Please
-note are taken from the `examples` folder of urknall's
+For the intended setup _ruby_ and _nginx_ must be installed. While it would be
+possible to extend the basic template, this would result in one large template,
+that would be hard to read and wouldn't be reusable. Therefore templates can be
+added to templates to form hierarchies. Additionally urknall has a mechanism to
+retrieve basic templates. These templates might not be exactly what you
+require, but could be a good point to start from, i.e. help you to take the
+first steps to solve the problem. For a detailed discussion see the
+[binary's documentation](/docs/binary#template_management).
+
+The `urknall templates list` command lists the available templates. These are
+retrieved from urknall's
 [github repository](https://github.com/dynport/urknall/tree/master/examples),
-so a network connection is required!
-
-The `urknall templates list` command lists the available templates, and those
-are the templates available at the time of the writing of this guide:
+so a network connection is required! At the time when this guide was written
+the following templates were available:
 
 ~~~ bash
 $ urknall templates list
@@ -210,9 +220,9 @@ available packages:
 * system
 ~~~
 
-Luckily there are templates for the packages we require, so we just need to add
-those to get at least something. The `urknall template add` can be used to
-download and add templates:
+For the software required there are templates available, so it is sufficient to
+add those.  The `templates add` command of the `urknall` binary can be used to
+download and add a list of templates:
 
 ~~~ bash
 $ urknall templates add nginx ruby
@@ -224,38 +234,36 @@ Now there are two files `tpl_nginx.go` and `tpl_ruby.go` that can be used as
 rough sketch for our requirements. You should use a version control system like
 [git](http://git-scm.org) and add and commit these templates. This way changes
 to the upstream templates can be easily verified by loading the template again
-and diff to the local version. As these templates reside locally in your
-repository you have maximum flexibility, as you can easily modify them to suite
-your needs.
+and verify the delta to the local version. As these templates reside locally in
+your repository you have maximum flexibility, as you can easily modify them to
+suite your needs.
 
-For our little project here no modifications are required, so lets inspect the
+For the quickstart example no modifications are required, so lets inspect the
 downloaded files and get a grip on the template mechanism.
 
 
-### Inspecting Installed Templates
+### Inspecting The Installed Templates
 
 Every template is a go struct type that implements the `Template` interface,
 i.e. it must have a `Render` method that retrieves a `Package` as argument. The
-`Package` interface requires three methods to add another template, a task or a
-list of commands.
+`Package` interface hass three methods to add another template (for the
+template hierarchies already mentioned), a task or a list of commands.
 
-A *template* is a set of *tasks* and a *task* is a list of *commands*. The
-caching is applied per task, i.e. if one of the commands in a task changes,
-this and all following commands will be executed in the next run.
+Templates have been mentioned already. A _task_ is a list of _commands_ and the
+entity that caching applies to (the mechanism that decides whether a command
+needs to be executed or not). Manually creating tasks is not required often,
+but can be useful if certain commands should only be executed under certain
+circumstances. The `AddTask` method's description has an example.
 
-As templates can be added while rendering a template hierarchies can be built
-easily. This is useful for adding one template multiple times (for example to
-configure a dynamic list of users).
+The `AddCommands` method is most important, as it allows to add the actual
+commands to be executed in a template. A task will be generated in the
+background.
 
-The `AddCommands` method is a convenience function as it allows to add a cached
-list of commands on the fly. The `AddTask` method can be used if a task must be
-created manually. This can be required if some commands must only be executed
-based on some condition (there is an example in the methods description).
-
-Let's get started provisioning the ruby template. The struct's field can have
-an annotation to mark fields that must be specified or set default values.
-
-This is what the ruby template looks like:
+When starting to use a template it's important to verify the template's
+configuration possibilities. Those can be found in it's `struct` definition.
+Urknall supports a set of annotations that specify whether a value must be
+given (is required) or if a default value is given. For the `ruby` package it
+look like this:
 
 ~~~ golang
 type Ruby struct {
@@ -265,19 +273,23 @@ type Ruby struct {
 ~~~
 
 There is a field `Version` that is required, i.e. must be specified when
-created. The other field optional, as it has no annotation. It will have the go
-specific default value, i.e. `false`.
+the template is instanciated. The other field is optional, as it has no
+annotation. It will have the go specific default value, which is `false` for
+boolean values.
 
 The nginx template works quite similar. The next subsection will show how to
 use these templates.
 
 
-### Using The Templates
+### Using The Installed Templates
 
-First we'll modify the template we're adding to the build so that the ruby and
-nginx template are used. For the sake of demonstration let's use the annotation
-mechanism to specify a default version for nginx and require an explicit
-version for ruby.
+The templates installed in the previous subsections must be integrated into the
+template hierarchy to be used. The root of this hierarchy is the template
+rendered to the target in `Run` call in the `run` function described in the
+beginning of this guide. This value's type will now be modified, to add the
+_ruby_ and _nginx_ templates required. For the sake of demonstration the
+annotation mechanism to specify a default version for nginx and require an
+explicit version for ruby are used (usually both would be set to be required).
 
 ~~~ golang
 type Template struct {
@@ -286,20 +298,22 @@ type Template struct {
 }
 ~~~
 
-Next we'll need to adopt the our template's `Render` method to add the
-templates. Additionally we'll add some additional commands to make sure that
-the packages installed are updated at least once a day. This demonstrates how
-the `Packages.AddCommands` method can be used.
+Next the template's `Render` method is modified to add the
+templates. Additionally some additional commands are added to make sure that
+the system's package cache is updated and the installed packages are upgraded
+at least once a day (whenever the provisioning tool is called). This
+demonstrates how the `Packages.AddCommands` method can be used.
 
 ~~~ golang
 	timeString := time.Now().UTC().Format("2006-01-02")
 	p.AddCommands("base", Shell("# "+timeString), UpdatePackages())
+
 	p.AddTemplate("ruby", &Ruby{Version: tpl.RubyVersion})
 	p.AddTemplate("nginx", &Nginx{Version: tpl.NginxVersion})
 ~~~
 
-Additionally we need to specify the ruby version when instanciating our
-template, as it is set as required:
+Additionally the ruby version must be given when instantiating the root
+template, as it is set as required in the annotations.
 
 ~~~ golang
 func run() error {
@@ -308,18 +322,17 @@ func run() error {
 }
 ~~~
 
-Now the provisioning will update the apt's package cache, install updates, ruby
-and nginx. Still missing are configuration of nginx and the deployment of the
-documentation.
+Now the provisioning will update the system's package cache, install upgrades,
+ruby and nginx. Still missing are the deployment of the documentation and the
+configuration of nginx.
 
 
 ### Further Extending The Templates
 
-We're still missing the actual deployment of the documentation. For the
-deployment we will need to access aspects of the ruby and nginx
-installation, like the insdallation and configuration paths. These are
-accessible from the templates itself so lets first keep the values of the types
-available:
+Still missing is the actual deployment of the documentation and configuration
+of nginx. This requires access to aspects of the already installed templates,
+like the path where the stuff was installed.  These are accessible from the
+templates itself so its sufficient to keep the values available:
 
 ~~~ golang
 ruby := &Ruby{Version: tpl.RubyVersion}
@@ -329,8 +342,7 @@ p.AddTemplate("ruby", ruby)
 p.AddTemplate("nginx", nginx)
 ~~~
 
-Now we can issue requests to these variables when doing the actual deployment.
-Next we'll have to get the code, all the required tools and build it finally.
+Now requests to these variables can be issued when doing the actual deployment.
 
 ~~~ golang
 p.AddCommands("github.docs",
@@ -343,9 +355,10 @@ p.AddCommands("github.docs",
 
 This will install [git](http://git-scm.org), install the bundle gem, checkout
 the documentation repository, install all the gems and finally compile the
-pages. Please note that some commands are executed as user `ubuntu`. The
-rendered pages will be available in `/home/ubuntu/docs/output` so lets finally
-define this directory as root of nginx.
+pages. Please note that some commands are executed as user `ubuntu` (just for
+the sake of showing the feature). The rendered pages will be available in
+`/home/ubuntu/docs/output` so the only task remaining is configuring this
+directory as root of the nginx server.
 
 ~~~ golang
 p.AddCommands("nginx.conf",
@@ -354,15 +367,13 @@ p.AddCommands("nginx.conf",
 )
 ~~~
 
-Now everything is setup and configured. Run the provisioning and afterwards
-browse to the server's public address like http://192.168.56.10 and you should
-see the documentation.
+Now everything is setup and configured. The provisioning (again started using
+`go get . && example`) will take quite a while was ruby and nginx need to be
+compiled. Afterwards everything is set up and served on the virtual machine's
+public address (like `http://192.168.56.10`).
 
 
 ## Conclusion
 
-Now you've seen how to create a basic provisioning tool. This is just the most
-basic example because it lacks support for multiple host provisioning,
-deployment of specified versions and many more. But actually that is way beyond
-the scope of urknall itself.
+This guide showed how to create a basic provisioning tool for a simple task.
 
