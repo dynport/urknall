@@ -267,8 +267,8 @@ look like this:
 
 ~~~ golang
 type Ruby struct {
-	Version string `urknall:"required=true"`
-	Local   bool
+  Version string `urknall:"required=true"`
+  Local   bool
 }
 ~~~
 
@@ -293,8 +293,8 @@ explicit version for ruby are used (usually both would be set to be required).
 
 ~~~ golang
 type Template struct {
-	RubyVersion  string `urknall:"required=true"`
-	NginxVersion string `urknall:"default=1.4.1"`
+  RubyVersion  string `urknall:"required=true"`
+  NginxVersion string `urknall:"default=1.4.1"`
 }
 ~~~
 
@@ -304,10 +304,10 @@ cache is updated and the installed packages are upgraded. This prevents errors
 when installing packages fails as the package cache is outdated.
 
 ~~~ golang
-	p.AddCommands("pkg-update", UpdatePackages())
+  p.AddCommands("pkg-update", UpdatePackages())
 
-	p.AddTemplate("ruby", &Ruby{Version: tpl.RubyVersion})
-	p.AddTemplate("nginx", &Nginx{Version: tpl.NginxVersion})
+  p.AddTemplate("ruby", &Ruby{Version: tpl.RubyVersion})
+  p.AddTemplate("nginx", &Nginx{Version: tpl.NginxVersion})
 ~~~
 
 The `AddCommands` and `AddTemplate` are given a string first, that is used to
@@ -321,8 +321,8 @@ instantiating the root template, as it is set as required in the annotations.
 
 ~~~ golang
 func run() error {
-	[...]
-	return urknall.Run(target, &Template{RubyVersion: "2.1.2"})
+  [...]
+  return urknall.Run(target, &Template{RubyVersion: "2.1.2"})
 }
 ~~~
 
@@ -350,10 +350,10 @@ Now requests to these variables can be issued when doing the actual deployment.
 
 ~~~ golang
 p.AddCommands("github.docs",
-	InstallPackages("git"),
-	Shell(ruby.InstallDir()+"/bin/gem install bundle"),
-	AsUser("ubuntu", "git clone https://github.com/nanoc/nanoc.ws.git docs"),
-	AsUser("ubuntu", "export PATH=${PATH}:"+ruby.InstallDir()+"/bin &&cd docs && bundle install && nanoc compile"),
+  InstallPackages("git"),
+  Shell(ruby.InstallDir()+"/bin/gem install bundle"),
+  AsUser("ubuntu", "git clone https://github.com/nanoc/nanoc.ws.git docs"),
+  AsUser("ubuntu", "export PATH=${PATH}:"+ruby.InstallDir()+"/bin &&cd docs && bundle install && nanoc compile"),
 )
 ~~~
 
@@ -366,8 +366,8 @@ directory as root of the nginx server.
 
 ~~~ golang
 p.AddCommands("nginx.conf",
-	Shell(`sed -e "s.root \+html;.root /home/ubuntu/docs/output;." -i `+nginx.ConfDir()+`/nginx.conf`),
-	Shell("service nginx start"),
+  Shell(`sed -e "s.root \+html;.root /home/ubuntu/docs/output;." -i `+nginx.ConfDir()+`/nginx.conf`),
+  Shell("service nginx start"),
 )
 ~~~
 
