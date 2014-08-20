@@ -216,7 +216,7 @@ func (build *Build) prepareCommand(cmd string) (cmd.ExecCommand, error) {
 	if build.User() != "root" {
 		sudo = "sudo "
 	}
-	cmd = fmt.Sprintf(sudo+"sh -x -e <<EOC\n%s\nEOC\n", cmd)
+	cmd = fmt.Sprintf(sudo+"sh -x -e <<\"EOC\"\n%s\nEOC\n", cmd)
 	return build.Command(cmd)
 }
 
