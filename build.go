@@ -205,7 +205,6 @@ func (build *Build) cleanUpRemainingCachedEntries(checksumDir string, checksumHa
 		if e := c.Run(); e != nil {
 			return e
 		}
-		//m.sshResult = result
 		m.Publish("finished")
 	}
 	return nil
