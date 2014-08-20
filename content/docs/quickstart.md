@@ -380,4 +380,54 @@ public address (like `http://192.168.56.10`).
 ## Conclusion
 
 This guide showed how to create a basic provisioning tool for a simple task.
+The final code should look like this:
+
+~~~ golang
+type Template struct {
+  RubyVersion  string `urknall:"required=true"`
+  NginxVersion string `urknall:"default=1.4.1"`
+}
+
+func (tpl *Template) Render(p urknall.Package) {
+  p.AddCommands("pkg-update", UpdatePackages())
+
+  ruby := &Ruby{Version: tpl.RubyVersion}
+  nginx := &Nginx{Version: tpl.NginxVersion}
+
+  p.AddTemplate("ruby", ruby)
+  p.AddTemplate("nginx", nginx)
+
+  p.AddCommands("github.docs",
+    InstallPackages("git"),
+    Shell(ruby.InstallDir()+"/bin/gem install bundle"),
+    AsUser("ubuntu", "git clone https://github.com/nanoc/nanoc.ws.git docs"),
+    AsUser("ubuntu", "export PATH=${PATH}:"+ruby.InstallDir()+"/bin && cd docs && bundle install && nanoc compile"),
+  )
+
+  p.AddCommands("nginx.conf",
+    Shell(`sed -e "s.root \+html;.root /home/ubuntu/docs/output;." -i `+nginx.ConfDir()+`/nginx.conf`),
+    Shell("service nginx start"),
+  )
+}
+
+func run() error {
+  defer urknall.OpenLogger(os.Stdout).Close()
+  var target urknall.Target
+  var e error
+  uri := "ubuntu@192.168.56.10"
+  password := "ubuntu"
+  if password != "" {
+    target, e = urknall.NewSshTargetWithPassword(uri, password)
+  } else {
+    target, e = urknall.NewSshTarget(uri)
+  }
+  if e != nil {
+    return e
+  }
+  return urknall.Run(target, &Template{RubyVersion: "2.1.2"})
+}
+~~~
+
+For further information on how to use urknall have a look into the detailed
+descriptions of the [binary](/docs/binary) and [library](/docs/library).
 
