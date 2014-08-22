@@ -172,9 +172,36 @@ are concatenated using dots.
 
 ## Templates
 
+The templates are used to define the list of steps required during
+provisioning. Conceptually they are structs that implement the `Template`
+interface, i.e. have a `Render` method that will extend a given `Package`.
+These steps are influenced by the configuration of the template.
+
+When building a template hierarchy, from the root template given to the `Build`
+function towards some more generic templates it might be necessary to have a
+lot of configuration options on the root, that are handed through to the leafs.
+This way there is a single interface for setting and changing configuration
+which helps with handling more complex scenarios.
+
 
 ### Anonymous Render Function
 
+Sometimes there are templates that don't have any configuration. There is the
+`TemplateFunc` mechanism shown in the following example.
+
+~~~ golang
+func templateFunc(pkg urknall.Package) {
+  pkg.AddCommands("hello", "echo hello world"))
+}
+
+type template struct {
+  [..]
+}
+
+func (t *template) Render(pkg urknall.Package) {
+  pkg.Add("anon", urknall.TemplateFunc(templateFunc))
+}
+~~~
 
 ## Targets
 
