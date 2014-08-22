@@ -21,6 +21,4 @@ type Package interface {
 	AddTemplate(string, Template)   // Add another template, nested below the current one.
 	AddCommands(string, ...Command) // Add a new task from the given commands.
 	AddTask(string, Task)           // Add the given tasks to the package with the given name.
-
-	Build(*Build) error
 }

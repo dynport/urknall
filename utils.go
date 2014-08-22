@@ -7,7 +7,7 @@ import (
 	"github.com/dynport/urknall/cmd"
 )
 
-func renderTemplate(builder Template) (Package, error) {
+func renderTemplate(builder Template) (*packageImpl, error) {
 	p := &packageImpl{reference: builder}
 	e := validateTemplate(builder)
 	if e != nil {

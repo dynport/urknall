@@ -78,7 +78,7 @@ func (runner *remoteTaskRunner) writeChecksumFile(prefix string, e error) {
 		logError(e)
 		targetFile = prefix + ".failed"
 	}
-	cmd := fmt.Sprintf("echo %q > %s", runner.command.Shell(), targetFile)
+	cmd := fmt.Sprintf("echo %q > %s && echo %s >> %s/%s.run", runner.command.Shell(), targetFile, targetFile, runner.dir, runner.started.Format("20060102_150405"))
 	c, e := runner.build.prepareCommand(cmd)
 	if e != nil {
 		panic(e.Error())

@@ -26,7 +26,7 @@ func NewTask() Task {
 }
 
 type task struct {
-	commands []cmd.Command
+	commands []*commandWrapper
 
 	name        string   // Name of the compilable.
 	taskBuilder Template // only used for rendering templates TODO(gf): rename
@@ -35,12 +35,16 @@ type task struct {
 	validated bool
 }
 
-func (t *task) Commands() ([]cmd.Command, error) {
-	e := t.Compile()
-	if e != nil {
+func (t *task) Commands() (cmds []cmd.Command, e error) {
+	if e = t.Compile(); e != nil {
 		return nil, e
 	}
-	return t.commands, nil
+
+	for _, c := range t.commands {
+		cmds = append(cmds, c.command)
+	}
+
+	return cmds, nil
 }
 
 func (task *task) Add(cmds ...interface{}) Task {
@@ -89,7 +93,7 @@ func (task *task) addCommand(c cmd.Command) {
 			}
 		}
 	}
-	task.commands = append(task.commands, c)
+	task.commands = append(task.commands, &commandWrapper{command: c})
 }
 
 func (task *task) Compile() (e error) {
