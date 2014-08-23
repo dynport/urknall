@@ -97,6 +97,17 @@ func (init *initProject) Run() error {
 	if e != nil {
 		return e
 	}
+
+	_, e = os.Stat(dir)
+	switch {
+	case os.IsNotExist(e):
+		if e = os.Mkdir(dir, 0755); e != nil {
+			return e
+		}
+	case e != nil:
+		return e
+	}
+
 	contents, e := exampleFiles()
 	if e != nil {
 		return e
