@@ -4,18 +4,27 @@ title: Binary
 
 # Urknall Binary
 
-The urknall binary is used to manage urknall based provisioning tools. It is
-the last step of a longer "evolution" described in the next subsection
+Urknall comes in two flavors: binary and library. This is, as there are two
+separate problems that need to be solved. On the one hand there must be the
+underlying mechanisms to handle the targets, like managing the connection and
+executing commands and recording and transfering the output (this is what the
+[binary](/docs/binary) does). On the other hand there must be the tasks that
+should be executed. While this is mostly the users' domain making basic stuff
+available helps a lot with bootstrapping projects. This is the binary's purpose
+and the next subsection is going to explain its evolution. Afterwards the
+different use cases are discussed.
 
 
 ## Urknall's Evolution
 
-The concepts used have matured over the course of about a year when we tested
-different concepts and changed directions a few times, until we settled with
-something pragmatic and usable. The basic concepts have been pretty stable,
-while being renamed a lot. What we discussed a lot was the mechanism to handle
-commands and templates. The problem is that changing those affects everyone
-using them.
+The concepts used matured over the course of about a year when we tested
+different approaches and changed direction a few times, until we settled with
+something pragmatic and usable. The basic concepts of how the provisioning is
+executed have been pretty stable, while being renamed a lot. What we discussed
+a lot was the mechanism to handle commands and templates. The problem is that
+changing those affects everyone using them, i.e. changing a basic command like
+the `FileCommand` (used to write files to the target), that would affect all
+usages, as changes break the caching.
 
 We don't want to provide _the_ solution to provisioning certain aspects, but
 give you an example. Take it, try it and most important: modify it!
@@ -38,33 +47,35 @@ type template {
 }
 
 func (t *template) Render(pkg urknall.Package) {
-  pkg.AddTemplate("ruby", &package.Ruby{Version: "2.1.2"})
+  pkg.AddTemplate("ruby", &packages.Ruby{Version: "2.1.2"})
   pkg.AddCommands("hello", &commands.Shell("echo hello world"))
 }
 ~~~
 
-There are two problem with the approach. First if we changed a template or even
-worse a command everyone updating urknall would have his caches broken as the
-underlying commands changed. This is not acceptable as the changes might brake
+There are two problem with the approach. If we changed a template or even worse
+a command everyone updating urknall would have his caches broken as the
+underlying commands changed. This is not acceptable as the changes might break
 stuff pretty bad (like urknall trying to reinstall your production database).
-Second users can't change the implementations. This puts a lot of burden on the
-implementations delivered with urknall. They absolutely have to work for users.
-This can't be guaranteed, as there are just to many use cases. Therefore these
-artefacts need to be delivered another way.
+And users can't change the implementations easily, i.e. they have to move the
+code manually to their own project.
+
+This put a lot of burden on the implementations delivered with urknall, as
+implementation couldn't be changed easily. Therefore these artefacts had to be
+delivered another way.
 
 
 ### Integrated With A Binary
 
-In a second iteration we had the artefacts integrated with the binary as
-assets. This was way better than the first approach. Users would import the
-templates needed into their project and had all the freedom to change them
-according to their needs. Even updating with later versions was easily
-possible, i.e. after an update of the urknall binary new versions could easily
-be deployed and verified against the version deployed previously.
+In a second iteration we added an urknall binary that had the artefacts as
+static assets. Users would add these assets to their project as needed. This
+had the additional benefit that modification was easy, as the code was already
+there. Even updating with later versions was easily possible, i.e. after an
+update of the urknall binary new versions could easily be deployed and verified
+against the project's version deployed previously.
 
-The downside with this approach is that users must update the urknall binary
-(and library) every time they want to update the templates to the latest
-version. Which might not actually be wanted.
+The downside with this approach is that the binary gets bigger as the number of
+assets increases and users must update the urknall binary (and library) to
+update commands and templates to the latest version.
 
 
 ### A Binary Accessing Templates On Github
@@ -78,7 +89,9 @@ templates require no update of the urknall binary itself.
 
 The urknall binary can be used to create a simple basic urknall provisioning
 tool. This is to help with the basic steps of creating a new project. Besides a
-basic file with a `main` function some command definitions are added.
+basic file with a `main` function, that initializes and uses the urknall
+system, some command definitions (with a fokus on ubuntu based systems) are
+added.
 
 ~~~ shell
 $ urknall init example
@@ -106,18 +119,14 @@ loading content from "https://api.github.com/repos/dynport/urknall/contents/exam
 saving file "main.go" to "/private/tmp/example/main.go"
 ~~~
 
-The files added contain some basic commands for usage with ubuntu based
-systems (most of them should work with any unix system) and a basic structure
-for a provisioning tool that shows the basic urknall initialization and usage.
-
 
 ## Template Management
 
 We have some basic templates in stock we use a lot. Those can be added to a
 project with the urknall binary.
 
-* `urknall templates list` will list all available templates.
-* `urknall templates add <template names>` will add the given templates to the
+* `urknall templates list` lists all available templates.
+* `urknall templates add <template names>` adds the given templates to the
   project.
 
 
