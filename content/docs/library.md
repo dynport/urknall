@@ -5,10 +5,10 @@ title: Library
 # Urknall Library
 {:.no_toc}
 
-The library part of the urknall is where most of the magic happens. For a
-detailed information on the API of urknall have look into the [API
-documentation](http://godoc.org/github/dynport/urknall). This guide will guide
-you through the concepts required for using urknall.
+The library part of urknall is where most of the magic happens. For a detailed
+information on the API of urknall have look into the [API
+documentation](http://godoc.org/github/dynport/urknall). This guide shows the
+basic information required for using urknall.
 
 * TOC
 {:toc}
@@ -18,16 +18,19 @@ you through the concepts required for using urknall.
 
 What urknall actually does is executing commands on a target. Commands in the
 sense of shell commands. Internally these are modelled using the `Commands`
-interface and a set of predefined implementations is provided using the
-[urknall binary](/docs/binary/#urknall_init). There is a most basic `ShellCommand`
-command for example, that is given a string, that is execute as is. A more
-advanced example would be the `FileCommand` command that writes given content
-to file with given owner and permissions.
+interface. A basic set of implementations is provided using the [urknall
+binary](/docs/binary/#urknall_init). There is a most basic `ShellCommand` for
+example, that is given a string, that is execute as is. A more advanced example
+would be the `FileCommand` that writes given content to file with given owner
+and permissions.
+
+The following subsubsection will show different interfaces that must (or can)
+be implemented by commands.
 
 
 ### The `Commands` Interface
 
-The most important interface a command needs to implement is called `Command`:
+Every command must implement the `Command` interface:
 
 ~~~ golang
 type Command interface {
@@ -52,13 +55,15 @@ type Logger interface {
 ~~~
 
 If a command implements the interface this function is called to generate the
-logged string. Otherwise the output of the `Shell` function will be used.
+string to be logged. Otherwise the output of the `Shell` function will be used.
 
 
 ### The `Renderer` Interface
 
-When writing templates it's convenient to use the command strings as templates
-directly using the template's configuration like in the following example.
+When writing templates it's convenient to use it's properties in the command
+strings using go's templating (templating in the sense of having special marks
+in a string that are replaced with content) mechanism. The following example
+show the benefit.
 
 ~~~ golang
 type ExampleTemplate struct {
@@ -75,8 +80,13 @@ can be used directly. Error detection is deferred from compile to run time, but
 as command building happens prior to starting the actual execution urknall will
 fail early.
 
-The `Renderer` interface requires a function that is called when building the
-command if the interface is implemented.
+There are commands where the rendering must be limited to specific parts and it
+is not sufficient to just render the output of the `Shell` function. This is a
+problem for example with the the `FileCommand` example where the given content
+must be rendered, as it encoded (base64) and zipped when returned.
+
+For this to work commands must be rendered prior to usage. The `Renderer`
+interface shows this is supported.
 
 ~~~ golang
 type Renderer interface {
@@ -86,9 +96,6 @@ type Renderer interface {
 
 There is a helper function in the `github.com/dynport/urknall/utils` packages
 named `MustRenderTemplate` that can be used to do the actual rendering.
-
-TODO: Is this really necessary with the command? Couldn't that be rendered by
-      default on every single command executed?
 
 
 ### The `Validator` Interface
@@ -116,7 +123,7 @@ following caching will be described as tasks are the layer where it is applied.
 ### Manual Task Generation
 
 Urknall provides the `NewTask` function that will generate a blank task that
-commands can be added manually.
+commands can be added to manually.
 
 TODO: missing example that properly explains the need for this. cache breaking for bundle install?
 
@@ -125,10 +132,10 @@ TODO: missing example that properly explains the need for this. cache breaking f
 
 One of the core features of urknall is the caching layer that will decide
 whether or not a command must be executed. This is essential if provisioning is
-run more than once. This is useful in many situations:
+run more than once, which is useful in many situations:
 
 * While developing templates the turnaround time is pretty short, as only
-  changed or added parts are executed.
+  changed or added parts need to be executed.
 * When an already provisioned target must be extended only the relevant parts
   are touched.
 * Changes to an existing setup are possible without disrupting the overall
@@ -172,7 +179,7 @@ are concatenated using dots.
 
 ## Templates
 
-The templates are used to define the list of steps required during
+Templates are used to define the list of tasks that should be performed during
 provisioning. Conceptually they are structs that implement the `Template`
 interface, i.e. have a `Render` method that will extend a given `Package`.
 These steps are influenced by the configuration of the template.
@@ -182,6 +189,9 @@ function towards some more generic templates it might be necessary to have a
 lot of configuration options on the root, that are handed through to the leafs.
 This way there is a single interface for setting and changing configuration
 which helps with handling more complex scenarios.
+
+TODO: need motivation why we need the special `Template` abstraction layer
+instaed of directly using the `Packages`.
 
 
 ### Anonymous Render Function
