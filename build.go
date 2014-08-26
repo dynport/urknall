@@ -101,7 +101,9 @@ func (build *Build) prepareTarget() error {
 	if build.User() == "" {
 		return fmt.Errorf("User not set")
 	}
-	cmd, e := build.prepareCommand(fmt.Sprintf(`{ grep "^%s:" /etc/group | grep %s; } && [ -d %[3]s ] && [ -f %[3]s/.v2 ]`, ukGROUP, build.User(), ukCACHEDIR))
+	rawCmd := fmt.Sprintf(`{ grep "^%s:" /etc/group | grep %s; } && [ -d %[3]s ] && [ -f %[3]s/.v2 ]`,
+		ukGROUP, build.User(), ukCACHEDIR)
+	cmd, e := build.prepareInternalCommand(rawCmd)
 	if e != nil {
 		return e
 	}
@@ -114,7 +116,7 @@ func (build *Build) prepareTarget() error {
 			fmt.Sprintf(`[ -f %[1]s/.v2 ] || { export DATE=$(date "+%%Y%%m%%d_%%H%%M%%S") && ls %[1]s | while read dir; do ls -t %[1]s/$dir/*.done | tac > %[1]s/$dir/$DATE.run; done && touch %[1]s/.v2;  } `, ukCACHEDIR),
 		}
 
-		cmd, e = build.prepareCommand(strings.Join(cmds, " && "))
+		cmd, e = build.prepareInternalCommand(strings.Join(cmds, " && "))
 		if e != nil {
 			return e
 		}
@@ -145,7 +147,7 @@ func (build *Build) prepareTask(tsk *task, ct checksumTree) (e error) {
 		// different users (being part of that group) to create, modify and delete the contained checksum and log files.
 		createChecksumDirCmd := fmt.Sprintf("mkdir -m2775 -p %s", checksumDir)
 
-		cmd, e := build.prepareCommand(createChecksumDirCmd)
+		cmd, e := build.prepareInternalCommand(createChecksumDirCmd)
 		if e != nil {
 			return e
 		}
@@ -192,7 +194,13 @@ func (build *Build) buildTask(tsk *task) (e error) {
 
 		m.ExecStatus = pubsub.StatusExecStart
 		m.Publish("started")
-		e := executeCommand(cmd.command, build, checksumDir, tsk.name)
+		r := &remoteTaskRunner{
+			build:    build,
+			command:  cmd.command,
+			dir:      checksumDir,
+			taskName: tsk.name,
+		}
+		e := r.run()
 
 		m.Error = e
 		m.ExecStatus = pubsub.StatusExecFinished
@@ -211,10 +219,10 @@ type checksumTree map[string][]string
 func (build *Build) buildChecksumTree() (ct checksumTree, e error) {
 	ct = checksumTree{}
 
-	cmd, e := build.prepareCommand(
-		fmt.Sprintf(
-			`[ -d %[1]s ] && { ls %[1]s | while read dir; do ls -t %[1]s/$dir/*.run | head -n1 | xargs cat; done; }`,
-			ukCACHEDIR))
+	rawCmd := fmt.Sprintf(
+		`[ -d %[1]s ] && { ls %[1]s | while read dir; do ls -t %[1]s/$dir/*.run | head -n1 | xargs cat; done; }`,
+		ukCACHEDIR)
+	cmd, e := build.prepareInternalCommand(rawCmd)
 	if e != nil {
 		return nil, e
 	}
@@ -246,13 +254,17 @@ func (build *Build) buildChecksumTree() (ct checksumTree, e error) {
 	return ct, nil
 }
 
-func (build *Build) prepareCommand(cmd string) (cmd.ExecCommand, error) {
+func (build *Build) prepareCommand(rawCmd string) (cmd.ExecCommand, error) {
 	var sudo string
 	if build.User() != "root" {
 		sudo = "sudo "
 	}
-	cmd = fmt.Sprintf(sudo+"sh -x -e <<\"EOC\"\n%s\nEOC\n", cmd)
-	return build.Command(cmd)
+	return build.Command(sudo + rawCmd)
+}
+
+func (build *Build) prepareInternalCommand(rawCmd string) (cmd.ExecCommand, error) {
+	rawCmd = fmt.Sprintf("sh -x -e <<\"EOC\"\n%s\nEOC\n", rawCmd)
+	return build.prepareCommand(rawCmd)
 }
 
 func (build *Build) hostname() string {

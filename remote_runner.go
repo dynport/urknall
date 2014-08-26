@@ -13,7 +13,6 @@ import (
 
 type remoteTaskRunner struct {
 	build    *Build
-	cmd      string
 	dir      string
 	command  cmd.Command
 	taskName string
@@ -30,10 +29,14 @@ func (runner *remoteTaskRunner) run() error {
 	}
 	prefix := runner.dir + "/" + checksum
 
+	if e = runner.writeScriptFile(prefix); e != nil {
+		return e
+	}
+
 	errors := make(chan error)
 	logs := runner.newLogWriter(prefix+".log", errors)
 
-	c, e := runner.build.prepareCommand(runner.cmd)
+	c, e := runner.build.prepareCommand("sh " + prefix + ".sh")
 	if e != nil {
 		return e
 	}
@@ -59,8 +62,9 @@ func (runner *remoteTaskRunner) run() error {
 	wg.Wait()
 	close(logs)
 
-	runner.writeChecksumFile(prefix, e)
-	// TODO(gf): should add better error handling (don't panic right now, but properly close everything open).
+	if e = runner.createChecksumFile(prefix, e); e != nil {
+		return e
+	}
 
 	// Get errors that might have occured while handling the back-channel for the logs.
 	select {
@@ -72,21 +76,36 @@ func (runner *remoteTaskRunner) run() error {
 	return e
 }
 
-func (runner *remoteTaskRunner) writeChecksumFile(prefix string, e error) {
-	targetFile := prefix + ".done"
-	if e != nil {
-		logError(e)
-		targetFile = prefix + ".failed"
+func (runner *remoteTaskRunner) writeScriptFile(prefix string) (e error) {
+	targetFile := prefix + ".sh"
+	env := ""
+	for _, e := range runner.build.Env {
+		env += "export " + e + "\n"
 	}
-	cmd := fmt.Sprintf("echo %q > %s && echo %s >> %s/%s.run", runner.command.Shell(), targetFile, targetFile, runner.dir, runner.started.Format("20060102_150405"))
-	c, e := runner.build.prepareCommand(cmd)
+	rawCmd := fmt.Sprintf("cat <<\"EOSCRIPT\" > %s\n#!/bin/sh\nset -e\nset -x\n\n%s\n%s\nEOSCRIPT\n", targetFile, env, runner.command.Shell())
+	c, e := runner.build.prepareInternalCommand(rawCmd)
 	if e != nil {
-		panic(e.Error())
+		return e
 	}
 
-	if e := c.Run(); e != nil {
-		panic(e.Error())
+	return c.Run()
+}
+
+func (runner *remoteTaskRunner) createChecksumFile(prefix string, err error) (e error) {
+	sourceFile := prefix + ".sh"
+	targetFile := prefix + ".done"
+	if err != nil {
+		logError(err)
+		targetFile = prefix + ".failed"
 	}
+	rawCmd := fmt.Sprintf("{ [ -f %[1]s ] || mv %[2]s %[1]s; } && echo %[1]s >> %[3]s/%[4]s.run",
+		targetFile, sourceFile, runner.dir, runner.started.Format("20060102_150405"))
+	c, e := runner.build.prepareInternalCommand(rawCmd)
+	if e != nil {
+		return e
+	}
+
+	return c.Run()
 }
 
 func logError(e error) {
