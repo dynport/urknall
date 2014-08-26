@@ -125,13 +125,3 @@ func (task *task) Compile() (e error) {
 	task.compiled = true
 	return nil
 }
-
-type anonymousTask struct {
-	cmds []interface{}
-}
-
-func (anon *anonymousTask) BuildTask(pkg Task) {
-	for i := range anon.cmds {
-		pkg.Add(anon.cmds[i])
-	}
-}
