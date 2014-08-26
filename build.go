@@ -36,15 +36,15 @@ func (b *Build) Run() error {
 	if e != nil {
 		return e
 	}
+	m := message(pubsub.MessageRunlistsProvision, b.hostname(), "")
+	m.Publish("started")
 	for _, task := range pkg.tasks {
-		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvision, Hostname: b.hostname()}
-		m.Publish("started")
 		if e = b.buildTask(task); e != nil {
 			m.PublishError(e)
 			return e
 		}
-		m.Publish("finished")
 	}
+	m.Publish("finished")
 	return nil
 }
 
@@ -56,13 +56,9 @@ func (b *Build) DryRun() error {
 
 	for _, task := range pkg.tasks {
 		for _, command := range task.commands {
-			m := &pubsub.Message{
-				Key:          pubsub.MessageRunlistsProvisionTask,
-				TaskChecksum: command.Checksum(),
-				Message:      command.LogMsg(),
-				Hostname:     b.hostname(),
-				RunlistName:  task.name,
-			}
+			m := message(pubsub.MessageRunlistsProvisionTask, b.hostname(), task.name)
+			m.TaskChecksum = command.Checksum()
+			m.Message = command.LogMsg()
 
 			switch {
 			case command.cached:
@@ -184,13 +180,9 @@ func (build *Build) buildTask(tsk *task) (e error) {
 	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", tsk.name)
 
 	for _, cmd := range tsk.commands {
-		m := &pubsub.Message{
-			Key:          pubsub.MessageRunlistsProvisionTask,
-			TaskChecksum: cmd.Checksum(),
-			Message:      cmd.LogMsg(),
-			Hostname:     build.hostname(),
-			RunlistName:  tsk.name,
-		}
+		m := message(pubsub.MessageRunlistsProvisionTask, build.hostname(), tsk.name)
+		m.TaskChecksum = cmd.Checksum()
+		m.Message = cmd.LogMsg()
 
 		if cmd.cached { // Task is cached.
 			m.ExecStatus = pubsub.StatusCached

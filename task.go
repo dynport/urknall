@@ -100,7 +100,7 @@ func (task *task) Compile() (e error) {
 	if task.compiled {
 		return nil
 	}
-	m := &pubsub.Message{RunlistName: task.name, Key: pubsub.MessageRunlistsPrecompile}
+	m := message(pubsub.MessageRunlistsPrecompile, "", task.name)
 	m.Publish("started")
 	defer func() {
 		if r := recover(); r != nil {
