@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/utils"
 )
 
@@ -14,14 +15,14 @@ type packageImpl struct {
 	cacheKeyPrefix string
 }
 
-func (pkg *packageImpl) AddCommands(name string, cmds ...Command) {
+func (pkg *packageImpl) AddCommands(name string, cmds ...cmd.Command) {
 	if pkg.cacheKeyPrefix != "" {
 		name = pkg.cacheKeyPrefix + "." + name
 	}
 	name = utils.MustRenderTemplate(name, pkg.reference)
 	t := &task{name: name}
 	for _, c := range cmds {
-		if r, ok := c.(renderer); ok {
+		if r, ok := c.(cmd.Renderer); ok {
 			r.Render(pkg.reference)
 		}
 		t.Add(c)
