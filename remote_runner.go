@@ -58,6 +58,11 @@ func (runner *remoteTaskRunner) run() error {
 	wg.Add(1)
 	go runner.forwardStream(logs, "stderr", &wg, stderr)
 
+	if sc, ok := runner.command.(cmd.StdinConsumer); ok {
+		c.SetStdin(sc.Input())
+		defer sc.Input().Close()
+	}
+
 	e = c.Run()
 	wg.Wait()
 	close(logs)

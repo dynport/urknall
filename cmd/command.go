@@ -22,10 +22,13 @@ type Logger interface {
 	Logging() string
 }
 
-// This interface can be used to add support the usage of go's template
-// mechanism (not to be mixed up with urknall's tempaltes!). This allows for
-// the direct usage of the parameters of the configuration of an urkanll
-// template in the command strings.
+type StdinConsumer interface {
+	Input() io.ReadCloser
+}
+
+// Interface that allows for rendering template content into a structure. Implement this interface for commands that
+// should have the ability for templating. For example the ShellCommand provided by `urknall init` implements this,
+// allowing for substitution of a package's values in the command.
 type Renderer interface {
 	Render(i interface{})
 }
