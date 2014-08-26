@@ -68,20 +68,13 @@ func rcover(t *testing.T) {
 func TestIntegration(t *testing.T) {
 	Convey("Integration test", t, func() {
 		bh := &BuildHost{}
-		raw, e := renderTemplate(bh)
+		p, e := renderTemplate(bh)
 		So(e, ShouldBeNil)
-		So(raw, ShouldNotBeNil)
+		So(p, ShouldNotBeNil)
 
 		names := []string{}
 
 		tasks := map[string]Task{}
-
-		var p *packageImpl
-		var ok bool
-
-		if p, ok = raw.(*packageImpl); !ok {
-			t.Fatalf("expected package impl, fgot %T", p)
-		}
 
 		for _, task := range p.tasks {
 			tasks[task.name] = task

@@ -2,6 +2,7 @@ package urknall
 
 import (
 	"testing"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -31,7 +32,7 @@ func TestAddCommand(t *testing.T) {
 		Convey("When a string is added", func() {
 			rl.Add(`string with "{{ .SField }}" and "{{ .IField }}"`)
 			Convey("Then the string is turned to a command and appended to the list of commands", func() {
-				c := rl.commands[len(rl.commands)-1]
+				c := rl.commands[len(rl.commands)-1].command
 				sc, ok := c.(*stringCommand)
 
 				Convey("And the command is a string command", func() {
@@ -56,7 +57,7 @@ func TestAddCommand(t *testing.T) {
 
 			Convey("When it is added by reference", func() {
 				rl.Add(&baseCommand)
-				c := rl.commands[len(rl.commands)-1]
+				c := rl.commands[len(rl.commands)-1].command
 				sc, ok := c.(*stringCommand)
 
 				Convey("Then the command is a string command", func() {

@@ -1,6 +1,10 @@
 package urknall
 
-import "log"
+import (
+	"log"
+
+	"github.com/dynport/urknall/cmd"
+)
 
 func ExampleBuild() {
 	template := &ExampleTemplate{}
@@ -52,6 +56,6 @@ func (c *ShellCmd) Shell() string {
 }
 
 // Helper function to easily create a ShellCmd.
-func Shell(cmd string) Command {
+func Shell(cmd string) cmd.Command {
 	return &ShellCmd{cmd: cmd}
 }
