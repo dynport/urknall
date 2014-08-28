@@ -6,12 +6,12 @@ class NavLinker
     @item = item
   end
 
-  def nav_link(item)
+  def nav_link(item, path)
     link_text = item[:short_title] || item[:title]
 
     html_class = html_class_for(item)
 
-    li(a(link_text, :href => item.path), :class => html_class)
+    li(a(link_text, :href => path), :class => html_class)
   end
 
   private
@@ -56,7 +56,7 @@ end
 module NavLinkHelper
 
   def nav_link(item)
-    NavLinker.new(@item).nav_link(item)
+    NavLinker.new(@item).nav_link(item, relative_path_to(item))
   end
 
 end

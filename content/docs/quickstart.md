@@ -28,8 +28,8 @@ as easy as running the following command.
 	go get github.com/dynport/urknall/urknall
 
 This will download the source to `$GOPATH/src/github.com/dynport/urknall` and
-install the [urknall binary](/binary) to `$GOPATH/bin` (which should be in your
-`$PATH` environment for best experience) and [urknall library](/library) to the
+install the [urknall binary](../binary/) to `$GOPATH/bin` (which should be in your
+`$PATH` environment for best experience) and [urknall library](../library/) to the
 subtree in `$GOPATH/pkg`.
 
 This quickstart guide will work with an example that needs to be provisioned. A
@@ -44,7 +44,7 @@ to the target machine are the following:
   and you must know the IP of the machine.
 * You must know the username (and if required the password) of a user on the
   machine. If this user is not `root` he must be allowed to run commands using
-  `sudo` without being asked for a password, as described in [here](/docs/library/#sudo_without_password).
+  `sudo` without being asked for a password, as described in [here](../library/#sudo_without_password).
 
 
 ## Creating The Basic Project
@@ -68,7 +68,7 @@ get` or `goimports`).
 
 The `urknall init` command creates a lot of files that should be explained
 next. The `main.go` will be explained in greater detail below. The `cmd_*.go`
-files contain [command](/docs/glossary/#command) definitions. These are
+files contain [command](../glossary/#command) definitions. These are
 abstractions that allow to specify commands that should be executed on the
 remote machine.
 
@@ -119,7 +119,7 @@ not usable. Make sure you add the proper values for `uri` consisting of the
 username and IP address of the machine you use for this quickstart guide. Also
 set the `password` if required.
 
-The last line does two things. A [template](/docs/glossary/#template) is
+The last line does two things. A [template](../glossary/#template) is
 instantiated and given to urknall's `Run` function, which will render it to the
 target built in the previous step. The template is the specification of the
 actions to perform on the target. The example template will just `echo` the
@@ -137,7 +137,7 @@ func (tpl *Template) Render(p urknall.Package) {
 Every template must implement the `Renderer` interface. The `Render` method
 implemented is given a package that commands are added to. This is where the
 commands from all the `cmd_*.go` files come into play. For a detailed
-introduction of the commands see the [binary's documentation](/docs/binary).
+introduction of the commands see the [binary's documentation](../binary/).
 
 
 ## Running The Basic Example
@@ -192,7 +192,7 @@ added to templates to form hierarchies. Additionally urknall has a mechanism to
 retrieve basic templates. These templates might not be exactly what you
 require, but could be a good point to start from, i.e. help you to take the
 first steps to solve the problem. For a detailed discussion see the
-[binary's documentation](/docs/binary#template_management).
+[binary's documentation](../binary/#template_management).
 
 The `urknall templates list` command lists the available templates. These are
 retrieved from urknall's
@@ -429,5 +429,5 @@ func run() error {
 ~~~
 
 For further information on how to use urknall have a look into the detailed
-descriptions of the [binary](/docs/binary) and [library](/docs/library).
+descriptions of the [binary](../binary/) and [library](../library/).
 

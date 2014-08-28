@@ -8,7 +8,7 @@ Urknall comes in two flavors: binary and library. This is, as there are two
 separate problems that need to be solved. On the one hand there must be the
 underlying mechanisms to handle the targets, like managing the connection and
 executing commands and recording and transfering the output (this is what the
-[binary](/docs/binary) does). On the other hand there must be the tasks that
+[binary](../binary/) does). On the other hand there must be the tasks that
 should be executed. While this is mostly the users' domain making basic stuff
 available helps a lot with bootstrapping projects. This is the binary's purpose
 and the next subsection is going to explain its evolution. Afterwards the

@@ -19,7 +19,7 @@ basic information required for using urknall.
 What urknall actually does is executing commands on a target. Commands in the
 sense of shell commands. Internally these are modelled using the `Commands`
 interface. A basic set of implementations is provided using the [urknall
-binary](/docs/binary/#urknall_init). There is a most basic `ShellCommand` for
+binary](../binary/#urknall_init). There is a most basic `ShellCommand` for
 example, that is given a string, that is execute as is. A more advanced example
 would be the `FileCommand` that writes given content to file with given owner
 and permissions.
