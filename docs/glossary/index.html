@@ -1,0 +1,133 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Urknall Documentation - Glossary</title>
+<link rel="stylesheet" href="/stylesheet.css">
+<link href="/css/pygments.css" media="screen" rel="stylesheet" type="text/css">
+
+<!-- Bootstrap -->
+<link href="/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+		<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+		<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+	<![endif]-->
+
+<!-- you don't need to keep this, but it's cool for stats! -->
+<meta name="generator" content="nanoc 3.7.2">
+</head>
+
+
+
+<body>
+<div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+	<div class="container">
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			<a class="navbar-brand" href="/">Urknall Documentation</a>
+		</div>
+		<div class="collapse navbar-collapse">
+			<ul class="nav navbar-nav">
+				<li><a href="/docs/quickstart/">QuickStart</a></li>
+				<li><a href="/docs/library/">Library</a></li>
+				<li><a href="/docs/binary/">Binary</a></li>
+				<li class="active"><a href="/docs/glossary/">Glossary</a></li>
+			</ul>
+		</div><!--/.nav-collapse -->
+	</div>
+</div>
+
+
+
+
+<div class="container">
+
+<h1 class="no_toc" id="urknall-glossary">Urknall Glossary</h1>
+
+<ul id="markdown-toc">
+  <li><a href="#build">Build</a></li>
+  <li><a href="#caching">Caching</a></li>
+  <li><a href="#command">Command</a></li>
+  <li><a href="#package">Package</a></li>
+  <li><a href="#target">Target</a></li>
+  <li><a href="#task">Task</a></li>
+  <li><a href="#template">Template</a></li>
+</ul>
+
+<h2 id="build">Build</h2>
+
+<p>A build renders a <a href="#template">template</a> to a <a href="#target">target</a>.</p>
+
+<h2 id="caching">Caching</h2>
+
+<p>As the <a href="#command">commands</a> of a <a href="#task">task</a> should only be executed once or
+if one of the predecessors or itself changed, there needs to be some
+information what has already been run. <a href="#template">Templates</a> and
+<a href="#task">tasks</a> are assigned names that are concatenated for nested templatess.
+These names are given with the <code>AddCommands</code>, <code>AddTask</code> and <code>AddTemplate</code>
+methods. Each task has a subdirectory in the <code>/var/lib/urknall</code> directory. This
+subdirectory will contain one file per command that is named after the hash of
+the command. This information is then used in subsequent executions to
+determine whether a command has already been executed.</p>
+
+<h2 id="command">Command</h2>
+
+<p>A command is the entity that is actually executed on the <a href="#target">target</a>. The
+<code>Command</code> interface has two methods: <code>Shell</code> and <code>Logging</code>. The first will
+create the command as executed as string (i.e. something like <code>echo -n "Hello"
+&amp;&amp; echo " World"</code>). The second is used to create dedicated logging output. This
+is useful if a command requires multiple (maybe complicated) steps that somehow
+obfuscate the intention of the command. For an example have a look into the
+<code>cmd_file.go</code> file.</p>
+
+<h2 id="package">Package</h2>
+
+<p>The <code>Package</code> interface is exposed to the user only in the <code>Render</code> method of
+a <a href="#template">template</a>. It is used to add <a href="#task">tasks</a> for a
+<a href="#build">build</a>, either by directly giving the task (see the <code>AddTask</code> method),
+adding a list of <a href="#command">commands</a>, or adding another <a href="#template">template</a>.</p>
+
+<h2 id="target">Target</h2>
+
+<p>This is the target a template is rendered too. We decided to not use the “host”
+phrase, as it is to broadly used.</p>
+
+<h2 id="task">Task</h2>
+
+<p>A task is a list of <a href="#command">commands</a> that are executed with a
+<a href="#caching">cache</a> in the background, i.e. only those commands are exeucted that
+have not yet been run or those that follow on a changed one.</p>
+
+<h2 id="template">Template</h2>
+
+<p>A template is a struct that implements the <code>Template</code> interface, i.e. has a
+<code>Render</code> method. The struct’s fields are used to configure the addition of
+<a href="#task">tasks</a> to a given <a href="#package">package</a> in the form of <a href="#task">tasks</a>,
+<a href="#command">commands</a> or other <a href="#template">templates</a>.</p>
+
+</div>
+
+
+<hr/>
+
+<footer>
+<div class="container">
+	<p>© <a href="http://www.dynport.de">Dynport GmbH</a> 2014</p>
+</div>
+</footer>
+
+
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="/js/bootstrap.min.js"></script>
+</body>
+</html>

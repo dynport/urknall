@@ -1,0 +1,328 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Urknall Documentation - Library</title>
+<link rel="stylesheet" href="/stylesheet.css">
+<link href="/css/pygments.css" media="screen" rel="stylesheet" type="text/css">
+
+<!-- Bootstrap -->
+<link href="/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+		<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+		<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+	<![endif]-->
+
+<!-- you don't need to keep this, but it's cool for stats! -->
+<meta name="generator" content="nanoc 3.7.2">
+</head>
+
+
+
+<body>
+<div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+	<div class="container">
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			<a class="navbar-brand" href="/">Urknall Documentation</a>
+		</div>
+		<div class="collapse navbar-collapse">
+			<ul class="nav navbar-nav">
+				<li><a href="/docs/quickstart/">QuickStart</a></li>
+				<li class="active"><a href="/docs/library/">Library</a></li>
+				<li><a href="/docs/binary/">Binary</a></li>
+				<li><a href="/docs/glossary/">Glossary</a></li>
+			</ul>
+		</div><!--/.nav-collapse -->
+	</div>
+</div>
+
+
+
+
+<div class="container">
+
+<h1 class="no_toc" id="urknall-library">Urknall Library</h1>
+
+<p>The library part of urknall is where most of the magic happens. For a detailed
+information on the API of urknall have look into the <a href="http://godoc.org/github/dynport/urknall">API
+documentation</a>. This guide shows the
+basic information required for using urknall.</p>
+
+<ul id="markdown-toc">
+  <li>
+<a href="#commands">Commands</a>    <ul>
+      <li><a href="#the-commands-interface">The <code>Commands</code> Interface</a></li>
+      <li><a href="#the-logger-interface">The <code>Logger</code> Interface</a></li>
+      <li><a href="#the-renderer-interface">The <code>Renderer</code> Interface</a></li>
+      <li><a href="#the-validator-interface">The <code>Validator</code> Interface</a></li>
+    </ul>
+  </li>
+  <li>
+<a href="#tasks">Tasks</a>    <ul>
+      <li><a href="#manual-task-generation">Manual Task Generation</a></li>
+      <li><a href="#caching">Caching</a></li>
+    </ul>
+  </li>
+  <li><a href="#packages">Packages</a></li>
+  <li>
+<a href="#templates">Templates</a>    <ul>
+      <li><a href="#anonymous-render-function">Anonymous Render Function</a></li>
+    </ul>
+  </li>
+  <li>
+<a href="#targets">Targets</a>    <ul>
+      <li><a href="#remote-target">Remote Target</a></li>
+      <li><a href="#local-target">Local Target</a></li>
+      <li><a href="#sudo-without-password">Sudo Without Password</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="commands">Commands</h2>
+
+<p>What urknall actually does is executing commands on a target. Commands in the
+sense of shell commands. Internally these are modelled using the <code>Commands</code>
+interface. A basic set of implementations is provided using the <a href="/docs/binary/#urknall_init">urknall
+binary</a>. There is a most basic <code>ShellCommand</code> for
+example, that is given a string, that is execute as is. A more advanced example
+would be the <code>FileCommand</code> that writes given content to file with given owner
+and permissions.</p>
+
+<p>The following subsubsection will show different interfaces that must (or can)
+be implemented by commands.</p>
+
+<h3 id="the-commands-interface">The <code>Commands</code> Interface</h3>
+
+<p>Every command must implement the <code>Command</code> interface:</p>
+
+<pre><code class="language-golang highlight"><span class="k">type</span><span class="x"> </span><span class="n">Command</span><span class="x"> </span><span class="k">interface</span><span class="x"> </span><span class="p">{</span><span class="x">
+  </span><span class="n">Shell</span><span class="p">()</span><span class="x"> </span><span class="kt">string</span><span class="x">
+</span><span class="p">}</span></code></pre>
+
+<p>The <code>Shell</code> function must return the command that should be executed on the
+remote host, i.e. the plain shell command.</p>
+
+<h3 id="the-logger-interface">The <code>Logger</code> Interface</h3>
+
+<p>Some commands can get pretty complex and obfuscate the real intent by this
+complexity. The <code>FileCommand</code> already mentioned is an example. To simplify the
+logging output, there is the <code>Logger</code> interface.</p>
+
+<pre><code class="language-golang highlight"><span class="k">type</span><span class="x"> </span><span class="n">Logger</span><span class="x"> </span><span class="k">interface</span><span class="x"> </span><span class="p">{</span><span class="x">
+  </span><span class="n">Logging</span><span class="p">()</span><span class="x"> </span><span class="kt">string</span><span class="x">
+</span><span class="p">}</span></code></pre>
+
+<p>If a command implements the interface this function is called to generate the
+string to be logged. Otherwise the output of the <code>Shell</code> function will be used.</p>
+
+<h3 id="the-renderer-interface">The <code>Renderer</code> Interface</h3>
+
+<p>When writing templates it’s convenient to use it’s properties in the command
+strings using go’s templating (templating in the sense of having special marks
+in a string that are replaced with content) mechanism. The following example
+show the benefit.</p>
+
+<pre><code class="language-golang highlight"><span class="k">type</span><span class="x"> </span><span class="n">ExampleTemplate</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
+  </span><span class="n">Name</span><span class="x"> </span><span class="kt">string</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">func</span><span class="x"> </span><span class="p">(</span><span class="n">et</span><span class="x"> </span><span class="o">*</span><span class="n">ExampleTemplate</span><span class="p">)</span><span class="x"> </span><span class="n">Render</span><span class="p">(</span><span class="n">pkg</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">Package</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+  </span><span class="n">pkg</span><span class="o">.</span><span class="n">AddCommands</span><span class="p">(</span><span class="s">"hello"</span><span class="p">,</span><span class="x"> </span><span class="n">Shell</span><span class="p">(</span><span class="s">"Hello {{ .Name }}"</span><span class="p">))</span><span class="x">
+</span><span class="p">}</span></code></pre>
+
+<p>This way no complex string concatenation is required, but values and functions
+can be used directly. Error detection is deferred from compile to run time, but
+as command building happens prior to starting the actual execution urknall will
+fail early.</p>
+
+<p>There are commands where the rendering must be limited to specific parts and it
+is not sufficient to just render the output of the <code>Shell</code> function. This is a
+problem for example with the the <code>FileCommand</code> example where the given content
+must be rendered, as it encoded (base64) and zipped when returned.</p>
+
+<p>For this to work commands must be rendered prior to usage. The <code>Renderer</code>
+interface shows this is supported.</p>
+
+<pre><code class="language-golang highlight"><span class="k">type</span><span class="x"> </span><span class="n">Renderer</span><span class="x"> </span><span class="k">interface</span><span class="x"> </span><span class="p">{</span><span class="x">
+  </span><span class="n">Render</span><span class="p">(</span><span class="n">i</span><span class="x"> </span><span class="k">interface</span><span class="p">{})</span><span class="x">
+</span><span class="p">}</span></code></pre>
+
+<p>There is a helper function in the <code>github.com/dynport/urknall/utils</code> packages
+named <code>MustRenderTemplate</code> that can be used to do the actual rendering.</p>
+
+<h3 id="the-validator-interface">The <code>Validator</code> Interface</h3>
+
+<p>The <code>Validator</code> interface can be used to do more complex validations, like
+making sure all required values are set properly.</p>
+
+<pre><code class="language-golang highlight"><span class="k">type</span><span class="x"> </span><span class="n">Validator</span><span class="x"> </span><span class="k">interface</span><span class="x"> </span><span class="p">{</span><span class="x">
+  </span><span class="n">Validate</span><span class="p">()</span><span class="x"> </span><span class="kt">error</span><span class="x">
+</span><span class="p">}</span></code></pre>
+
+<p>TODO: well that could be described better I guess</p>
+
+<h2 id="tasks">Tasks</h2>
+
+<p>Tasks are ordered collections of commands. Usually there is no need to handle
+them manually, except for situation’s where conditionals are required inside a
+cached entity. The following subsection will describe this scenario. In the
+following caching will be described as tasks are the layer where it is applied.</p>
+
+<h3 id="manual-task-generation">Manual Task Generation</h3>
+
+<p>Urknall provides the <code>NewTask</code> function that will generate a blank task that
+commands can be added to manually.</p>
+
+<p>TODO: missing example that properly explains the need for this. cache breaking for bundle install?</p>
+
+<h3 id="caching">Caching</h3>
+
+<p>One of the core features of urknall is the caching layer that will decide
+whether or not a command must be executed. This is essential if provisioning is
+run more than once, which is useful in many situations:</p>
+
+<ul>
+  <li>While developing templates the turnaround time is pretty short, as only
+changed or added parts need to be executed.</li>
+  <li>When an already provisioned target must be extended only the relevant parts
+are touched.</li>
+  <li>Changes to an existing setup are possible without disrupting the overall
+service.</li>
+</ul>
+
+<p>Without this feature repeated provisioning would only be possible if all
+commands would be idempotent, i.e. could be run over and over again without
+changing results. This is a stark restriction that would require a lot of
+thought to get right.</p>
+
+<p>TODO: Is it even possible to build proper idempotent commands without being
+      restricted to trivial problems?</p>
+
+<p>Each task is defined by the ordered list of commands that need to be executed.
+The commands are identified by the hash of the command actually executed. If it
+was executed successfully a file will be written on the target. These files can
+be found under <code>/var/lib/urknall/&lt;task-name&gt;/&lt;hash&gt;.done</code>. Prior to running a
+task all files with this pattern from this directory will be listed.  This list
+can be used as foundation for the cache. If a command’s hash is contained in
+this list the command must not be executed again. If it isn’t all remaining
+commands must be executed.</p>
+
+<h2 id="packages">Packages</h2>
+
+<p>Packages are an strictly internal data-structure. It is a container for all the
+tasks that must be executed on the target. The interface is just exposed to the
+user when rendering templates. There are three possibilities for adding tasks:</p>
+
+<ul>
+  <li>Using the <code>AddTemplate</code> method the given template will be rendered into the
+current template, i.e. all tasks generated inside the “child” template are
+added to the “parent”. This is required to build template hierarchies.</li>
+  <li>The <code>AddTask</code> method will add the given manually created task.</li>
+  <li>With <code>AddCommands</code> a task is generated internally using the list of commands
+given.</li>
+</ul>
+
+<p>Each of these commands is given a string that is used as identifier for the
+underlying task. In case of template hierarchies the different layers’ names
+are concatenated using dots.</p>
+
+<h2 id="templates">Templates</h2>
+
+<p>Templates are used to define the list of tasks that should be performed during
+provisioning. Conceptually they are structs that implement the <code>Template</code>
+interface, i.e. have a <code>Render</code> method that will extend a given <code>Package</code>.
+These steps are influenced by the configuration of the template.</p>
+
+<p>When building a template hierarchy, from the root template given to the <code>Build</code>
+function towards some more generic templates it might be necessary to have a
+lot of configuration options on the root, that are handed through to the leafs.
+This way there is a single interface for setting and changing configuration
+which helps with handling more complex scenarios.</p>
+
+<p>TODO: need motivation why we need the special <code>Template</code> abstraction layer
+instaed of directly using the <code>Packages</code>.</p>
+
+<h3 id="anonymous-render-function">Anonymous Render Function</h3>
+
+<p>Sometimes there are templates that don’t have any configuration. There is the
+<code>TemplateFunc</code> mechanism shown in the following example.</p>
+
+<pre><code class="language-golang highlight"><span class="k">func</span><span class="x"> </span><span class="n">templateFunc</span><span class="p">(</span><span class="n">pkg</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">Package</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+  </span><span class="n">pkg</span><span class="o">.</span><span class="n">AddCommands</span><span class="p">(</span><span class="s">"hello"</span><span class="p">,</span><span class="x"> </span><span class="s">"echo hello world"</span><span class="p">))</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">type</span><span class="x"> </span><span class="n">template</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
+  </span><span class="p">[</span><span class="o">..</span><span class="p">]</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">func</span><span class="x"> </span><span class="p">(</span><span class="n">t</span><span class="x"> </span><span class="o">*</span><span class="n">template</span><span class="p">)</span><span class="x"> </span><span class="n">Render</span><span class="p">(</span><span class="n">pkg</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">Package</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+  </span><span class="n">pkg</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="s">"anon"</span><span class="p">,</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">TemplateFunc</span><span class="p">(</span><span class="n">templateFunc</span><span class="p">))</span><span class="x">
+</span><span class="p">}</span></code></pre>
+
+<h2 id="targets">Targets</h2>
+
+<p>The target is the “host” where the commands are executed on. Currently there is
+support for remote execution using SSH and running commands locally.</p>
+
+<h3 id="remote-target">Remote Target</h3>
+
+<p>The remote target mechanism uses SSH to connect to the remote machine and sends
+everything back and forth through this channel. The connection opened initially
+is kept for the complete session.</p>
+
+<p>There are two basic mechanisms for authentication using SSH, a password or a
+public key can be used. They are instantiated using the <code>NewSshTarget</code> or
+<code>NewSsshTargetWithPassword</code> respectively.</p>
+
+<p>Please note that the public key mechanism won’t read your <code>~/.ssh</code> directory
+and you need to add your key to an ssh-agent.</p>
+
+<h3 id="local-target">Local Target</h3>
+
+<p>This target can be used to provision the local host.</p>
+
+<p>TODO: motivation?</p>
+
+<h3 id="sudo-without-password">Sudo Without Password</h3>
+
+<p>Urknall must be able to execute commands like installing packages or creating
+users, which require <code>root</code> permissions. If you’re not provisioning
+using the <code>root</code> user the <code>sudo</code> mechanism is required. As manual entry of
+passwords is tedious it is required that the user is allowed sudo without
+password. This can be achieved by adding the following setting (make sure you
+change the username from ‘ubuntu’ to whatever suits you):</p>
+
+<pre><code>echo "ubuntu ALL=(ALL) NOPASSWD:ALL" &gt; /etc/sudoers.d/90-nopassword
+</code></pre>
+
+<p>Now you should verify that there is no password required on running commands
+with <code>sudo</code>.</p>
+
+
+</div>
+
+
+<hr/>
+
+<footer>
+<div class="container">
+	<p>© <a href="http://www.dynport.de">Dynport GmbH</a> 2014</p>
+</div>
+</footer>
+
+
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="/js/bootstrap.min.js"></script>
+</body>
+</html>
