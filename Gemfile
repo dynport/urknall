@@ -8,5 +8,6 @@ gem 'rouge', '~> 1.4'
 
 group :development do
 	gem 'adsf'
+	gem 'guard-nanoc'
 end
 
