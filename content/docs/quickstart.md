@@ -35,10 +35,11 @@ urknall [binary](../binary/)'s `init` command:
 	#!shell
 	$ urknall init example
 
-Besides the a basic set of [commands](../glossary/#Command), the `main.go` file
-is creatted, that ahs code that configures and drives the urknall
-[library](../library) with a simple [template](../glossary/#Template). The
-generated code can be compiled to a binary, used to do the actual provisioning.
+Besides the a basic set of [commands](../binary/#project-scaffolding), the
+`main.go` file is creatted, that ahs code that configures and drives the
+urknall [library](../library) with a simple [template](../library/#templates).
+The generated code can be compiled to a binary, used to do the actual
+provisioning.
 
 
 ## Running The Basic Example

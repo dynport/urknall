@@ -3,6 +3,7 @@ title: Binary
 ---
 
 # Urknall Binary
+{:.no_toc}
 
 Urknall comes in two flavors: binary and library. This is, as there are two
 separate problems that need to be solved. On the one hand there must be the
@@ -13,6 +14,9 @@ should be executed. While this is mostly the users' domain making basic stuff
 available helps a lot with bootstrapping projects. This is the binary's purpose
 and the next subsection is going to explain its evolution. Afterwards the
 different use cases are discussed.
+
+* TOC
+{:toc}
 
 
 ## Urknall's Evolution
