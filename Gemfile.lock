@@ -56,4 +56,4 @@ DEPENDENCIES
   nanoc (~> 3.7)
   nokogiri (~> 1.6.0)
   rake (~> 0.9.2)
-  rouge (~> 1.4)
+  rouge (~> 1.6.2)

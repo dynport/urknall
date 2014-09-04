@@ -38,6 +38,19 @@ is useful if a command requires multiple (maybe complicated) steps that somehow
 obfuscate the intention of the command. For an example have a look into the
 `cmd_file.go` file.
 
+	#!golang
+	Shell("echo -n hello && echo world")
+	WriteFile("/tmp/foo", "some content", "root", 0644)
+
+The first example show a simple shell command, that will be executed directly
+on the machine. The second example is much more elaborate, as it will be
+expanded into a series of commands that will create a file `/tmp/foo`
+containing the line `some content` with owner set to `root` and permissions set
+to `0644`. This mechanism has the benefit that code is better readable, the
+compiler can support with types and internally logging can be modified to be
+more specific on what a series of commands actually does.
+
+
 
 ## Package
 

@@ -36,21 +36,20 @@ First everything was bundled with the library, i.e. the implementations of some
 basic commands and templates were part of the library itself. This meant users
 would be using them like the following:
 
-~~~ golang
-import (
-  "github.com/dynport/urknall/commands"
-  "github.com/dynport/urknall/packages"
-)
+	#!golang
+	import (
+	  "github.com/dynport/urknall/commands"
+	  "github.com/dynport/urknall/packages"
+	)
 
-type template {
-  [...]
-}
+	type template {
+	  [...]
+	}
 
-func (t *template) Render(pkg urknall.Package) {
-  pkg.AddTemplate("ruby", &packages.Ruby{Version: "2.1.2"})
-  pkg.AddCommands("hello", &commands.Shell("echo hello world"))
-}
-~~~
+	func (t *template) Render(pkg urknall.Package) {
+	  pkg.AddTemplate("ruby", &packages.Ruby{Version: "2.1.2"})
+	  pkg.AddCommands("hello", &commands.Shell("echo hello world"))
+	}
 
 There are two problem with the approach. If we changed a template or even worse
 a command everyone updating urknall would have his caches broken as the
@@ -85,7 +84,7 @@ requires a network connection, it has the benefit, that changes to the
 templates require no update of the urknall binary itself.
 
 
-## Project Management
+## Project Scaffolding
 
 The urknall binary can be used to create a simple basic urknall provisioning
 tool. This is to help with the basic steps of creating a new project. Besides a
@@ -93,31 +92,48 @@ basic file with a `main` function, that initializes and uses the urknall
 system, some command definitions (with a fokus on ubuntu based systems) are
 added.
 
-~~~ shell
-$ urknall init example
-loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_add_user.go?ref=master"
-saving file "cmd_add_user.go" to "/private/tmp/example/cmd_add_user.go"
-loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_as_user.go?ref=master"
-saving file "cmd_as_user.go" to "/private/tmp/example/cmd_as_user.go"
-loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_bool.go?ref=master"
-saving file "cmd_bool.go" to "/private/tmp/example/cmd_bool.go"
-loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_download.go?ref=master"
-saving file "cmd_download.go" to "/private/tmp/example/cmd_download.go"
-loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_extract_file.go?ref=master"
-saving file "cmd_extract_file.go" to "/private/tmp/example/cmd_extract_file.go"
-loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_file.go?ref=master"
-saving file "cmd_file.go" to "/private/tmp/example/cmd_file.go"
-loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_fileutils.go?ref=master"
-saving file "cmd_fileutils.go" to "/private/tmp/example/cmd_fileutils.go"
-loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_shell.go?ref=master"
-saving file "cmd_shell.go" to "/private/tmp/example/cmd_shell.go"
-loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_ubuntu.go?ref=master"
-saving file "cmd_ubuntu.go" to "/private/tmp/example/cmd_ubuntu.go"
-loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_wait.go?ref=master"
-saving file "cmd_wait.go" to "/private/tmp/example/cmd_wait.go"
-loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/main.go?ref=master"
-saving file "main.go" to "/private/tmp/example/main.go"
-~~~
+	#!shell
+	$ urknall init example
+	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_add_user.go?ref=master"
+	saving file "cmd_add_user.go" to "/private/tmp/example/cmd_add_user.go"
+	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_as_user.go?ref=master"
+	saving file "cmd_as_user.go" to "/private/tmp/example/cmd_as_user.go"
+	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_bool.go?ref=master"
+	saving file "cmd_bool.go" to "/private/tmp/example/cmd_bool.go"
+	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_download.go?ref=master"
+	saving file "cmd_download.go" to "/private/tmp/example/cmd_download.go"
+	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_extract_file.go?ref=master"
+	saving file "cmd_extract_file.go" to "/private/tmp/example/cmd_extract_file.go"
+	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_file.go?ref=master"
+	saving file "cmd_file.go" to "/private/tmp/example/cmd_file.go"
+	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_fileutils.go?ref=master"
+	saving file "cmd_fileutils.go" to "/private/tmp/example/cmd_fileutils.go"
+	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_shell.go?ref=master"
+	saving file "cmd_shell.go" to "/private/tmp/example/cmd_shell.go"
+	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_ubuntu.go?ref=master"
+	saving file "cmd_ubuntu.go" to "/private/tmp/example/cmd_ubuntu.go"
+	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_wait.go?ref=master"
+	saving file "cmd_wait.go" to "/private/tmp/example/cmd_wait.go"
+	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/main.go?ref=master"
+	saving file "main.go" to "/private/tmp/example/main.go"
+
+The files installed contain the following commands:
+
+* `InstallPackages` and `UpdatePackages` from `cmd_ubuntu.go`: These commands
+  are useful to manage packages on an ubuntu system. Replace these commands
+  with something that supports your platform if it is not ubuntu (or debian
+  based).
+* `Mkdir` from `cmd_fileutils.go`: Create directories with a owner and
+  permissions set accordingly.
+* `WriteFile` from `cmd_file.go`: The command will write given content to a
+  specific files with owner and permissions set as specified. The content will
+  be contained in the generated shell command  as gzipped and base64 encoded
+  string.
+* `Download` and `DownloadAndExtract` from `cmd_download.go`: Uses `curl` to
+  download content from a given URI and save or extract respectively it to a
+  given location.
+
+There are many more commands. See `godoc` for more information.
 
 
 ## Template Management
@@ -128,5 +144,30 @@ project with the urknall binary.
 * `urknall templates list` lists all available templates.
 * `urknall templates add <template names>` adds the given templates to the
   project.
+
+The `urknall templates list` command lists the available templates. These are
+retrieved from urknall's
+[github repository](https://github.com/dynport/urknall/tree/master/examples),
+so a network connection is required! At the time when this guide was written
+the following templates were available:
+
+	#!shell
+	$ urknall templates list
+	available packages:
+	* docker
+	* elasticsearch
+	* firewall
+	* golang
+	* haproxy
+	* jenkins
+	* nginx
+	* openvpn
+	* postgis
+	* postgres
+	* rabbitmq
+	* redis
+	* ruby
+	* syslogng
+	* system
 
 

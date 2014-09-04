@@ -5,13 +5,32 @@ title: Library
 # Urknall Library
 {:.no_toc}
 
-The library part of urknall is where most of the magic happens. For a detailed
-information on the API of urknall have look into the [API
-documentation](http://godoc.org/github/dynport/urknall). This guide shows the
-basic information required for using urknall.
+The library part of urknall provides the core mechanisms to execute commands on
+a target. For a detailed information on the API of urknall have look into the
+[API documentation](http://godoc.org/github/dynport/urknall). This guide
+explains the basic ideas behind the concepts.
 
 * TOC
 {:toc}
+
+
+## Logging
+
+Urknall's logging must be configured prior to usage. Internally a
+publisher-subscribe mechanism is used, that has more complex features, but the
+default configuration should be sufficient in most cases. The `main.go` file
+created by the [urknall binary](../binary/#init) does so in the first line of
+the run function:
+
+	#!golang
+	func run() error {
+	  defer urknall.OpenLogger(os.Stdout).Close()
+	  // [...]
+	}
+
+This configures the logging to write all output to the process's standard
+output channel and close the logger on program termination (this is done using
+the `defer` statement).
 
 
 ## Commands
@@ -20,26 +39,28 @@ What urknall actually does is executing commands on a target. Commands in the
 sense of shell commands. Internally these are modelled using the `Commands`
 interface. A basic set of implementations is provided using the [urknall
 binary](../binary/#urknall_init). There is a most basic `ShellCommand` for
-example, that is given a string, that is execute as is. A more advanced example
-would be the `FileCommand` that writes given content to file with given owner
-and permissions.
+example, that is given a string, that is executed as is. A more advanced
+example would be the `FileCommand` that writes given content to a file with
+given owner and permissions.
 
-The following subsubsection will show different interfaces that must (or can)
-be implemented by commands.
+The following subsubsections will show different interfaces that must (or can)
+be implemented by commands and their intent.
 
 
 ### The `Commands` Interface
 
 Every command must implement the `Command` interface:
 
-~~~ golang
-type Command interface {
-  Shell() string
-}
-~~~
+	#!golang
+	type Command interface {
+	  Shell() string
+	}
 
 The `Shell` function must return the command that should be executed on the
-remote host, i.e. the plain shell command.
+remote host, i.e. the plain shell command. All standard `sh` features are
+supported, from pipes to subshells and more.
+
+TODO: add information on how to (or better not) use input and output redirects.
 
 
 ### The `Logger` Interface
@@ -48,14 +69,14 @@ Some commands can get pretty complex and obfuscate the real intent by this
 complexity. The `FileCommand` already mentioned is an example. To simplify the
 logging output, there is the `Logger` interface.
 
-~~~ golang
-type Logger interface {
-  Logging() string
-}
-~~~
+	#!golang
+	type Logger interface {
+	  Logging() string
+	}
 
-If a command implements the interface this function is called to generate the
-string to be logged. Otherwise the output of the `Shell` function will be used.
+If a command implements this interface the function is called to generate the
+string used for logging. Otherwise the raw output of the `Shell` function will
+be used.
 
 
 ### The `Renderer` Interface
@@ -65,15 +86,14 @@ strings using go's templating (templating in the sense of having special marks
 in a string that are replaced with content) mechanism. The following example
 show the benefit.
 
-~~~ golang
-type ExampleTemplate struct {
-  Name string
-}
+	#!golang
+	type ExampleTemplate struct {
+	  Name string
+	}
 
-func (et *ExampleTemplate) Render(pkg urknall.Package) {
-  pkg.AddCommands("hello", Shell("Hello {{ .Name }}"))
-}
-~~~
+	func (et *ExampleTemplate) Render(pkg urknall.Package) {
+	  pkg.AddCommands("hello", Shell("Hello {{ .Name }}"))
+	}
 
 This way no complex string concatenation is required, but values and functions
 can be used directly. Error detection is deferred from compile to run time, but
@@ -88,11 +108,10 @@ must be rendered, as it encoded (base64) and zipped when returned.
 For this to work commands must be rendered prior to usage. The `Renderer`
 interface shows this is supported.
 
-~~~ golang
-type Renderer interface {
-  Render(i interface{})
-}
-~~~
+	#!golang
+	type Renderer interface {
+	  Render(i interface{})
+	}
 
 There is a helper function in the `github.com/dynport/urknall/utils` packages
 named `MustRenderTemplate` that can be used to do the actual rendering.
@@ -103,11 +122,10 @@ named `MustRenderTemplate` that can be used to do the actual rendering.
 The `Validator` interface can be used to do more complex validations, like
 making sure all required values are set properly.
 
-~~~ golang
-type Validator interface {
-  Validate() error
-}
-~~~
+	#!golang
+	type Validator interface {
+	  Validate() error
+	}
 
 TODO: well that could be described better I guess
 
@@ -158,6 +176,8 @@ can be used as foundation for the cache. If a command's hash is contained in
 this list the command must not be executed again. If it isn't all remaining
 commands must be executed.
 
+TODO: add information on how to best partition the cache.
+
 
 ## Packages
 
@@ -181,8 +201,9 @@ are concatenated using dots.
 
 Templates are used to define the list of tasks that should be performed during
 provisioning. Conceptually they are structs that implement the `Template`
-interface, i.e. have a `Render` method that will extend a given `Package`.
-These steps are influenced by the configuration of the template.
+interface, i.e. have a `Render` method that will extend a given `Package`. For
+convenience there is a `TemplateFunc` type that allows to add templates without
+configuration, i.e. a simple Render function.
 
 When building a template hierarchy, from the root template given to the `Build`
 function towards some more generic templates it might be necessary to have a
@@ -190,28 +211,64 @@ lot of configuration options on the root, that are handed through to the leafs.
 This way there is a single interface for setting and changing configuration
 which helps with handling more complex scenarios.
 
-TODO: need motivation why we need the special `Template` abstraction layer
-instaed of directly using the `Packages`.
+
+When creating the `main.go` file using the [urknall binary](../binary/#init) a
+simple template without configuration is generated.
+
+	#!golang
+	type Template struct {
+	}
+	
+	func (tpl *Template) Render(p urknall.Package) {
+	  p.AddCommands("hello", Shell("echo hello world"))
+	}
+
+As the template has no configuration the example could be changed to use the
+`TemplateFunc` mechanism as described in the next subsection. The last
+subsection describes the annotation mechanism provided by urknall to give
+constraints on a template's configuration.
 
 
 ### Anonymous Render Function
 
 Sometimes there are templates that don't have any configuration. There is the
-`TemplateFunc` mechanism shown in the following example.
+`TemplateFunc` mechanism shown in the following example to avoid unnecessary code.
 
-~~~ golang
-func templateFunc(pkg urknall.Package) {
-  pkg.AddCommands("hello", "echo hello world"))
-}
+	#!golang
+	func templateFunc(pkg urknall.Package) {
+	  pkg.AddCommands("hello", Shell("echo hello world"))
+	}
 
-type template struct {
-  [..]
-}
+	func run() {
+	  return urknall.Run(target, urknall.TemplateFunc(templateFunc))
+	}
 
-func (t *template) Render(pkg urknall.Package) {
-  pkg.Add("anon", urknall.TemplateFunc(templateFunc))
-}
-~~~
+
+### Annotations
+
+Urknall provides an annotation based mechanism to give further constraints on a
+template's configuration. In the [quickstart guide](../quickstart/) the
+`required` and `default` tags were used.
+
+	#!golang
+	type Template struct {
+	  RubyVersion  string `urknall:"required=true"`
+	  NginxVersion string `urknall:"default=1.4.1"`
+	}
+
+Prior to rendering templates to a target, urknall will validate it. This
+validation takes the annotations into account, i.e. it verifies that:
+
+* `required` fields have not go's zero value set.
+* fields with a `default` tag get this value set if none was specified.
+* an integer field with `min` or `max` annotations fullfill the respective
+  constraints.
+* for string fields the value's length is validate if the `size` annotation is
+  given.
+
+This helps to prevent missing configuration items prior to executing commands,
+that would fail otherwise.
+
 
 ## Targets
 
@@ -219,18 +276,41 @@ The target is the "host" where the commands are executed on. Currently there is
 support for remote execution using SSH and running commands locally.
 
 
-### Remote Target
+### Remot Target
 
 The remote target mechanism uses SSH to connect to the remote machine and sends
-everything back and forth through this channel. The connection opened initially
-is kept for the complete session.
+everything back and forth through this secured channel. The connection opened
+initially is kept for the complete session.
 
-There are two basic mechanisms for authentication using SSH, a password or a
-public key can be used. They are instantiated using the `NewSshTarget` or
-`NewSsshTargetWithPassword` respectively.
+Authentication on the remote host is either done using a password or
+public key for the used user. The password based approach shouldn't be used for
+production setups so, but might be the most pragmatic solution for testing
+purposes.
 
-Please note that the public key mechanism won't read your `~/.ssh` directory
-and you need to add your key to an ssh-agent.
+The public key authentication mechanism doesn't search the `~/.ssh` directory
+for keys, but relies on a configure _ssh-agent_ running.
+
+The `main.go` file created by the [urknall binary](../binary/#init) provides
+both mechanisms depending on the availability of a password, using the
+`NewSshTarget` and `NewSshTargetWithPassword` respectively. The `uri` and
+`password` must be configured depending of the user's use case, of course.
+
+	#!golang
+	func run() error {
+	  // [...]
+	  var target urknall.Target
+	  uri := "ubuntu@my.host"
+	  password := ""
+	  if password != "" {
+	    target, e = urknall.NewSshTargetWithPassword(uri, password)
+	  } else {
+	    target, e = urknall.NewSshTarget(uri)
+	  }
+	  if e != nil {
+	    return e
+	  }
+	 // [...]
+	}
 
 
 ### Local Target
@@ -253,6 +333,5 @@ change the username from 'ubuntu' to whatever suits you):
 
 Now you should verify that there is no password required on running commands
 with `sudo`.
-
 
 
