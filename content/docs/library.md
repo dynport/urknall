@@ -7,7 +7,7 @@ title: Library
 
 The library part of urknall provides the core mechanisms to execute commands on
 a target. For a detailed information on the API of urknall have look into the
-[API documentation](http://godoc.org/github/dynport/urknall). This guide
+[API documentation](http://godoc.org/github/dynport/urknall){:target='blank'}. This guide
 explains the basic ideas behind the concepts.
 
 * TOC

@@ -10,7 +10,7 @@ layout: frontpage
 				<h1>Urknall <small>Opinionated provisioning for clever developers</small></h1>
 			</div>
 
-			<p>Urknall is the basic building block for creating <a href="http://golang.org">go</a>
+			<p>Urknall is the basic building block for creating <a href="http://golang.org" target="_blank">go</a>
 			based tools for the administration of complex infrastructure. It
 			provides the mechanisms to access resources and keep a cache of
 			executed tasks.  Description of tasks is done using a mix of
@@ -53,12 +53,12 @@ layout: frontpage
 <div class="row" style="margin-top: 20px;">
 	<div class="container">
 		<div class="col-lg-12">
-			<h2>Installation</h2>
+			<h2 id="installation">Installation</h2>
 
 			<p>To install urknall a proper go setup is required. See
-			<a href="http://www.golang.org">go</a> for further information on
+			<a href="http://www.golang.org" target="_blank">go</a> for further information on
 			how to do so. This page has a helpful
-			<a href="http://tour.golang.org">tour</a> on the language itself that
+			<a href="http://tour.golang.org" target="_blank">tour</a> on the language itself that
 			might be a good quick introduction, when you haven't use go yet.</p>
 
 			<p>Installation of urknall is as easy as running the following command:</p>
@@ -66,8 +66,8 @@ layout: frontpage
 			<pre><code>$ go get github.com/dynport/urknall/urknall</code></pre>
 
 			<p>This will download the source to <code>$GOPATH/src/github.com/dynport/urknall</code> and
-			install the <a href="../binary/">urknall binary</a> to <code>$GOPATH/bin</code> (which should be in your
-			<code>$PATH</code> environment for best experience) and <a href="../library/">urknall library</a> to the
+			install the <a href="<%= relative_path_to '/docs/binary/' %>">urknall binary</a> to <code>$GOPATH/bin</code> (which should be in your
+			<code>$PATH</code> environment for best experience) and <a href="<%= relative_path_to '/docs/library/' %>">urknall library</a> to the
 			subtree in <code>$GOPATH/pkg</code>.</p>
 		</div>
 	</div>

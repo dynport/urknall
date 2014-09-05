@@ -16,9 +16,9 @@ urknall.
 
 ## Requirements
 
-Make sure urknall is properly installed as described [here](../installation/).
+Make sure urknall is properly installed as described [here](../../#installation).
 Additionally a machine is needed to provision to (see
-[VirtualBox](https://www.virtualbox.org) on how to create a virtual machine),
+[VirtualBox](https://www.virtualbox.org){:target='blank'}  on how to create a virtual machine),
 that should meet the following requirements:
 
 * The machine should have Ubuntu Trust 14.04 installed.
@@ -73,7 +73,7 @@ basic template.
 The basic template instanciated when calling urknall is now extended to
 demonstrate the execution of proper commands. The task at hand is to serve
 urknall's documentation using nginx. Ruby is required to generate the pages
-using the [nanoc](http://nanoc.ws) static page generator.
+using the [nanoc](http://nanoc.ws){:target='blank'} static page generator.
 
 
 ### The Templating System

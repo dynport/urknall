@@ -151,7 +151,7 @@ project with the urknall binary.
 
 The `urknall templates list` command lists the available templates. These are
 retrieved from urknall's
-[github repository](https://github.com/dynport/urknall/tree/master/examples),
+[github repository](https://github.com/dynport/urknall/tree/master/examples){:target='blank'},
 so a network connection is required! At the time when this guide was written
 the following templates were available:
 
