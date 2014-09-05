@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>Urknall Documentation - Library</title>
 <link rel="stylesheet" href="../../stylesheet.css">
-<link href="../../css/pygments.css media="screen" rel="stylesheet" type="text/css">
+<link href="../../css/pygments.css" media="screen" rel="stylesheet" type="text/css">
 
 <!-- Bootstrap -->
 <link href="../../css/bootstrap.min.css" rel="stylesheet">
@@ -39,7 +39,6 @@
 				<li><a href="../quickstart/">QuickStart</a></li>
 				<li class="active"><a href="./">Library</a></li>
 				<li><a href="../binary/">Binary</a></li>
-				<li><a href="../glossary/">Glossary</a></li>
 			</ul>
 		</div><!--/.nav-collapse -->
 	</div>
@@ -52,12 +51,13 @@
 
 <h1 class="no_toc" id="urknall-library">Urknall Library</h1>
 
-<p>The library part of urknall is where most of the magic happens. For a detailed
-information on the API of urknall have look into the <a href="http://godoc.org/github/dynport/urknall">API
-documentation</a>. This guide shows the
-basic information required for using urknall.</p>
+<p>The library part of urknall provides the core mechanisms to execute commands on
+a target. For a detailed information on the API of urknall have look into the
+<a href="http://godoc.org/github/dynport/urknall">API documentation</a>. This guide
+explains the basic ideas behind the concepts.</p>
 
 <ul id="markdown-toc">
+  <li><a href="#logging">Logging</a></li>
   <li>
 <a href="#commands">Commands</a>    <ul>
       <li><a href="#the-commands-interface">The <code>Commands</code> Interface</a></li>
@@ -76,16 +76,34 @@ basic information required for using urknall.</p>
   <li>
 <a href="#templates">Templates</a>    <ul>
       <li><a href="#anonymous-render-function">Anonymous Render Function</a></li>
+      <li><a href="#annotations">Annotations</a></li>
     </ul>
   </li>
   <li>
 <a href="#targets">Targets</a>    <ul>
-      <li><a href="#remote-target">Remote Target</a></li>
+      <li><a href="#remot-target">Remot Target</a></li>
       <li><a href="#local-target">Local Target</a></li>
       <li><a href="#sudo-without-password">Sudo Without Password</a></li>
     </ul>
   </li>
 </ul>
+
+<h2 id="logging">Logging</h2>
+
+<p>Urknall’s logging must be configured prior to usage. Internally a
+publisher-subscribe mechanism is used, that has more complex features, but the
+default configuration should be sufficient in most cases. The <code>main.go</code> file
+created by the <a href="../binary/#init">urknall binary</a> does so in the first line of
+the run function:</p>
+
+<pre><code class="language-golang highlight"><span class="k">func</span><span class="x"> </span><span class="n">run</span><span class="p">()</span><span class="x"> </span><span class="kt">error</span><span class="x"> </span><span class="p">{</span><span class="x">
+  </span><span class="k">defer</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">OpenLogger</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">Stdout</span><span class="p">)</span><span class="o">.</span><span class="n">Close</span><span class="p">()</span><span class="x">
+  </span><span class="c">// [...]</span><span class="x">
+</span><span class="p">}</span></code></pre>
+
+<p>This configures the logging to write all output to the process’s standard
+output channel and close the logger on program termination (this is done using
+the <code>defer</code> statement).</p>
 
 <h2 id="commands">Commands</h2>
 
@@ -93,12 +111,12 @@ basic information required for using urknall.</p>
 sense of shell commands. Internally these are modelled using the <code>Commands</code>
 interface. A basic set of implementations is provided using the <a href="../binary/#urknall_init">urknall
 binary</a>. There is a most basic <code>ShellCommand</code> for
-example, that is given a string, that is execute as is. A more advanced example
-would be the <code>FileCommand</code> that writes given content to file with given owner
-and permissions.</p>
+example, that is given a string, that is executed as is. A more advanced
+example would be the <code>FileCommand</code> that writes given content to a file with
+given owner and permissions.</p>
 
-<p>The following subsubsection will show different interfaces that must (or can)
-be implemented by commands.</p>
+<p>The following subsubsections will show different interfaces that must (or can)
+be implemented by commands and their intent.</p>
 
 <h3 id="the-commands-interface">The <code>Commands</code> Interface</h3>
 
@@ -109,7 +127,10 @@ be implemented by commands.</p>
 </span><span class="p">}</span></code></pre>
 
 <p>The <code>Shell</code> function must return the command that should be executed on the
-remote host, i.e. the plain shell command.</p>
+remote host, i.e. the plain shell command. All standard <code>sh</code> features are
+supported, from pipes to subshells and more.</p>
+
+<p>TODO: add information on how to (or better not) use input and output redirects.</p>
 
 <h3 id="the-logger-interface">The <code>Logger</code> Interface</h3>
 
@@ -121,8 +142,9 @@ logging output, there is the <code>Logger</code> interface.</p>
   </span><span class="n">Logging</span><span class="p">()</span><span class="x"> </span><span class="kt">string</span><span class="x">
 </span><span class="p">}</span></code></pre>
 
-<p>If a command implements the interface this function is called to generate the
-string to be logged. Otherwise the output of the <code>Shell</code> function will be used.</p>
+<p>If a command implements this interface the function is called to generate the
+string used for logging. Otherwise the raw output of the <code>Shell</code> function will
+be used.</p>
 
 <h3 id="the-renderer-interface">The <code>Renderer</code> Interface</h3>
 
@@ -216,6 +238,8 @@ can be used as foundation for the cache. If a command’s hash is contained in
 this list the command must not be executed again. If it isn’t all remaining
 commands must be executed.</p>
 
+<p>TODO: add information on how to best partition the cache.</p>
+
 <h2 id="packages">Packages</h2>
 
 <p>Packages are an strictly internal data-structure. It is a container for all the
@@ -239,8 +263,9 @@ are concatenated using dots.</p>
 
 <p>Templates are used to define the list of tasks that should be performed during
 provisioning. Conceptually they are structs that implement the <code>Template</code>
-interface, i.e. have a <code>Render</code> method that will extend a given <code>Package</code>.
-These steps are influenced by the configuration of the template.</p>
+interface, i.e. have a <code>Render</code> method that will extend a given <code>Package</code>. For
+convenience there is a <code>TemplateFunc</code> type that allows to add templates without
+configuration, i.e. a simple Render function.</p>
 
 <p>When building a template hierarchy, from the root template given to the <code>Build</code>
 function towards some more generic templates it might be necessary to have a
@@ -248,43 +273,100 @@ lot of configuration options on the root, that are handed through to the leafs.
 This way there is a single interface for setting and changing configuration
 which helps with handling more complex scenarios.</p>
 
-<p>TODO: need motivation why we need the special <code>Template</code> abstraction layer
-instaed of directly using the <code>Packages</code>.</p>
+<p>When creating the <code>main.go</code> file using the <a href="../binary/#init">urknall binary</a> a
+simple template without configuration is generated.</p>
+
+<pre><code class="language-golang highlight"><span class="k">type</span><span class="x"> </span><span class="n">Template</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">func</span><span class="x"> </span><span class="p">(</span><span class="n">tpl</span><span class="x"> </span><span class="o">*</span><span class="n">Template</span><span class="p">)</span><span class="x"> </span><span class="n">Render</span><span class="p">(</span><span class="n">p</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">Package</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+  </span><span class="n">p</span><span class="o">.</span><span class="n">AddCommands</span><span class="p">(</span><span class="s">"hello"</span><span class="p">,</span><span class="x"> </span><span class="n">Shell</span><span class="p">(</span><span class="s">"echo hello world"</span><span class="p">))</span><span class="x">
+</span><span class="p">}</span></code></pre>
+
+<p>As the template has no configuration the example could be changed to use the
+<code>TemplateFunc</code> mechanism as described in the next subsection. The last
+subsection describes the annotation mechanism provided by urknall to give
+constraints on a template’s configuration.</p>
 
 <h3 id="anonymous-render-function">Anonymous Render Function</h3>
 
 <p>Sometimes there are templates that don’t have any configuration. There is the
-<code>TemplateFunc</code> mechanism shown in the following example.</p>
+<code>TemplateFunc</code> mechanism shown in the following example to avoid unnecessary code.</p>
 
 <pre><code class="language-golang highlight"><span class="k">func</span><span class="x"> </span><span class="n">templateFunc</span><span class="p">(</span><span class="n">pkg</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">Package</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
-  </span><span class="n">pkg</span><span class="o">.</span><span class="n">AddCommands</span><span class="p">(</span><span class="s">"hello"</span><span class="p">,</span><span class="x"> </span><span class="s">"echo hello world"</span><span class="p">))</span><span class="x">
+  </span><span class="n">pkg</span><span class="o">.</span><span class="n">AddCommands</span><span class="p">(</span><span class="s">"hello"</span><span class="p">,</span><span class="x"> </span><span class="n">Shell</span><span class="p">(</span><span class="s">"echo hello world"</span><span class="p">))</span><span class="x">
 </span><span class="p">}</span><span class="x">
 
-</span><span class="k">type</span><span class="x"> </span><span class="n">template</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
-  </span><span class="p">[</span><span class="o">..</span><span class="p">]</span><span class="x">
-</span><span class="p">}</span><span class="x">
-
-</span><span class="k">func</span><span class="x"> </span><span class="p">(</span><span class="n">t</span><span class="x"> </span><span class="o">*</span><span class="n">template</span><span class="p">)</span><span class="x"> </span><span class="n">Render</span><span class="p">(</span><span class="n">pkg</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">Package</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
-  </span><span class="n">pkg</span><span class="o">.</span><span class="n">Add</span><span class="p">(</span><span class="s">"anon"</span><span class="p">,</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">TemplateFunc</span><span class="p">(</span><span class="n">templateFunc</span><span class="p">))</span><span class="x">
+</span><span class="k">func</span><span class="x"> </span><span class="n">run</span><span class="p">()</span><span class="x"> </span><span class="p">{</span><span class="x">
+  </span><span class="k">return</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">Run</span><span class="p">(</span><span class="n">target</span><span class="p">,</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">TemplateFunc</span><span class="p">(</span><span class="n">templateFunc</span><span class="p">))</span><span class="x">
 </span><span class="p">}</span></code></pre>
+
+<h3 id="annotations">Annotations</h3>
+
+<p>Urknall provides an annotation based mechanism to give further constraints on a
+template’s configuration. In the <a href="../quickstart/">quickstart guide</a> the
+<code>required</code> and <code>default</code> tags were used.</p>
+
+<pre><code class="language-golang highlight"><span class="k">type</span><span class="x"> </span><span class="n">Template</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
+  </span><span class="n">RubyVersion</span><span class="x">  </span><span class="kt">string</span><span class="x"> </span><span class="s">`urknall:"required=true"`</span><span class="x">
+  </span><span class="n">NginxVersion</span><span class="x"> </span><span class="kt">string</span><span class="x"> </span><span class="s">`urknall:"default=1.4.1"`</span><span class="x">
+</span><span class="p">}</span></code></pre>
+
+<p>Prior to rendering templates to a target, urknall will validate it. This
+validation takes the annotations into account, i.e. it verifies that:</p>
+
+<ul>
+  <li>
+<code>required</code> fields have not go’s zero value set.</li>
+  <li>fields with a <code>default</code> tag get this value set if none was specified.</li>
+  <li>an integer field with <code>min</code> or <code>max</code> annotations fullfill the respective
+constraints.</li>
+  <li>for string fields the value’s length is validate if the <code>size</code> annotation is
+given.</li>
+</ul>
+
+<p>This helps to prevent missing configuration items prior to executing commands,
+that would fail otherwise.</p>
 
 <h2 id="targets">Targets</h2>
 
 <p>The target is the “host” where the commands are executed on. Currently there is
 support for remote execution using SSH and running commands locally.</p>
 
-<h3 id="remote-target">Remote Target</h3>
+<h3 id="remot-target">Remot Target</h3>
 
 <p>The remote target mechanism uses SSH to connect to the remote machine and sends
-everything back and forth through this channel. The connection opened initially
-is kept for the complete session.</p>
+everything back and forth through this secured channel. The connection opened
+initially is kept for the complete session.</p>
 
-<p>There are two basic mechanisms for authentication using SSH, a password or a
-public key can be used. They are instantiated using the <code>NewSshTarget</code> or
-<code>NewSsshTargetWithPassword</code> respectively.</p>
+<p>Authentication on the remote host is either done using a password or
+public key for the used user. The password based approach shouldn’t be used for
+production setups so, but might be the most pragmatic solution for testing
+purposes.</p>
 
-<p>Please note that the public key mechanism won’t read your <code>~/.ssh</code> directory
-and you need to add your key to an ssh-agent.</p>
+<p>The public key authentication mechanism doesn’t search the <code>~/.ssh</code> directory
+for keys, but relies on a configure <em>ssh-agent</em> running.</p>
+
+<p>The <code>main.go</code> file created by the <a href="../binary/#init">urknall binary</a> provides
+both mechanisms depending on the availability of a password, using the
+<code>NewSshTarget</code> and <code>NewSshTargetWithPassword</code> respectively. The <code>uri</code> and
+<code>password</code> must be configured depending of the user’s use case, of course.</p>
+
+<pre><code class="language-golang highlight"><span class="k">func</span><span class="x"> </span><span class="n">run</span><span class="p">()</span><span class="x"> </span><span class="kt">error</span><span class="x"> </span><span class="p">{</span><span class="x">
+  </span><span class="c">// [...]</span><span class="x">
+  </span><span class="k">var</span><span class="x"> </span><span class="n">target</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">Target</span><span class="x">
+  </span><span class="n">uri</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="s">"ubuntu@my.host"</span><span class="x">
+  </span><span class="n">password</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="s">""</span><span class="x">
+  </span><span class="k">if</span><span class="x"> </span><span class="n">password</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="s">""</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">target</span><span class="p">,</span><span class="x"> </span><span class="n">e</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">NewSshTargetWithPassword</span><span class="p">(</span><span class="n">uri</span><span class="p">,</span><span class="x"> </span><span class="n">password</span><span class="p">)</span><span class="x">
+  </span><span class="p">}</span><span class="x"> </span><span class="k">else</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">target</span><span class="p">,</span><span class="x"> </span><span class="n">e</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">NewSshTarget</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span><span class="x">
+  </span><span class="p">}</span><span class="x">
+  </span><span class="k">if</span><span class="x"> </span><span class="n">e</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="k">return</span><span class="x"> </span><span class="n">e</span><span class="x">
+  </span><span class="p">}</span><span class="x">
+ </span><span class="c">// [...]</span><span class="x">
+</span><span class="p">}</span></code></pre>
 
 <h3 id="local-target">Local Target</h3>
 

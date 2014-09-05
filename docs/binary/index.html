@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>Urknall Documentation - Binary</title>
 <link rel="stylesheet" href="../../stylesheet.css">
-<link href="../../css/pygments.css media="screen" rel="stylesheet" type="text/css">
+<link href="../../css/pygments.css" media="screen" rel="stylesheet" type="text/css">
 
 <!-- Bootstrap -->
 <link href="../../css/bootstrap.min.css" rel="stylesheet">
@@ -39,7 +39,6 @@
 				<li><a href="../quickstart/">QuickStart</a></li>
 				<li><a href="../library/">Library</a></li>
 				<li class="active"><a href="./">Binary</a></li>
-				<li><a href="../glossary/">Glossary</a></li>
 			</ul>
 		</div><!--/.nav-collapse -->
 	</div>
@@ -50,7 +49,7 @@
 
 <div class="container">
 
-<h1 id="urknall-binary">Urknall Binary</h1>
+<h1 class="no_toc" id="urknall-binary">Urknall Binary</h1>
 
 <p>Urknall comes in two flavors: binary and library. This is, as there are two
 separate problems that need to be solved. On the one hand there must be the
@@ -61,6 +60,18 @@ should be executed. While this is mostly the users’ domain making basic stuff
 available helps a lot with bootstrapping projects. This is the binary’s purpose
 and the next subsection is going to explain its evolution. Afterwards the
 different use cases are discussed.</p>
+
+<ul id="markdown-toc">
+  <li>
+<a href="#urknalls-evolution">Urknall’s Evolution</a>    <ul>
+      <li><a href="#fully-integrated-library">Fully Integrated Library</a></li>
+      <li><a href="#integrated-with-a-binary">Integrated With A Binary</a></li>
+      <li><a href="#a-binary-accessing-templates-on-github">A Binary Accessing Templates On Github</a></li>
+    </ul>
+  </li>
+  <li><a href="#project-scaffolding">Project Scaffolding</a></li>
+  <li><a href="#template-management">Template Management</a></li>
+</ul>
 
 <h2 id="urknalls-evolution">Urknall’s Evolution</h2>
 
@@ -126,7 +137,7 @@ update commands and templates to the latest version.</p>
 requires a network connection, it has the benefit, that changes to the
 templates require no update of the urknall binary itself.</p>
 
-<h2 id="project-management">Project Management</h2>
+<h2 id="project-scaffolding">Project Scaffolding</h2>
 
 <p>The urknall binary can be used to create a simple basic urknall provisioning
 tool. This is to help with the basic steps of creating a new project. Besides a
@@ -158,6 +169,30 @@ saving file <span class="s2">"cmd_wait.go"</span> to <span class="s2">"/private/
 loading content from <span class="s2">"https://api.github.com/repos/dynport/urknall/contents/examples/main.go?ref=master"</span>
 saving file <span class="s2">"main.go"</span> to <span class="s2">"/private/tmp/example/main.go"</span></code></pre>
 
+<p>The files installed contain the following commands:</p>
+
+<ul>
+  <li>
+<code>InstallPackages</code> and <code>UpdatePackages</code> from <code>cmd_ubuntu.go</code>: These commands
+are useful to manage packages on an ubuntu system. Replace these commands
+with something that supports your platform if it is not ubuntu (or debian
+based).</li>
+  <li>
+<code>Mkdir</code> from <code>cmd_fileutils.go</code>: Create directories with a owner and
+permissions set accordingly.</li>
+  <li>
+<code>WriteFile</code> from <code>cmd_file.go</code>: The command will write given content to a
+specific files with owner and permissions set as specified. The content will
+be contained in the generated shell command  as gzipped and base64 encoded
+string.</li>
+  <li>
+<code>Download</code> and <code>DownloadAndExtract</code> from <code>cmd_download.go</code>: Uses <code>curl</code> to
+download content from a given URI and save or extract respectively it to a
+given location.</li>
+</ul>
+
+<p>There are many more commands. See <code>godoc</code> for more information.</p>
+
 <h2 id="template-management">Template Management</h2>
 
 <p>We have some basic templates in stock we use a lot. Those can be added to a
@@ -170,6 +205,30 @@ project with the urknall binary.</p>
 <code>urknall templates add &lt;template names&gt;</code> adds the given templates to the
 project.</li>
 </ul>
+
+<p>The <code>urknall templates list</code> command lists the available templates. These are
+retrieved from urknall’s
+<a href="https://github.com/dynport/urknall/tree/master/examples">github repository</a>,
+so a network connection is required! At the time when this guide was written
+the following templates were available:</p>
+
+<pre><code class="language-shell highlight"><span class="gp">$ </span>urknall templates list
+available packages:
+<span class="k">*</span> docker
+<span class="k">*</span> elasticsearch
+<span class="k">*</span> firewall
+<span class="k">*</span> golang
+<span class="k">*</span> haproxy
+<span class="k">*</span> jenkins
+<span class="k">*</span> nginx
+<span class="k">*</span> openvpn
+<span class="k">*</span> postgis
+<span class="k">*</span> postgres
+<span class="k">*</span> rabbitmq
+<span class="k">*</span> redis
+<span class="k">*</span> ruby
+<span class="k">*</span> syslogng
+<span class="k">*</span> system</code></pre>
 
 
 </div>

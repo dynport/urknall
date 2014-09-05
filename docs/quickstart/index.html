@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>Urknall Documentation - QuickStart</title>
 <link rel="stylesheet" href="../../stylesheet.css">
-<link href="../../css/pygments.css media="screen" rel="stylesheet" type="text/css">
+<link href="../../css/pygments.css" media="screen" rel="stylesheet" type="text/css">
 
 <!-- Bootstrap -->
 <link href="../../css/bootstrap.min.css" rel="stylesheet">
@@ -39,7 +39,6 @@
 				<li class="active"><a href="./">QuickStart</a></li>
 				<li><a href="../library/">Library</a></li>
 				<li><a href="../binary/">Binary</a></li>
-				<li><a href="../glossary/">Glossary</a></li>
 			</ul>
 		</div><!--/.nav-collapse -->
 	</div>
@@ -52,8 +51,8 @@
 
 <h1 class="no_toc" id="getting-started">Getting Started</h1>
 
-<p>This guide will help you to create a basic provisioning tool to deploy this
-documentation into a fresh host, thereby showing you the nuts and bolts of
+<p>This guide will demonstrate how to create a provisioning tool to deploy this
+documentation’s pages behind a nginx, thereby showing the nuts and bolts of
 urknall.</p>
 
 <ul id="markdown-toc">
@@ -63,9 +62,7 @@ urknall.</p>
   <li>
 <a href="#extending-the-basic-project">Extending The Basic Project</a>    <ul>
       <li><a href="#the-templating-system">The Templating System</a></li>
-      <li><a href="#inspecting-the-installed-templates">Inspecting The Installed Templates</a></li>
       <li><a href="#using-the-installed-templates">Using The Installed Templates</a></li>
-      <li><a href="#further-extending-the-templates">Further Extending The Templates</a></li>
     </ul>
   </li>
   <li><a href="#conclusion">Conclusion</a></li>
@@ -73,130 +70,35 @@ urknall.</p>
 
 <h2 id="requirements">Requirements</h2>
 
-<p>To reproduce the steps of this quickstart guide the following requirements must
-be met. First and foremost <a href="http://www.golang.org">go</a> must be installed and
-configured properly. See the documentation provided for details on how to do
-that. If you don’t have any experience with the go language itselff, then the
-<a href="http://tour.golang.org/#1">tour of go</a> is quite helpful.</p>
-
-<p>When go is up and running you need to install urknall itself. Installation is
-as easy as running the following command.</p>
-
-<pre><code>go get github.com/dynport/urknall/urknall
-</code></pre>
-
-<p>This will download the source to <code>$GOPATH/src/github.com/dynport/urknall</code> and
-install the <a href="../binary/">urknall binary</a> to <code>$GOPATH/bin</code> (which should be in your
-<code>$PATH</code> environment for best experience) and <a href="../library/">urknall library</a> to the
-subtree in <code>$GOPATH/pkg</code>.</p>
-
-<p>This quickstart guide will work with an example that needs to be provisioned. A
-fresh Ubuntu Trusty 14.04 based machine should be used to repeat the steps.
-Creating a local virtual machine (using something like
-<a href="https://www.virtualbox.org">VirtualBox</a> or <a href="http://www.vmware.com">VMWare</a>) is
-the best option for testing. But using a cloud instance (like from Amazon’s
-AWS, JiffyBox, etc.) or even bare metal is possible, too. The only requirements
-to the target machine are the following:</p>
+<p>Make sure urknall is properly installed as described <a href="../installation/">here</a>.
+Additionally a machine is needed to provision to (see
+<a href="https://www.virtualbox.org">VirtualBox</a> on how to create a virtual machine),
+that should meet the following requirements:</p>
 
 <ul>
-  <li>The machine must be accessible via SSH, i.e. the SSH server must be running
-and you must know the IP of the machine.</li>
-  <li>You must know the username (and if required the password) of a user on the
-machine. If this user is not <code>root</code> he must be allowed to run commands using
-<code>sudo</code> without being asked for a password, as described in <a href="../library/#sudo_without_password">here</a>.</li>
+  <li>The machine should have Ubuntu Trust 14.04 installed.</li>
+  <li>The machine must be accessible via SSH.</li>
+  <li>If the user on the machine is not <code>root</code>, he must be allowed to run commands
+using <code>sudo</code>, <a href="../library/#sudo_without_password">without being asked for a password</a>.</li>
 </ul>
 
 <h2 id="creating-the-basic-project">Creating The Basic Project</h2>
 
-<p>Urknall comes in two parts: a library and a binary. The <em>library</em> provides the
-actual mechanisms for provisioning, like creating a connection to the remote
-machine, handling the cache that decides which commands must be executed and
-executing them.</p>
+<p>First the basic project is created in the <code>example</code> subdirectory, using the
+urknall <a href="../binary/">binary</a>’s <code>init</code> command:</p>
 
-<p>The <em>binary</em> can be used to create a basic structure of an urknall provisioning
-tool in a given directory using the <code>init</code> command:</p>
+<pre><code class="language-shell highlight"><span class="gp">$ </span>urknall init example</code></pre>
 
-<pre><code>urknall init example
-</code></pre>
-
-<p>While not strictly necessary for this simple example you should consider to
-stick with go’s convention to create source in a directory like
-<code>$GOPATH/src/github.com/&lt;username&gt;/&lt;project&gt;</code> where <code>&lt;username&gt;</code> is your
-username on github and <code>&lt;project&gt;</code> the name of the project you created. This
-will simplify sharing and installing the sources using the go tooling (like <code>go
-get</code> or <code>goimports</code>).</p>
-
-<p>The <code>urknall init</code> command creates a lot of files that should be explained
-next. The <code>main.go</code> will be explained in greater detail below. The <code>cmd_*.go</code>
-files contain <a href="../glossary/#command">command</a> definitions. These are
-abstractions that allow to specify commands that should be executed on the
-remote machine.</p>
-
-<pre><code class="language-golang highlight"><span class="n">Shell</span><span class="p">(</span><span class="s">"echo -n hello &amp;&amp; echo world"</span><span class="p">)</span><span class="x">
-</span><span class="n">WriteFile</span><span class="p">(</span><span class="s">"/tmp/foo"</span><span class="p">,</span><span class="x"> </span><span class="s">"some content"</span><span class="p">,</span><span class="x"> </span><span class="s">"root"</span><span class="p">,</span><span class="x"> </span><span class="m">0644</span><span class="p">)</span></code></pre>
-
-<p>The first example show a simple shell command, that will be executed directly
-on the machine. The second example is much more elaborate, as it will be
-expanded into a series of commands that will create a file <code>/tmp/foo</code>
-containing the line <code>some content</code> with owner set to <code>root</code> and permissions set
-to <code>0644</code>. This mechanism has the benefit that code is better readable, the
-compiler can support with types and internally logging can be modified to be
-more specific on what a series of commands actually does.</p>
-
-<p>The <code>main.go</code> file contains the <code>main</code> function executed initially. The
-relevant part of code for this quickstart guide is in the <code>run</code> function, that
-initializes urknall, configures the target to be provisioned and finally does
-the actual build.</p>
-
-<pre><code class="language-golang highlight"><span class="k">func</span><span class="x"> </span><span class="n">run</span><span class="p">()</span><span class="x"> </span><span class="kt">error</span><span class="x"> </span><span class="p">{</span><span class="x">
-  </span><span class="k">defer</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">OpenLogger</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">Stdout</span><span class="p">)</span><span class="o">.</span><span class="n">Close</span><span class="p">()</span><span class="x">
-  </span><span class="k">var</span><span class="x"> </span><span class="n">target</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">Target</span><span class="x">
-  </span><span class="k">var</span><span class="x"> </span><span class="n">e</span><span class="x"> </span><span class="kt">error</span><span class="x">
-  </span><span class="n">uri</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="s">"ubuntu@my.host"</span><span class="x">
-  </span><span class="n">password</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="s">""</span><span class="x">
-  </span><span class="k">if</span><span class="x"> </span><span class="n">password</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="s">""</span><span class="x"> </span><span class="p">{</span><span class="x">
-    </span><span class="n">target</span><span class="p">,</span><span class="x"> </span><span class="n">e</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">NewSshTargetWithPassword</span><span class="p">(</span><span class="n">uri</span><span class="p">,</span><span class="x"> </span><span class="n">password</span><span class="p">)</span><span class="x">
-  </span><span class="p">}</span><span class="x"> </span><span class="k">else</span><span class="x"> </span><span class="p">{</span><span class="x">
-    </span><span class="n">target</span><span class="p">,</span><span class="x"> </span><span class="n">e</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">NewSshTarget</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span><span class="x">
-  </span><span class="p">}</span><span class="x">
-  </span><span class="k">if</span><span class="x"> </span><span class="n">e</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
-    </span><span class="k">return</span><span class="x"> </span><span class="n">e</span><span class="x">
-  </span><span class="p">}</span><span class="x">
-  </span><span class="k">return</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">Run</span><span class="p">(</span><span class="n">target</span><span class="p">,</span><span class="x"> </span><span class="o">&amp;</span><span class="n">Template</span><span class="p">{})</span><span class="x">
-</span><span class="p">}</span></code></pre>
-
-<p>First urknall’s logger is configured to use standard output for logging. The
-creation and immediate closing of the logger inside the <code>defer</code> statement might
-seem awkward first, but allows for a pretty concise formulation of the problem.</p>
-
-<p>Next the target is configured using the <code>urknall.NewSshTarget</code> or
-<code>urknall.NewSshTargetWithPassword</code> respectively if public-key authentication is
-not usable. Make sure you add the proper values for <code>uri</code> consisting of the
-username and IP address of the machine you use for this quickstart guide. Also
-set the <code>password</code> if required.</p>
-
-<p>The last line does two things. A <a href="../glossary/#template">template</a> is
-instantiated and given to urknall’s <code>Run</code> function, which will render it to the
-target built in the previous step. The template is the specification of the
-actions to perform on the target. The example template will just <code>echo</code> the
-famous <code>hello world</code> string.</p>
-
-<pre><code class="language-golang highlight"><span class="k">type</span><span class="x"> </span><span class="n">Template</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
-</span><span class="p">}</span><span class="x">
-
-</span><span class="k">func</span><span class="x"> </span><span class="p">(</span><span class="n">tpl</span><span class="x"> </span><span class="o">*</span><span class="n">Template</span><span class="p">)</span><span class="x"> </span><span class="n">Render</span><span class="p">(</span><span class="n">p</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">Package</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
-  </span><span class="n">p</span><span class="o">.</span><span class="n">AddCommands</span><span class="p">(</span><span class="s">"hello"</span><span class="p">,</span><span class="x"> </span><span class="n">Shell</span><span class="p">(</span><span class="s">"echo hello world"</span><span class="p">))</span><span class="x">
-</span><span class="p">}</span></code></pre>
-
-<p>Every template must implement the <code>Renderer</code> interface. The <code>Render</code> method
-implemented is given a package that commands are added to. This is where the
-commands from all the <code>cmd_*.go</code> files come into play. For a detailed
-introduction of the commands see the <a href="../binary/">binary’s documentation</a>.</p>
+<p>Besides the a basic set of <a href="../binary/#project-scaffolding">commands</a>, the
+<code>main.go</code> file is creatted, that ahs code that configures and drives the
+urknall <a href="../library">library</a> with a simple <a href="../library/#templates">template</a>.
+The generated code can be compiled to a binary, used to do the actual
+provisioning.</p>
 
 <h2 id="running-the-basic-example">Running The Basic Example</h2>
 
-<p>After changing the <code>uri</code> and <code>password</code> variables’ value the example can be
-compiled and run.</p>
+<p>After changing the <code>uri</code> and <code>password</code> variables’ values in the <code>main.go</code> file
+the example code can be compiled and run.</p>
 
 <pre><code class="language-bash highlight"><span class="gp">$ </span>go get . <span class="o">&amp;&amp;</span> example
 <span class="o">[</span>ubuntu@192.168.56.10:22][hello       <span class="o">][</span>  0.600][EXEC    <span class="o">][</span>COMMAND] <span class="c"># echo hello world</span>
@@ -204,210 +106,132 @@ compiled and run.</p>
 <span class="o">[</span>ubuntu@192.168.56.10:22][hello       <span class="o">][</span>  0.610] hello world
 <span class="o">[</span>ubuntu@192.168.56.10:22][hello       <span class="o">][</span>  0.621][FINISHED][COMMAND] <span class="c"># echo hello world</span></code></pre>
 
-<p>The output shows the command run, the single steps (like in the using the <code>-x</code>
-flag on <code>bash</code>) and a line when the command was finished. This way the exact
-runtime can be seen and all intermediate steps a more complicated command may
-take. If the example is run a second time the output changes:</p>
+<p>The output shows a log of all commands run and their respective outputs (as
+seen when using bash’s <code>-x</code> flag). If the example is run a second time the
+output changes:</p>
 
 <pre><code class="language-bash highlight"><span class="gp">$ </span>go get . <span class="o">&amp;&amp;</span> example
 <span class="o">[</span>ubuntu@192.168.56.10:22][hello       <span class="o">][</span>  0.257][CACHED  <span class="o">][</span>COMMAND] <span class="c"># echo hello world</span></code></pre>
 
-<p>This shows the caching mechanism in effect (notice the “CACHED” mark in the
-fourth field). As the command was already executed and neither itself nor one
-of its (non existing as it is the only command) predecessors changed nothing
+<p>This shows the caching mechanism in effect (notice the <em>CACHED</em> mark in the
+fourth field). As the command was already executed and nothing changed, nothing
 had to be done. The next section will show the possibilities of extending the
 basic template.</p>
 
 <h2 id="extending-the-basic-project">Extending The Basic Project</h2>
 
-<p>The basic template just renders a single <code>echo</code> command to the target. To do
-something more meaningful the basic example should be extended to provision a
-host that serves the <a href="http://nanoc.ws/docs/">nanoc documentation</a>. This
-requires the installation of nginx and ruby. Finally the documentation’s
-repository must be cloned, the static pages be built and nginx be configured to
-serve them.</p>
-
-<p><em>TODO</em>: Actually the example should deploy the urknall documentation to the
-host, but this requires the repository to be public first.</p>
+<p>The basic template instanciated when calling urknall is now extended to
+demonstrate the execution of proper commands. The task at hand is to serve
+urknall’s documentation using nginx. Ruby is required to generate the pages
+using the <a href="http://nanoc.ws">nanoc</a> static page generator.</p>
 
 <h3 id="the-templating-system">The Templating System</h3>
 
-<p>For the intended setup <em>ruby</em> and <em>nginx</em> must be installed. While it would be
-possible to extend the basic template, this would result in one large template,
-that would be hard to read and wouldn’t be reusable. Therefore templates can be
-added to templates to form hierarchies. Additionally urknall has a mechanism to
-retrieve basic templates. These templates might not be exactly what you
-require, but could be a good point to start from, i.e. help you to take the
-first steps to solve the problem. For a detailed discussion see the
-<a href="../binary/#template_management">binary’s documentation</a>.</p>
-
-<p>The <code>urknall templates list</code> command lists the available templates. These are
-retrieved from urknall’s
-<a href="https://github.com/dynport/urknall/tree/master/examples">github repository</a>,
-so a network connection is required! At the time when this guide was written
-the following templates were available:</p>
+<p>First the templates for <em>ruby</em> and <em>nginx</em> provided with urknall are installed.
+The urknall binary is able to <a href="../binary/#template_management">list</a> and
+<a href="../binary/#template_management">add</a> provided templates:</p>
 
 <pre><code class="language-bash highlight"><span class="gp">$ </span>urknall templates list
 available packages:
-<span class="k">*</span> docker
-<span class="k">*</span> elasticsearch
-<span class="k">*</span> firewall
-<span class="k">*</span> golang
-<span class="k">*</span> haproxy
-<span class="k">*</span> jenkins
+<span class="o">[</span>..]
 <span class="k">*</span> nginx
-<span class="k">*</span> openvpn
-<span class="k">*</span> postgis
-<span class="k">*</span> postgres
-<span class="k">*</span> rabbitmq
-<span class="k">*</span> redis
 <span class="k">*</span> ruby
-<span class="k">*</span> syslogng
-<span class="k">*</span> system</code></pre>
-
-<p>For the software required there are templates available, so it is sufficient to
-add those.  The <code>templates add</code> command of the <code>urknall</code> binary can be used to
-download and add a list of templates:</p>
-
-<pre><code class="language-bash highlight"><span class="gp">$ </span>urknall templates add nginx ruby
+<span class="o">[</span>..]
+<span class="gp">$ </span>urknall templates add nginx ruby
 loading content from <span class="s2">"https://api.github.com/repos/dynport/urknall/contents/examples/tpl_nginx.go?ref=master"</span>
 loading content from <span class="s2">"https://api.github.com/repos/dynport/urknall/contents/examples/tpl_ruby.go?ref=master"</span></code></pre>
 
 <p>Now there are two files <code>tpl_nginx.go</code> and <code>tpl_ruby.go</code> that can be used as
-rough sketch for our requirements. You should use a version control system like
-<a href="http://git-scm.org">git</a> and add and commit these templates. This way changes
-to the upstream templates can be easily verified by loading the template again
-and verify the delta to the local version. As these templates reside locally in
-your repository you have maximum flexibility, as you can easily modify them to
-suite your needs.</p>
-
-<p>For the quickstart example no modifications are required, so lets inspect the
-downloaded files and get a grip on the template mechanism.</p>
-
-<h3 id="inspecting-the-installed-templates">Inspecting The Installed Templates</h3>
-
-<p>Every template is a go struct type that implements the <code>Template</code> interface,
-i.e. it must have a <code>Render</code> method that retrieves a <code>Package</code> as argument. The
-<code>Package</code> interface hass three methods to add another template (for the
-template hierarchies already mentioned), a task or a list of commands.</p>
-
-<p>Templates have been mentioned already. A <em>task</em> is a list of <em>commands</em> and the
-entity that caching applies to (the mechanism that decides whether a command
-needs to be executed or not). Manually creating tasks is not required often,
-but can be useful if certain commands should only be executed under certain
-circumstances. The <code>AddTask</code> method’s description has an example.</p>
-
-<p>The <code>AddCommands</code> method is most important, as it allows to add the actual
-commands to be executed in a template. A task will be generated in the
-background.</p>
-
-<p>When starting to use a template it’s important to verify the template’s
-configuration possibilities. Those can be found in it’s <code>struct</code> definition.
-Urknall supports a set of annotations that specify whether a value must be
-given (is required) or if a default value is given. For the <code>ruby</code> package it
-look like this:</p>
-
-<pre><code class="language-golang highlight"><span class="k">type</span><span class="x"> </span><span class="n">Ruby</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
-  </span><span class="n">Version</span><span class="x"> </span><span class="kt">string</span><span class="x"> </span><span class="s">`urknall:"required=true"`</span><span class="x">
-  </span><span class="n">Local</span><span class="x">   </span><span class="kt">bool</span><span class="x">
-</span><span class="p">}</span></code></pre>
-
-<p>There is a field <code>Version</code> that is required, i.e. must be specified when
-the template is instanciated. The other field is optional, as it has no
-annotation. It will have the go specific default value, which is <code>false</code> for
-boolean values.</p>
-
-<p>The nginx template works quite similar. The next subsection will show how to
-use these templates.</p>
+rough sketch for this project’s requirements. Actually no modifications to
+these templates are required for this project, so next they can be included
+with the provisioning mechanism.</p>
 
 <h3 id="using-the-installed-templates">Using The Installed Templates</h3>
 
 <p>The templates installed in the previous subsections must be integrated into the
 template hierarchy to be used. The root of this hierarchy is the template
-rendered to the target in <code>Run</code> call in the <code>run</code> function described in the
-beginning of this guide. This value’s type will now be modified, to add the
-<em>ruby</em> and <em>nginx</em> templates required. For the sake of demonstration the
-annotation mechanism to specify a default version for nginx and require an
-explicit version for ruby are used (usually both would be set to be required).</p>
+rendered to the target with the call to urknall’s <code>Run</code> method. This value’s
+type is now modified, to add the <em>ruby</em> and <em>nginx</em> templates required. For
+the sake of demonstration the <a href="../library/#annotations">annotation mechanism</a>
+is used to specify a default version for nginx and require an explicit version
+for ruby.</p>
 
 <pre><code class="language-golang highlight"><span class="k">type</span><span class="x"> </span><span class="n">Template</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
   </span><span class="n">RubyVersion</span><span class="x">  </span><span class="kt">string</span><span class="x"> </span><span class="s">`urknall:"required=true"`</span><span class="x">
   </span><span class="n">NginxVersion</span><span class="x"> </span><span class="kt">string</span><span class="x"> </span><span class="s">`urknall:"default=1.4.1"`</span><span class="x">
 </span><span class="p">}</span></code></pre>
 
-<p>Next the template’s <code>Render</code> method is modified to add the templates.
-Additionally a command is added to make sure that the system’s package
-cache is updated and the installed packages are upgraded. This prevents errors
-when installing packages fails as the package cache is outdated.</p>
+<p>Next the template’s <code>Render</code> method is modified. First a command is added to
+make sure that the system’s package cache is updated and the installed packages
+are upgraded. This prevents errors related to an outdated package cache. Next
+the two templates that were added in the peviosn chapter are added.</p>
 
-<pre><code class="language-golang highlight"><span class="x">  </span><span class="n">p</span><span class="o">.</span><span class="n">AddCommands</span><span class="p">(</span><span class="s">"pkg-update"</span><span class="p">,</span><span class="x"> </span><span class="n">UpdatePackages</span><span class="p">())</span><span class="x">
+<pre><code class="language-golang highlight"><span class="k">func</span><span class="x"> </span><span class="p">(</span><span class="n">tpl</span><span class="x"> </span><span class="o">*</span><span class="n">Template</span><span class="p">)</span><span class="x"> </span><span class="n">Render</span><span class="p">(</span><span class="n">p</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">Package</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+  </span><span class="n">p</span><span class="o">.</span><span class="n">AddCommands</span><span class="p">(</span><span class="s">"pkg-update"</span><span class="p">,</span><span class="x"> </span><span class="n">UpdatePackages</span><span class="p">())</span><span class="x">
 
-  </span><span class="n">p</span><span class="o">.</span><span class="n">AddTemplate</span><span class="p">(</span><span class="s">"ruby"</span><span class="p">,</span><span class="x"> </span><span class="o">&amp;</span><span class="n">Ruby</span><span class="p">{</span><span class="n">Version</span><span class="o">:</span><span class="x"> </span><span class="n">tpl</span><span class="o">.</span><span class="n">RubyVersion</span><span class="p">})</span><span class="x">
-  </span><span class="n">p</span><span class="o">.</span><span class="n">AddTemplate</span><span class="p">(</span><span class="s">"nginx"</span><span class="p">,</span><span class="x"> </span><span class="o">&amp;</span><span class="n">Nginx</span><span class="p">{</span><span class="n">Version</span><span class="o">:</span><span class="x"> </span><span class="n">tpl</span><span class="o">.</span><span class="n">NginxVersion</span><span class="p">})</span></code></pre>
+  </span><span class="n">ruby</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="o">&amp;</span><span class="n">Ruby</span><span class="p">{</span><span class="n">Version</span><span class="o">:</span><span class="x"> </span><span class="n">tpl</span><span class="o">.</span><span class="n">RubyVersion</span><span class="p">}</span><span class="x">
+  </span><span class="n">p</span><span class="o">.</span><span class="n">AddTemplate</span><span class="p">(</span><span class="s">"ruby"</span><span class="p">,</span><span class="x"> </span><span class="n">ruby</span><span class="p">)</span><span class="x">
 
-<p>The <code>AddCommands</code> and <code>AddTemplate</code> are given a string first, that is used to
-generate identifiers for the different tasks and used internally to do
-bookkeeping on which commands have already been executed. For a deep hierarchy
-the segments given with each call to <code>AddTemplate</code> are concatenated using a
-“.”.</p>
+  </span><span class="n">nginx</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="o">&amp;</span><span class="n">Nginx</span><span class="p">{</span><span class="n">Version</span><span class="o">:</span><span class="x"> </span><span class="n">tpl</span><span class="o">.</span><span class="n">NginxVersion</span><span class="p">}</span><span class="x">
+  </span><span class="n">p</span><span class="o">.</span><span class="n">AddTemplate</span><span class="p">(</span><span class="s">"nginx"</span><span class="p">,</span><span class="x"> </span><span class="n">nginx</span><span class="p">)</span><span class="x">
+</span><span class="p">}</span></code></pre>
 
-<p>The last thing to do is specifying the ruby version, that must be given when
-instantiating the root template, as it is set as required in the annotations.</p>
+<p>In a second step the root template is configured to specify the required ruby
+version.</p>
 
 <pre><code class="language-golang highlight"><span class="k">func</span><span class="x"> </span><span class="n">run</span><span class="p">()</span><span class="x"> </span><span class="kt">error</span><span class="x"> </span><span class="p">{</span><span class="x">
   </span><span class="p">[</span><span class="o">...</span><span class="p">]</span><span class="x">
   </span><span class="k">return</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">Run</span><span class="p">(</span><span class="n">target</span><span class="p">,</span><span class="x"> </span><span class="o">&amp;</span><span class="n">Template</span><span class="p">{</span><span class="n">RubyVersion</span><span class="o">:</span><span class="x"> </span><span class="s">"2.1.2"</span><span class="p">})</span><span class="x">
 </span><span class="p">}</span></code></pre>
 
-<p>Now the provisioning will update the system’s package cache, install upgrades,
-ruby and nginx. Still missing are the deployment of the documentation and the
-configuration of nginx.</p>
+<p>The final tasks retrieve the documentation’s code, compile it and configure
+nginx to serve the output.</p>
 
-<h3 id="further-extending-the-templates">Further Extending The Templates</h3>
+<pre><code class="language-golang highlight"><span class="k">func</span><span class="x"> </span><span class="p">(</span><span class="n">tpl</span><span class="x"> </span><span class="o">*</span><span class="n">Template</span><span class="p">)</span><span class="x"> </span><span class="n">Render</span><span class="p">(</span><span class="n">p</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">Package</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+  </span><span class="p">[</span><span class="o">...</span><span class="p">]</span><span class="x">
+  </span><span class="c">// Clone the documentation and compile it using nanoc.</span><span class="x">
+  </span><span class="n">p</span><span class="o">.</span><span class="n">AddCommands</span><span class="p">(</span><span class="s">"github.docs"</span><span class="p">,</span><span class="x">
+	</span><span class="n">InstallPackages</span><span class="p">(</span><span class="s">"git"</span><span class="p">),</span><span class="x">
+	</span><span class="n">Shell</span><span class="p">(</span><span class="n">ruby</span><span class="o">.</span><span class="n">InstallDir</span><span class="p">()</span><span class="o">+</span><span class="s">"/bin/gem install bundle"</span><span class="p">),</span><span class="x">
+	</span><span class="n">AsUser</span><span class="p">(</span><span class="s">"ubuntu"</span><span class="p">,</span><span class="x"> </span><span class="s">"git clone https://github.com/nanoc/nanoc.ws.git docs"</span><span class="p">),</span><span class="x">
+	</span><span class="n">AsUser</span><span class="p">(</span><span class="s">"ubuntu"</span><span class="p">,</span><span class="x"> </span><span class="s">"export PATH=${PATH}:"</span><span class="o">+</span><span class="n">ruby</span><span class="o">.</span><span class="n">InstallDir</span><span class="p">()</span><span class="o">+</span><span class="s">"/bin &amp;&amp;cd docs &amp;&amp; bundle install &amp;&amp; nanoc compile"</span><span class="p">),</span><span class="x">
+  </span><span class="p">)</span><span class="x">
 
-<p>Still missing is the actual deployment of the documentation and configuration
-of nginx. This requires access to aspects of the already installed templates,
-like the path where the stuff was installed.  These are accessible from the
-templates itself so its sufficient to keep the values available:</p>
+  </span><span class="c">// Configure nginx to use nanoc's output as root.</span><span class="x">
+  </span><span class="n">p</span><span class="o">.</span><span class="n">AddCommands</span><span class="p">(</span><span class="s">"nginx.conf"</span><span class="p">,</span><span class="x">
+	</span><span class="n">Shell</span><span class="p">(</span><span class="s">`sed -e "s.root \+html;.root /home/ubuntu/docs/output;." -i `</span><span class="o">+</span><span class="n">nginx</span><span class="o">.</span><span class="n">ConfDir</span><span class="p">()</span><span class="o">+</span><span class="s">`/nginx.conf`</span><span class="p">),</span><span class="x">
+	</span><span class="n">Shell</span><span class="p">(</span><span class="s">"service nginx start"</span><span class="p">),</span><span class="x">
+  </span><span class="p">)</span><span class="x">
+</span><span class="p">}</span></code></pre>
 
-<pre><code class="language-golang highlight"><span class="n">ruby</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="o">&amp;</span><span class="n">Ruby</span><span class="p">{</span><span class="n">Version</span><span class="o">:</span><span class="x"> </span><span class="n">tpl</span><span class="o">.</span><span class="n">RubyVersion</span><span class="p">}</span><span class="x">
-</span><span class="n">nginx</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="o">&amp;</span><span class="n">Nginx</span><span class="p">{</span><span class="n">Version</span><span class="o">:</span><span class="x"> </span><span class="n">tpl</span><span class="o">.</span><span class="n">NginxVersion</span><span class="p">}</span><span class="x">
-
-</span><span class="n">p</span><span class="o">.</span><span class="n">AddTemplate</span><span class="p">(</span><span class="s">"ruby"</span><span class="p">,</span><span class="x"> </span><span class="n">ruby</span><span class="p">)</span><span class="x">
-</span><span class="n">p</span><span class="o">.</span><span class="n">AddTemplate</span><span class="p">(</span><span class="s">"nginx"</span><span class="p">,</span><span class="x"> </span><span class="n">nginx</span><span class="p">)</span></code></pre>
-
-<p>Now requests to these variables can be issued when doing the actual deployment.</p>
-
-<pre><code class="language-golang highlight"><span class="n">p</span><span class="o">.</span><span class="n">AddCommands</span><span class="p">(</span><span class="s">"github.docs"</span><span class="p">,</span><span class="x">
-  </span><span class="n">InstallPackages</span><span class="p">(</span><span class="s">"git"</span><span class="p">),</span><span class="x">
-  </span><span class="n">Shell</span><span class="p">(</span><span class="n">ruby</span><span class="o">.</span><span class="n">InstallDir</span><span class="p">()</span><span class="o">+</span><span class="s">"/bin/gem install bundle"</span><span class="p">),</span><span class="x">
-  </span><span class="n">AsUser</span><span class="p">(</span><span class="s">"ubuntu"</span><span class="p">,</span><span class="x"> </span><span class="s">"git clone https://github.com/nanoc/nanoc.ws.git docs"</span><span class="p">),</span><span class="x">
-  </span><span class="n">AsUser</span><span class="p">(</span><span class="s">"ubuntu"</span><span class="p">,</span><span class="x"> </span><span class="s">"export PATH=${PATH}:"</span><span class="o">+</span><span class="n">ruby</span><span class="o">.</span><span class="n">InstallDir</span><span class="p">()</span><span class="o">+</span><span class="s">"/bin &amp;&amp;cd docs &amp;&amp; bundle install &amp;&amp; nanoc compile"</span><span class="p">),</span><span class="x">
-</span><span class="p">)</span></code></pre>
-
-<p>This will install <a href="http://git-scm.org">git</a>, install the bundle gem, checkout
-the documentation repository, install all the gems and finally compile the
-pages. Please note that some commands are executed as user <code>ubuntu</code> (just for
-the sake of showing the feature). The rendered pages will be available in
-<code>/home/ubuntu/docs/output</code> so the only task remaining is configuring this
-directory as root of the nginx server.</p>
-
-<pre><code class="language-golang highlight"><span class="n">p</span><span class="o">.</span><span class="n">AddCommands</span><span class="p">(</span><span class="s">"nginx.conf"</span><span class="p">,</span><span class="x">
-  </span><span class="n">Shell</span><span class="p">(</span><span class="s">`sed -e "s.root \+html;.root /home/ubuntu/docs/output;." -i `</span><span class="o">+</span><span class="n">nginx</span><span class="o">.</span><span class="n">ConfDir</span><span class="p">()</span><span class="o">+</span><span class="s">`/nginx.conf`</span><span class="p">),</span><span class="x">
-  </span><span class="n">Shell</span><span class="p">(</span><span class="s">"service nginx start"</span><span class="p">),</span><span class="x">
-</span><span class="p">)</span></code></pre>
-
-<p>Now everything is setup and configured. The provisioning (again started using
-<code>go get . &amp;&amp; example</code>) will take quite a while was ruby and nginx need to be
-compiled. Afterwards everything is set up and served on the virtual machine’s
-public address (like <code>http://192.168.56.10</code>).</p>
+<p>Now everything is setup, configured and started, i.e. the documentation is
+reachable using the machine’s public IP.</p>
 
 <h2 id="conclusion">Conclusion</h2>
 
-<p>This guide showed how to create a basic provisioning tool for a simple task.
-The final code should look like this:</p>
+<p>This guide showed how to create a basic provisioning tool for the simple task
+of deploying some static pages generated with a static page generator. The
+final code should look like the following, with the commands and templates
+being unaltered.</p>
 
-<pre><code class="language-golang highlight"><span class="k">type</span><span class="x"> </span><span class="n">Template</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
+<pre><code class="language-golang highlight"><span class="k">package</span><span class="x"> </span><span class="n">main</span><span class="x">
+
+</span><span class="k">import</span><span class="x"> </span><span class="p">(</span><span class="x">
+  </span><span class="s">"log"</span><span class="x">
+  </span><span class="s">"os"</span><span class="x">
+
+  </span><span class="s">"github.com/dynport/urknall"</span><span class="x">
+</span><span class="p">)</span><span class="x">
+
+</span><span class="k">var</span><span class="x"> </span><span class="n">logger</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">log</span><span class="o">.</span><span class="n">New</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">Stderr</span><span class="p">,</span><span class="x"> </span><span class="s">""</span><span class="p">,</span><span class="x"> </span><span class="m">0</span><span class="p">)</span><span class="x">
+
+</span><span class="k">func</span><span class="x"> </span><span class="n">main</span><span class="p">()</span><span class="x"> </span><span class="p">{</span><span class="x">
+  </span><span class="k">if</span><span class="x"> </span><span class="n">e</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">run</span><span class="p">();</span><span class="x"> </span><span class="n">e</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">logger</span><span class="o">.</span><span class="n">Fatal</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="x">
+  </span><span class="p">}</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">type</span><span class="x"> </span><span class="n">Template</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
   </span><span class="n">RubyVersion</span><span class="x">  </span><span class="kt">string</span><span class="x"> </span><span class="s">`urknall:"required=true"`</span><span class="x">
   </span><span class="n">NginxVersion</span><span class="x"> </span><span class="kt">string</span><span class="x"> </span><span class="s">`urknall:"default=1.4.1"`</span><span class="x">
 </span><span class="p">}</span><span class="x">
@@ -416,21 +240,23 @@ The final code should look like this:</p>
   </span><span class="n">p</span><span class="o">.</span><span class="n">AddCommands</span><span class="p">(</span><span class="s">"pkg-update"</span><span class="p">,</span><span class="x"> </span><span class="n">UpdatePackages</span><span class="p">())</span><span class="x">
 
   </span><span class="n">ruby</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="o">&amp;</span><span class="n">Ruby</span><span class="p">{</span><span class="n">Version</span><span class="o">:</span><span class="x"> </span><span class="n">tpl</span><span class="o">.</span><span class="n">RubyVersion</span><span class="p">}</span><span class="x">
-  </span><span class="n">nginx</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="o">&amp;</span><span class="n">Nginx</span><span class="p">{</span><span class="n">Version</span><span class="o">:</span><span class="x"> </span><span class="n">tpl</span><span class="o">.</span><span class="n">NginxVersion</span><span class="p">}</span><span class="x">
-
   </span><span class="n">p</span><span class="o">.</span><span class="n">AddTemplate</span><span class="p">(</span><span class="s">"ruby"</span><span class="p">,</span><span class="x"> </span><span class="n">ruby</span><span class="p">)</span><span class="x">
+
+  </span><span class="n">nginx</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="o">&amp;</span><span class="n">Nginx</span><span class="p">{</span><span class="n">Version</span><span class="o">:</span><span class="x"> </span><span class="n">tpl</span><span class="o">.</span><span class="n">NginxVersion</span><span class="p">}</span><span class="x">
   </span><span class="n">p</span><span class="o">.</span><span class="n">AddTemplate</span><span class="p">(</span><span class="s">"nginx"</span><span class="p">,</span><span class="x"> </span><span class="n">nginx</span><span class="p">)</span><span class="x">
 
+  </span><span class="c">// Clone the documentation and compile it using nanoc.</span><span class="x">
   </span><span class="n">p</span><span class="o">.</span><span class="n">AddCommands</span><span class="p">(</span><span class="s">"github.docs"</span><span class="p">,</span><span class="x">
-    </span><span class="n">InstallPackages</span><span class="p">(</span><span class="s">"git"</span><span class="p">),</span><span class="x">
-    </span><span class="n">Shell</span><span class="p">(</span><span class="n">ruby</span><span class="o">.</span><span class="n">InstallDir</span><span class="p">()</span><span class="o">+</span><span class="s">"/bin/gem install bundle"</span><span class="p">),</span><span class="x">
-    </span><span class="n">AsUser</span><span class="p">(</span><span class="s">"ubuntu"</span><span class="p">,</span><span class="x"> </span><span class="s">"git clone https://github.com/nanoc/nanoc.ws.git docs"</span><span class="p">),</span><span class="x">
-    </span><span class="n">AsUser</span><span class="p">(</span><span class="s">"ubuntu"</span><span class="p">,</span><span class="x"> </span><span class="s">"export PATH=${PATH}:"</span><span class="o">+</span><span class="n">ruby</span><span class="o">.</span><span class="n">InstallDir</span><span class="p">()</span><span class="o">+</span><span class="s">"/bin &amp;&amp; cd docs &amp;&amp; bundle install &amp;&amp; nanoc compile"</span><span class="p">),</span><span class="x">
+	</span><span class="n">InstallPackages</span><span class="p">(</span><span class="s">"git"</span><span class="p">),</span><span class="x">
+	</span><span class="n">Shell</span><span class="p">(</span><span class="n">ruby</span><span class="o">.</span><span class="n">InstallDir</span><span class="p">()</span><span class="o">+</span><span class="s">"/bin/gem install bundle"</span><span class="p">),</span><span class="x">
+	</span><span class="n">AsUser</span><span class="p">(</span><span class="s">"ubuntu"</span><span class="p">,</span><span class="x"> </span><span class="s">"git clone https://github.com/nanoc/nanoc.ws.git docs"</span><span class="p">),</span><span class="x">
+	</span><span class="n">AsUser</span><span class="p">(</span><span class="s">"ubuntu"</span><span class="p">,</span><span class="x"> </span><span class="s">"export PATH=${PATH}:"</span><span class="o">+</span><span class="n">ruby</span><span class="o">.</span><span class="n">InstallDir</span><span class="p">()</span><span class="o">+</span><span class="s">"/bin &amp;&amp; cd docs &amp;&amp; bundle install &amp;&amp; nanoc compile"</span><span class="p">),</span><span class="x">
   </span><span class="p">)</span><span class="x">
 
+  </span><span class="c">// Configure nginx to use nanoc's output as root.</span><span class="x">
   </span><span class="n">p</span><span class="o">.</span><span class="n">AddCommands</span><span class="p">(</span><span class="s">"nginx.conf"</span><span class="p">,</span><span class="x">
-    </span><span class="n">Shell</span><span class="p">(</span><span class="s">`sed -e "s.root \+html;.root /home/ubuntu/docs/output;." -i `</span><span class="o">+</span><span class="n">nginx</span><span class="o">.</span><span class="n">ConfDir</span><span class="p">()</span><span class="o">+</span><span class="s">`/nginx.conf`</span><span class="p">),</span><span class="x">
-    </span><span class="n">Shell</span><span class="p">(</span><span class="s">"service nginx start"</span><span class="p">),</span><span class="x">
+	</span><span class="n">Shell</span><span class="p">(</span><span class="s">`sed -e "s.root \+html;.root /home/ubuntu/docs/output;." -i `</span><span class="o">+</span><span class="n">nginx</span><span class="o">.</span><span class="n">ConfDir</span><span class="p">()</span><span class="o">+</span><span class="s">`/nginx.conf`</span><span class="p">),</span><span class="x">
+	</span><span class="n">Shell</span><span class="p">(</span><span class="s">"service nginx start"</span><span class="p">),</span><span class="x">
   </span><span class="p">)</span><span class="x">
 </span><span class="p">}</span><span class="x">
 
@@ -441,18 +267,15 @@ The final code should look like this:</p>
   </span><span class="n">uri</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="s">"ubuntu@192.168.56.10"</span><span class="x">
   </span><span class="n">password</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="s">"ubuntu"</span><span class="x">
   </span><span class="k">if</span><span class="x"> </span><span class="n">password</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="s">""</span><span class="x"> </span><span class="p">{</span><span class="x">
-    </span><span class="n">target</span><span class="p">,</span><span class="x"> </span><span class="n">e</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">NewSshTargetWithPassword</span><span class="p">(</span><span class="n">uri</span><span class="p">,</span><span class="x"> </span><span class="n">password</span><span class="p">)</span><span class="x">
+	</span><span class="n">target</span><span class="p">,</span><span class="x"> </span><span class="n">e</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">NewSshTargetWithPassword</span><span class="p">(</span><span class="n">uri</span><span class="p">,</span><span class="x"> </span><span class="n">password</span><span class="p">)</span><span class="x">
   </span><span class="p">}</span><span class="x"> </span><span class="k">else</span><span class="x"> </span><span class="p">{</span><span class="x">
-    </span><span class="n">target</span><span class="p">,</span><span class="x"> </span><span class="n">e</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">NewSshTarget</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span><span class="x">
+	</span><span class="n">target</span><span class="p">,</span><span class="x"> </span><span class="n">e</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">NewSshTarget</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span><span class="x">
   </span><span class="p">}</span><span class="x">
   </span><span class="k">if</span><span class="x"> </span><span class="n">e</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
-    </span><span class="k">return</span><span class="x"> </span><span class="n">e</span><span class="x">
+	</span><span class="k">return</span><span class="x"> </span><span class="n">e</span><span class="x">
   </span><span class="p">}</span><span class="x">
   </span><span class="k">return</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">Run</span><span class="p">(</span><span class="n">target</span><span class="p">,</span><span class="x"> </span><span class="o">&amp;</span><span class="n">Template</span><span class="p">{</span><span class="n">RubyVersion</span><span class="o">:</span><span class="x"> </span><span class="s">"2.1.2"</span><span class="p">})</span><span class="x">
 </span><span class="p">}</span></code></pre>
-
-<p>For further information on how to use urknall have a look into the detailed
-descriptions of the <a href="../binary/">binary</a> and <a href="../library/">library</a>.</p>
 
 
 </div>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>Urknall Documentation - Urknall Documentation</title>
 <link rel="stylesheet" href="stylesheet.css">
-<link href="css/pygments.css media="screen" rel="stylesheet" type="text/css">
+<link href="css/pygments.css" media="screen" rel="stylesheet" type="text/css">
 
 <!-- Bootstrap -->
 <link href="css/bootstrap.min.css" rel="stylesheet">
@@ -40,7 +40,6 @@
 				<li><a href="docs/quickstart/">QuickStart</a></li>
 				<li><a href="docs/library/">Library</a></li>
 				<li><a href="docs/binary/">Binary</a></li>
-				<li><a href="docs/glossary/">Glossary</a></li>
 			</ul>
 		</div><!--/.nav-collapse -->
 	</div>
@@ -53,15 +52,44 @@
 	<div class="container">
 		<div class="col-lg-12">
 			<div class="page-header">
-			<h1>Urknall Documentation <small>Opinionated provisioning for clever developers</small></h1>
+				<h1>Urknall <small>Opinionated provisioning for clever developers</small></h1>
+			</div>
+
+			<p>Urknall is the basic building block for creating <a href="http://golang.org">go</a>
+			based tools for the administration of complex infrastructure. It
+			provides the mechanisms to access resources and keep a cache of
+			executed tasks.  Description of tasks is done using a mix of
+			explicit shell commands and abstractions for more complex actions
+			being pragmatic, but readable.</p>
+
+			<img src="/uk.sc.gif" />
 		</div>
+	</div>
+</div>
+
+<div class="row" style="margion-top: 20px;">
+	<div class="container">
+		<div class="col-lg-12">
+			<h2>Features</h2>
 
 			<ul>
-				<li>Agentless mechanisms compatible with common UNIX tools that
-				only rely passwordless sudo access for non-root users.</li>
-				<li>Use templates provided as sketches on how to solve problems.</li>
-				<li>Write reusable templates for components you need in your setup.</li>
-				<li>Adopt commands to the platform you use.</li>
+				<li><p><b>Automate provisioning</b>: Urknall provides automated
+					provisioning, so that resources can be set up reproducibly and
+					easily. Thereby Urknall helps with scaling infrastructure to
+					the required size.</p>
+				</li>
+				<li><p><b>Agentless tool that only relies on common UNIX tools
+					and provides decent caching</b>: As Urknall works agentless
+					on most UNIX based systems, adding new resources to the
+					infrastructure is effortless. The caching keeps track of
+					performed tasks and makes repeated provisioning with
+					thoughtful changes possible.</p>
+				</li>
+				<li><p><b>Template mechanism that helps at the start, but get’s
+					out of the way later on</b>: Urknall provides some basic
+					templates, but lets users modify those or add new ones to
+					solve the specific problem at hand.</p>
+				</li>
 			</ul>
 		</div>
 	</div>
@@ -69,30 +97,47 @@
 
 <div class="row" style="margin-top: 20px;">
 	<div class="container">
-		<div class="col-lg-3">
+		<div class="col-lg-12">
+			<h2>Installation</h2>
+
+			<p>To install urknall a proper go setup is required. See
+			<a href="http://www.golang.org">go</a> for further information on
+			how to do so. This page has a helpful
+			<a href="http://tour.golang.org">tour</a> on the language itself that
+			might be a good quick introduction, when you haven't use go yet.</p>
+
+			<p>Installation of urknall is as easy as running the following command:</p>
+
+			<pre><code>$ go get github.com/dynport/urknall/urknall</code></pre>
+
+			<p>This will download the source to <code>$GOPATH/src/github.com/dynport/urknall</code> and
+			install the <a href="../binary/">urknall binary</a> to <code>$GOPATH/bin</code> (which should be in your
+			<code>$PATH</code> environment for best experience) and <a href="../library/">urknall library</a> to the
+			subtree in <code>$GOPATH/pkg</code>.</p>
+		</div>
+	</div>
+</div>
+
+<div class="row" style="margin-top: 20px;">
+	<div class="container">
+		<div class="col-lg-4">
 			<h2>QuickStart</h2>
 			<p>Understand how to use the different parts of urknall to build a
 			basic provisioning tool.</p>
 			<p><a class="btn btn-primary" href="docs/quickstart/" role="button">View details &raquo;</a></p>
 		</div>
-		<div class="col-lg-3">
+		<div class="col-lg-4">
 			<h2>Urknall Library</h2>
 			<p>The urknall library provides all the nuts and bolts required for
 			building provisioning tools.</p>
 			<p><a class="btn btn-primary" href="docs/library/" role="button">View details &raquo;</a></p>
 		</div>
-		<div class="col-lg-3">
+		<div class="col-lg-4">
 			<h2>Urknall Binary</h2>
 			<p>Urknall provides a binary that can be used to create an initial
 			application for provisoning, and add and update templatess. Learn how to use
 			this tool effectively.</p>
 			<p><a class="btn btn-primary" href="docs/binary/" role="button">View details &raquo;</a></p>
-		</div>
-		<div class="col-lg-3">
-			<h2>Glossary</h2>
-			<p>Understand how to use the different parts of urknall to build a
-			basic provisioning tool.</p>
-			<p><a class="btn btn-primary" href="docs/glossary/" role="button">View details &raquo;</a></p>
 		</div>
 	</div>
 </div>
