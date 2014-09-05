@@ -1,6 +1,6 @@
 # urknall
 
-urknall is a library written in go for the automated provisioning of servers.
+[urknall](http://urknall.dynport.de/) is a library written in go for the automated provisioning of servers.
 
 The primary use case for urknall is automated execution of commands on linux (ubuntu) hosts, either locally or via ssh.
 
@@ -9,6 +9,9 @@ urknall does not require any extra software to be installed on the target host (
 urknall __is not a framework__ but a library. There is no (and probably never will be) `urknall provision <my host>` binary. We are also keen on providing building blocks that simplify the life of developers and system operators rather than giving out blueprint-recipes for complex setups that will hardly ever fit their needs completely.
 
 To use urknall you need start with creating a __custom go application__ (either binary or script) and adding the commands which are executed on targets step by step.
+
+urknall is developed and maintained by [Dynport GmbH](http://www.dynport.de), the company behind the translation management software [PhraseApp](https://phraseapp.com).
+
 
 ## Philosophy
 
@@ -142,4 +145,3 @@ When compiled to a binary this program __does not need any runtime dependencies_
 ## More Examples
 
 See [examples](examples) for a list of more advanced examples.
-
