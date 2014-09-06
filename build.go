@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/pubsub"
+	"github.com/dynport/urknall/target"
 )
 
 // A shortcut creating and running a build from the given target and template.
@@ -258,7 +258,7 @@ func (build *Build) buildChecksumTree() (ct checksumTree, e error) {
 	return ct, nil
 }
 
-func (build *Build) prepareCommand(rawCmd string) (cmd.ExecCommand, error) {
+func (build *Build) prepareCommand(rawCmd string) (target.ExecCommand, error) {
 	var sudo string
 	if build.User() != "root" {
 		sudo = "sudo "
@@ -266,7 +266,7 @@ func (build *Build) prepareCommand(rawCmd string) (cmd.ExecCommand, error) {
 	return build.Command(sudo + rawCmd)
 }
 
-func (build *Build) prepareInternalCommand(rawCmd string) (cmd.ExecCommand, error) {
+func (build *Build) prepareInternalCommand(rawCmd string) (target.ExecCommand, error) {
 	rawCmd = fmt.Sprintf("sh -x -e <<\"EOC\"\n%s\nEOC\n", rawCmd)
 	return build.prepareCommand(rawCmd)
 }

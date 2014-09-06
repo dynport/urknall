@@ -6,8 +6,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-
-	"github.com/dynport/urknall/cmd"
 )
 
 // Create a target for local provisioning.
@@ -40,7 +38,7 @@ func (c *localTarget) User() string {
 	return c.cachedUser
 }
 
-func (c *localTarget) Command(cmd string) (cmd.ExecCommand, error) {
+func (c *localTarget) Command(cmd string) (ExecCommand, error) {
 	return &localCommand{
 		command: exec.Command("bash", "-c", cmd),
 	}, nil
