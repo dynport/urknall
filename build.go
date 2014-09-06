@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/pubsub"
@@ -181,6 +182,8 @@ func (build *Build) prepareTask(tsk *task, ct checksumTree) (e error) {
 func (build *Build) buildTask(tsk *task) (e error) {
 	checksumDir := fmt.Sprintf(ukCACHEDIR+"/%s", tsk.name)
 
+	tsk.started = time.Now()
+
 	for _, cmd := range tsk.commands {
 		m := message(pubsub.MessageRunlistsProvisionTask, build.hostname(), tsk.name)
 		m.TaskChecksum = cmd.Checksum()
@@ -195,10 +198,11 @@ func (build *Build) buildTask(tsk *task) (e error) {
 		m.ExecStatus = pubsub.StatusExecStart
 		m.Publish("started")
 		r := &remoteTaskRunner{
-			build:    build,
-			command:  cmd.command,
-			dir:      checksumDir,
-			taskName: tsk.name,
+			build:       build,
+			command:     cmd.command,
+			dir:         checksumDir,
+			taskName:    tsk.name,
+			taskStarted: tsk.started,
 		}
 		e := r.run()
 

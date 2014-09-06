@@ -11,17 +11,20 @@ import (
 	"github.com/dynport/urknall/cmd"
 )
 
+// TODO: rename to remoteCommandRunner
 type remoteTaskRunner struct {
-	build    *Build
-	dir      string
-	command  cmd.Command
-	taskName string
+	build   *Build
+	dir     string
+	command cmd.Command
 
-	started time.Time
+	taskName    string
+	taskStarted time.Time
+
+	commandStarted time.Time
 }
 
 func (runner *remoteTaskRunner) run() error {
-	runner.started = time.Now()
+	runner.commandStarted = time.Now()
 
 	checksum, e := commandChecksum(runner.command)
 	if e != nil {
@@ -104,7 +107,7 @@ func (runner *remoteTaskRunner) createChecksumFile(prefix string, err error) (e 
 		targetFile = prefix + ".failed"
 	}
 	rawCmd := fmt.Sprintf("{ [ -f %[1]s ] || mv %[2]s %[1]s; } && echo %[1]s >> %[3]s/%[4]s.run",
-		targetFile, sourceFile, runner.dir, runner.started.Format("20060102_150405"))
+		targetFile, sourceFile, runner.dir, runner.taskStarted.Format("20060102_150405"))
 	c, e := runner.build.prepareInternalCommand(rawCmd)
 	if e != nil {
 		return e
@@ -130,7 +133,7 @@ func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, w
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		m.Line = scanner.Text()
-		m.TotalRuntime = time.Since(runner.started)
+		m.TotalRuntime = time.Since(runner.commandStarted)
 		m.Publish(stream)
 		logs <- time.Now().UTC().Format(time.RFC3339Nano) + "\t" + stream + "\t" + scanner.Text()
 	}

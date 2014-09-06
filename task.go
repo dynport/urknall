@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"runtime/debug"
+	"time"
 
 	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/pubsub"
@@ -33,6 +34,8 @@ type task struct {
 
 	compiled  bool
 	validated bool
+
+	started time.Time // time used to for caching timestamp
 }
 
 func (t *task) Commands() (cmds []cmd.Command, e error) {
