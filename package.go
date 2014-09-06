@@ -3,8 +3,7 @@ package urknall
 import "github.com/dynport/urknall/cmd"
 
 // A template is used to modularize the urknall setting. Templates are rendered
-// into a package and during rendering tasks can be added. See the Package
-// description for information on how to manage tasks.
+// into a package and during rendering tasks can be added.
 type Template interface {
 	Render(pkg Package)
 }

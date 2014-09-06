@@ -11,20 +11,20 @@ import (
 	"github.com/dynport/urknall/pubsub"
 )
 
-// A shortcut for rendering the given template to the given target.
+// A shortcut creating and running a build from the given target and template.
 func Run(target Target, tpl Template) (e error) {
 	return (&Build{Target: target, Template: tpl}).Run()
 }
 
-// A shortcut for rendering the given template to the given target, without
-// actually executing any commands. This is quite helpful to see which commands
-// would be exeucted in the target's current state.
+// A shortcut creating and runnign a build from the given target and template
+// with the DryRun flag set to true. This is quite helpful to actually see
+// which commands would be exeucted in the current setting, without actually
+// doing anything.
 func DryRun(target Target, tpl Template) (e error) {
 	return (&Build{Target: target, Template: tpl}).DryRun()
 }
 
-// A build is the glue between a target and template. It contains the basic
-// parameters required for actually doing something.
+// A build is the glue between a target and template.
 type Build struct {
 	Target            // Where to run the build.
 	Template          // What to actually build.
@@ -32,15 +32,15 @@ type Build struct {
 }
 
 // This will render the build's template into a package and run all its tasks.
-func (b *Build) Run() error {
-	pkg, e := b.prepareBuild()
+func (build *Build) Run() error {
+	pkg, e := build.prepareBuild()
 	if e != nil {
 		return e
 	}
-	m := message(pubsub.MessageRunlistsProvision, b.hostname(), "")
+	m := message(pubsub.MessageRunlistsProvision, build.hostname(), "")
 	m.Publish("started")
 	for _, task := range pkg.tasks {
-		if e = b.buildTask(task); e != nil {
+		if e = build.buildTask(task); e != nil {
 			m.PublishError(e)
 			return e
 		}
