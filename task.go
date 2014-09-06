@@ -80,7 +80,6 @@ func (task *task) validate() error {
 	return nil
 }
 
-// Add the given command to the runlist.
 func (task *task) addCommand(c cmd.Command) {
 	if task.taskBuilder != nil {
 		e := task.validate()
@@ -103,7 +102,7 @@ func (task *task) Compile() (e error) {
 	if task.compiled {
 		return nil
 	}
-	m := message(pubsub.MessageRunlistsPrecompile, "", task.name)
+	m := message(pubsub.MessageTasksPrecompile, "", task.name)
 	m.Publish("started")
 	defer func() {
 		if r := recover(); r != nil {

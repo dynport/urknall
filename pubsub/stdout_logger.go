@@ -52,7 +52,7 @@ func (logger *logger) Started() time.Time {
 }
 
 func (logger *logger) formatCommandOuput(message *Message) string {
-	prefix := fmt.Sprintf("[%s][%s][%s]", formatIp(message.Hostname), formatRunlistName(message.RunlistName, 12), formatDuration(logger.sinceStarted()))
+	prefix := fmt.Sprintf("[%s][%s][%s]", formatIp(message.Hostname), formatTaskName(message.TaskName, 12), formatDuration(logger.sinceStarted()))
 	line := message.Line
 	if message.IsStderr() {
 		line = colorize(1, line)
@@ -67,7 +67,7 @@ func formatIp(ip string) string {
 type formatter func(urknallMessage *Message) string
 
 func (logger *logger) DefaultFormatter(message *Message) string {
-	ignoreKeys := []string{MessageRunlistsPrecompile, MessageCleanupCacheEntries, MessageRunlistsProvision, MessageUrknallInternal}
+	ignoreKeys := []string{MessageTasksPrecompile, MessageCleanupCacheEntries, MessageTasksProvision, MessageUrknallInternal}
 	for _, k := range ignoreKeys {
 		if strings.HasPrefix(message.Key, k) {
 			return ""
@@ -77,7 +77,7 @@ func (logger *logger) DefaultFormatter(message *Message) string {
 		return logger.formatCommandOuput(message)
 	}
 	ip := message.Hostname
-	runlistName := message.RunlistName
+	taskName := message.TaskName
 	payload := ""
 	if message.Message != "" {
 		payload = message.Message
@@ -89,7 +89,7 @@ func (logger *logger) DefaultFormatter(message *Message) string {
 	parts := []string{
 		fmt.Sprintf("[%s][%s][%s][%s]%s",
 			formatIp(ip),
-			formatRunlistName(runlistName, 12),
+			formatTaskName(taskName, 12),
 			formatDuration(logger.sinceStarted()),
 			execStatus,
 			payload,
@@ -98,7 +98,7 @@ func (logger *logger) DefaultFormatter(message *Message) string {
 	return strings.Join(parts, " ")
 }
 
-func formatRunlistName(name string, maxLen int) string {
+func formatTaskName(name string, maxLen int) string {
 	if len(name) > maxLen {
 		name = name[0:maxLen]
 	}

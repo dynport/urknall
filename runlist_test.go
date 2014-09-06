@@ -26,7 +26,7 @@ func (sp *somePackage) Render(Package) {
 }
 
 func TestAddCommand(t *testing.T) {
-	Convey("Given a runlist for a certain package", t, func() {
+	Convey("Given a task for a certain package", t, func() {
 		rl := &task{taskBuilder: &somePackage{SField: "something", IField: 1}}
 
 		Convey("When a string is added", func() {
@@ -47,7 +47,7 @@ func TestAddCommand(t *testing.T) {
 		Convey("Given a string command", func() {
 			baseCommand := stringCommand{cmd: `string with "{{ .SField }}" and "{{ .IField }}"`}
 
-			SkipConvey("When it is added to the runlist by value", func() {
+			Convey("When it is added to the task by value", func() {
 				f := func() { rl.Add(baseCommand) }
 
 				Convey("Then Add will panic", func() {

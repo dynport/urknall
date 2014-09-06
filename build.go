@@ -37,7 +37,7 @@ func (build *Build) Run() error {
 	if e != nil {
 		return e
 	}
-	m := message(pubsub.MessageRunlistsProvision, build.hostname(), "")
+	m := message(pubsub.MessageTasksProvision, build.hostname(), "")
 	m.Publish("started")
 	for _, task := range pkg.tasks {
 		if e = build.buildTask(task); e != nil {
@@ -57,7 +57,7 @@ func (b *Build) DryRun() error {
 
 	for _, task := range pkg.tasks {
 		for _, command := range task.commands {
-			m := message(pubsub.MessageRunlistsProvisionTask, b.hostname(), task.name)
+			m := message(pubsub.MessageTasksProvisionTask, b.hostname(), task.name)
 			m.TaskChecksum = command.Checksum()
 			m.Message = command.LogMsg()
 
@@ -185,7 +185,7 @@ func (build *Build) buildTask(tsk *task) (e error) {
 	tsk.started = time.Now()
 
 	for _, cmd := range tsk.commands {
-		m := message(pubsub.MessageRunlistsProvisionTask, build.hostname(), tsk.name)
+		m := message(pubsub.MessageTasksProvisionTask, build.hostname(), tsk.name)
 		m.TaskChecksum = cmd.Checksum()
 		m.Message = cmd.LogMsg()
 

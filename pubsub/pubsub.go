@@ -34,11 +34,11 @@ const (
 )
 
 const (
-	MessageRunlistsPrecompile    = "urknall.runlists.precompile"
-	MessageUrknallInternal       = "urknall.internal"
-	MessageCleanupCacheEntries   = "urknall.cleanup_cache_entries"
-	MessageRunlistsProvision     = "urknall.runlists.provision.list"
-	MessageRunlistsProvisionTask = "urknall.runlists.provision.task"
+	MessageTasksPrecompile     = "urknall.tasks.precompile"
+	MessageUrknallInternal     = "urknall.internal"
+	MessageCleanupCacheEntries = "urknall.cleanup_cache_entries"
+	MessageTasksProvision      = "urknall.tasks.provision.list"
+	MessageTasksProvisionTask  = "urknall.tasks.provision.task"
 )
 
 // Urknall uses the http://github.com/dynport/dgtk/pubsub package for logging (a publisher-subscriber pattern where
@@ -53,8 +53,8 @@ type Message struct {
 
 	Hostname string // IP of the host a command is run.
 
-	RunlistName  string // Name of the runlist currently being executed.
-	TaskChecksum string // Hash of an runlist action.
+	TaskName     string // Name of the package currently being executed.
+	TaskChecksum string // Hash of a task.
 
 	PublishedAt  time.Time     // When was the message published.
 	StartedAt    time.Time     // When was the message created.
