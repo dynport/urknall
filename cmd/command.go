@@ -1,41 +1,41 @@
-// Commands are the abstraction of the actual commands being executed on the
-// target. Such an abstraction is helpful as they provide the possibility to
-// add shortcuts for common tasks and more complex commands. There are some
-// interfaces that must or can be implemented, depending on the required
-// features.
+// The Command Interfaces
 //
-// For further information see http://urknall.dynport.de/docs/library/#commands.
+// This package contains a set of interfaces, commands must or can implement.
 package cmd
 
 import "io"
 
-// All commands must implement this interface. The Shell method returns the
-// command actually executed on the target.
+// The Command interface is used to have specialized commands that are used for
+// execution and logging (the latter is useful to hide the gory details of more
+// complex commands).
 type Command interface {
 	Shell() string
 }
 
-// If not implemented by a command the string returned by the Shell method
-// will be used for logging. If this method is implemented the returned string
-// will be used instead.
+// The Logger interface should be implemented by commands, which hide their
+// intent behind a series of complex shell commands. The returned string will
+// be printed instead of the raw output of the Shell function.
 type Logger interface {
 	Logging() string
 }
 
+// If a command needs to send something to the remote host (a file for example)
+// the content can be made available on standard input of the remote command.
+// The command must make sure that changed local content will reissue execution
+// of the command (by printing the content's hash to standard output for
+// example).
 type StdinConsumer interface {
 	Input() io.ReadCloser
 }
 
-// Interface that allows for rendering template content into a structure. Implement this interface for commands that
-// should have the ability for templating. For example the ShellCommand provided by `urknall init` implements this,
-// allowing for substitution of a package's values in the command.
+// Often it is convenient to directly use values or methods of the template in
+// the commands (using go's templating mechanism).
 type Renderer interface {
 	Render(i interface{})
 }
 
-// This interface can be implemented by commands that need to make sure the
-// configuration is valid. This helps to let the command fail as early and
-// graceful as possible.
+// Interface used for types that will validate its state. An error is returned
+// if the state is invalid.
 type Validator interface {
 	Validate() error
 }
