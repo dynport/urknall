@@ -3,21 +3,18 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"strings"
+	"path/filepath"
 )
 
 type templatesAdd struct {
-	*base
+	base
+	tplBase
+
 	Names []string `cli:"arg required"`
 }
 
 func (a *templatesAdd) Run() error {
-	var e error
-	a.base, e = loadBase()
-	if e != nil {
-		return e
-	}
-	tmpls, e := allTemplates()
+	tmpls, e := allUpstreamTemplates(a.Repo, a.RepoPath)
 	if e != nil {
 		return e
 	}
@@ -41,25 +38,9 @@ func (a *templatesAdd) Run() error {
 			return e
 		}
 
-		if e = ioutil.WriteFile("tpl_"+name+".go", content, 0644); e != nil {
+		if e = ioutil.WriteFile(filepath.Join(a.BaseDir, "tpl_"+name+".go"), content, 0644); e != nil {
 			return e
 		}
 	}
 	return nil
-}
-
-func allTemplates() (tmpls templates, e error) {
-	tmpls = templates{}
-	contents, e := exampleFiles()
-	if e != nil {
-		return nil, e
-	}
-
-	for _, c := range contents {
-		if strings.HasPrefix(c.Name, "tpl_") && strings.HasSuffix(c.Name, ".go") {
-			name := c.Name[4 : len(c.Name)-3]
-			tmpls[name] = c
-		}
-	}
-	return tmpls, nil
 }

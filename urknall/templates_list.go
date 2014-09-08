@@ -1,37 +1,19 @@
 package main
 
-import (
-	"fmt"
-	"sort"
-)
-
-type templates map[string]*content
-
-func (t templates) exists(name string) bool {
-	_, exist := t[name]
-	return exist
-}
-
-func (t templates) names() []string {
-	names := []string{}
-	for n := range t {
-		names = append(names, n)
-	}
-	sort.Strings(names)
-	return names
-}
+import "fmt"
 
 type templatesList struct {
+	base
 }
 
 func (list *templatesList) Run() error {
-	all, e := allTemplates()
+	all, e := allUpstreamTemplates(list.Repo, list.RepoPath)
 	if e != nil {
 		return e
 	}
-	fmt.Println("available packages: ")
+	fmt.Println("available templates: ")
 	for _, name := range all.names() {
-		fmt.Println("* " + name)
+		fmt.Println(" * " + name)
 	}
 	return nil
 }
