@@ -21,7 +21,7 @@ var colorMapping = map[string]int{
 	StatusExecFinished: colorExec,
 }
 
-var IgnoredMessagesError = errors.New("ignored published messages (subscriber buffer full)")
+var ignoredMessagesError = errors.New("ignored published messages (subscriber buffer full)")
 
 // Create a logging facility for urknall using urknall's default formatter.
 // Note that this resource must be closed afterwards!
@@ -65,34 +65,6 @@ func formatIp(ip string) string {
 }
 
 type formatter func(urknallMessage *Message) string
-
-func SimpleFormatter(message *Message) string {
-	ignoreKeys := []string{MessageRunlistsPrecompile, MessageCleanupCacheEntries, MessageRunlistsProvision, MessageUrknallInternal}
-	for _, k := range ignoreKeys {
-		if strings.HasPrefix(message.Key, k) {
-			return ""
-		}
-	}
-	if len(message.Line) > 0 {
-		prefix := fmt.Sprintf("[%s]", formatRunlistName(message.RunlistName, 8))
-		line := message.Line
-		return prefix + " " + line
-	}
-	runlistName := message.RunlistName
-	payload := ""
-	if message.Message != "" {
-		payload = message.Message
-	}
-	execStatus := fmt.Sprintf("%-8s", message.ExecStatus)
-	parts := []string{
-		fmt.Sprintf("[%s][%s]%s",
-			formatRunlistName(runlistName, 8),
-			execStatus,
-			payload,
-		),
-	}
-	return strings.Join(parts, " ")
-}
 
 func (logger *logger) DefaultFormatter(message *Message) string {
 	ignoreKeys := []string{MessageRunlistsPrecompile, MessageCleanupCacheEntries, MessageRunlistsProvision, MessageUrknallInternal}
@@ -163,7 +135,7 @@ func (logger *logger) Start() error {
 func (logger *logger) Close() (e error) {
 	e = logger.subscription.Close()
 	if d := logger.pubSub.Stats.Ignored(); e == nil && d > 0 {
-		return IgnoredMessagesError
+		return ignoredMessagesError
 	}
 	return e
 }
