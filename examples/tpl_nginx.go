@@ -13,16 +13,16 @@ type Nginx struct {
 	Autostart          bool
 }
 
-func (pkg *Nginx) Render(r urknall.Package) {
+func (ngx *Nginx) Render(pkg urknall.Package) {
 	syslogPatchPath := "/tmp/nginx_syslog_patch"
 	fileName := "syslog_{{ .SyslogPatchVersion }}.patch"
-	r.AddCommands("packages",
+	pkg.AddCommands("packages",
 		InstallPackages("build-essential", "curl", "libpcre3", "libpcre3-dev", "libssl-dev", "libpcrecpp0", "zlib1g-dev", "libgd2-xpm-dev"),
 	)
-	r.AddCommands("download",
+	pkg.AddCommands("download",
 		DownloadAndExtract("{{ .Url }}", "/opt/src/"),
 	)
-	r.AddCommands("syslog_patch",
+	pkg.AddCommands("syslog_patch",
 		Mkdir(syslogPatchPath, "root", 0755),
 		Download("https://raw.github.com/yaoweibin/nginx_syslog_patch/master/config", syslogPatchPath+"/config", "root", 0644),
 		Download("https://raw.github.com/yaoweibin/nginx_syslog_patch/master/"+fileName, syslogPatchPath+"/"+fileName, "root", 0644),
@@ -31,10 +31,10 @@ func (pkg *Nginx) Render(r urknall.Package) {
 			"patch -p1 < "+syslogPatchPath+"/"+fileName,
 		),
 	)
-	r.AddCommands("more_clear_headers",
+	pkg.AddCommands("more_clear_headers",
 		DownloadAndExtract("https://github.com/agentzh/headers-more-nginx-module/archive/v{{ .HeadersMoreVersion }}.tar.gz", "/opt/src/"),
 	)
-	r.AddCommands("build",
+	pkg.AddCommands("build",
 		And(
 			"cd /opt/src/nginx-{{ .Version }}",
 			"./configure --with-http_ssl_module --with-http_gzip_static_module --with-http_stub_status_module --with-http_spdy_module --add-module=/tmp/nginx_syslog_patch --add-module=/opt/src/headers-more-nginx-module-{{ .HeadersMoreVersion }} --prefix={{ .InstallDir }}",
@@ -42,34 +42,34 @@ func (pkg *Nginx) Render(r urknall.Package) {
 			"make install",
 		),
 	)
-	r.AddCommands("upstart",
-		WriteFile("/etc/init/nginx.conf", utils.MustRenderTemplate(upstartScript, pkg), "root", 0644),
+	pkg.AddCommands("upstart",
+		WriteFile("/etc/init/nginx.conf", utils.MustRenderTemplate(nginxUpstartScript, ngx), "root", 0644),
 	)
 }
 
-func (pkg *Nginx) ConfDir() string {
-	return pkg.InstallDir() + "/conf"
+func (ngx *Nginx) ConfDir() string {
+	return ngx.InstallDir() + "/conf"
 }
 
-func (pkg *Nginx) InstallDir() string {
-	if pkg.Local {
+func (ngx *Nginx) InstallDir() string {
+	if ngx.Local {
 		return "/usr/local/nginx"
 	}
-	if pkg.Version == "" {
+	if ngx.Version == "" {
 		panic("Version must be set")
 	}
-	return "/opt/nginx-" + pkg.Version
+	return "/opt/nginx-" + ngx.Version
 }
 
-func (pkg *Nginx) BinPath() string {
-	return pkg.InstallDir() + "/sbin/nginx"
+func (ngx *Nginx) BinPath() string {
+	return ngx.InstallDir() + "/sbin/nginx"
 }
 
-func (pkg *Nginx) ReloadCommand() string {
-	return utils.MustRenderTemplate("{{ . }} -t && {{ . }} -s reload", pkg.BinPath())
+func (ngx *Nginx) ReloadCommand() string {
+	return utils.MustRenderTemplate("{{ . }} -t && {{ . }} -s reload", ngx.BinPath())
 }
 
-const upstartScript = `# nginx
+const nginxUpstartScript = `# nginx
  
 description "nginx http daemon"
 author "George Shammas <georgyo@gmail.com>"
@@ -96,6 +96,6 @@ end script
 exec $DAEMON -g "daemon off;"
 `
 
-func (pkg *Nginx) Url() string {
+func (ngx *Nginx) Url() string {
 	return "http://nginx.org/download/nginx-{{ .Version }}.tar.gz"
 }

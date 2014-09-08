@@ -15,14 +15,14 @@ type Ruby struct {
 	Local   bool   // install to /usr/local/bin
 }
 
-func (ruby *Ruby) Render(r urknall.Package) {
-	r.AddCommands("packages",
+func (ruby *Ruby) Render(pkg urknall.Package) {
+	pkg.AddCommands("packages",
 		InstallPackages(
 			"curl", "build-essential", "libyaml-dev", "libxml2-dev", "libxslt1-dev", "libreadline-dev", "libssl-dev", "zlib1g-dev",
 		),
 	)
-	r.AddCommands("download", DownloadAndExtract("{{ .Url }}", "/opt/src"))
-	r.AddCommands("build",
+	pkg.AddCommands("download", DownloadAndExtract("{{ .Url }}", "/opt/src"))
+	pkg.AddCommands("build",
 		And(
 			"cd {{ .SourceDir }}",
 			"./configure --disable-install-doc --prefix={{ .InstallDir }}",

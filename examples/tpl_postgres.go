@@ -10,13 +10,13 @@ type Postgres struct {
 	InitDb bool
 }
 
-func (pkg *Postgres) Render(r urknall.Package) {
-	r.AddCommands("packages",
+func (pgres *Postgres) Render(pkg urknall.Package) {
+	pkg.AddCommands("packages",
 		InstallPackages("build-essential", "openssl", "libssl-dev", "flex", "zlib1g-dev", "libxslt1-dev", "libxml2-dev", "python-dev", "libreadline-dev", "bison"),
 	)
-	r.AddCommands("download", DownloadAndExtract("{{ .Url }}", "/opt/src/"))
-	r.AddCommands("user", AddUser("{{ .User }}", true))
-	r.AddCommands("build",
+	pkg.AddCommands("download", DownloadAndExtract("{{ .Url }}", "/opt/src/"))
+	pkg.AddCommands("user", AddUser("{{ .User }}", true))
+	pkg.AddCommands("build",
 		And(
 			"cd /opt/src/postgresql-{{ .Version }}",
 			"./configure --prefix={{ .InstallDir }}",
@@ -24,26 +24,26 @@ func (pkg *Postgres) Render(r urknall.Package) {
 			"make install",
 		),
 	)
-	r.AddCommands("upstart",
+	pkg.AddCommands("upstart",
 		WriteFile("/etc/init/postgres.conf", postgresUpstart, "root", 0644),
 	)
-	if pkg.InitDb {
-		user := pkg.User
+	if pgres.InitDb {
+		user := pgres.User
 		if user == "" {
 			user = "postgres"
 		}
-		r.AddCommands("init_db",
-			Mkdir(pkg.DataDir, "{{ .User }}", 0755),
+		pkg.AddCommands("init_db",
+			Mkdir(pgres.DataDir, "{{ .User }}", 0755),
 			AsUser(user, "{{ .InstallDir }}/bin/initdb -D {{ .DataDir }} -E utf8 --auth-local=trust"),
 		)
 	}
 }
 
-func (p *Postgres) InstallDir() string {
-	if p.Version == "" {
+func (pgres *Postgres) InstallDir() string {
+	if pgres.Version == "" {
 		panic("Version must be set")
 	}
-	return "/opt/postgresql-" + p.Version
+	return "/opt/postgresql-" + pgres.Version
 }
 
 // some helpers for e.g. database creation
@@ -73,12 +73,12 @@ func (user *PostgresUser) CreateCommand() string {
 	return cmd
 }
 
-func (pkg *Postgres) CreateDatabaseCommand(db *PostgresDatabase) string {
-	return pkg.InstallDir() + "/bin/" + `psql -U postgres -c "` + db.CreateCommand() + `"`
+func (pgres *Postgres) CreateDatabaseCommand(db *PostgresDatabase) string {
+	return pgres.InstallDir() + "/bin/" + `psql -U postgres -c "` + db.CreateCommand() + `"`
 }
 
-func (pkg *Postgres) CreateUserCommand(user *PostgresUser) string {
-	return pkg.InstallDir() + "/bin/" + `psql -U postgres -c "` + user.CreateCommand() + `"`
+func (pgres *Postgres) CreateUserCommand(user *PostgresUser) string {
+	return pgres.InstallDir() + "/bin/" + `psql -U postgres -c "` + user.CreateCommand() + `"`
 }
 
 const postgresUpstart = `
@@ -88,6 +88,6 @@ setuid {{ .User }}
 exec {{ .InstallDir }}/bin/postgres -D {{ .DataDir }}
 `
 
-func (pkg *Postgres) Url() string {
+func (pgres *Postgres) Url() string {
 	return "http://ftp.postgresql.org/pub/source/v{{ .Version }}/postgresql-{{ .Version }}.tar.gz"
 }

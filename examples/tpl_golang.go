@@ -8,17 +8,17 @@ type Golang struct {
 	Version string `urknall:"required=true"`
 }
 
-func (pkg *Golang) Render(r urknall.Package) {
-	r.AddCommands("packages", InstallPackages("build-essential", "curl", "bzr", "mercurial", "git-core"))
-	r.AddCommands("mkdir", Mkdir("{{ .InstallDir }}", "root", 0755))
-	r.AddCommands("download",
+func (golang *Golang) Render(pkg urknall.Package) {
+	pkg.AddCommands("packages", InstallPackages("build-essential", "curl", "bzr", "mercurial", "git-core"))
+	pkg.AddCommands("mkdir", Mkdir("{{ .InstallDir }}", "root", 0755))
+	pkg.AddCommands("download",
 		DownloadAndExtract("https://storage.googleapis.com/golang/go{{ .Version }}.linux-amd64.tar.gz", "{{ .InstallDir }}"),
 	)
 }
 
-func (tpl *Golang) InstallDir() string {
-	if tpl.Version == "" {
+func (golang *Golang) InstallDir() string {
+	if golang.Version == "" {
 		panic("Version must bese")
 	}
-	return "/opt/go-" + tpl.Version
+	return "/opt/go-" + golang.Version
 }

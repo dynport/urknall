@@ -16,14 +16,14 @@ type Firewall struct {
 	IPSets    []*FirewallIPSet // List of ipsets for the firewall.
 }
 
-func (f *Firewall) Render(r urknall.Package) {
+func (fw *Firewall) Render(pkg urknall.Package) {
 	var ipsetsCmd Command
-	if len(f.IPSets) > 0 {
+	if len(fw.IPSets) > 0 {
 		ipsetsCmd = WriteFile("/etc/iptables/ipsets", fwIpset, "root", 0644)
 	} else {
 		ipsetsCmd = Shell("rm -f /etc/iptables/ipsets")
 	}
-	r.AddCommands("base",
+	pkg.AddCommands("base",
 		InstallPackages("iptables", "ipset"),
 		WriteFile("/etc/network/if-pre-up.d/iptables", firewallUpstart, "root", 0744),
 		WriteFile("/etc/iptables/rules_ipv4", fw_rules_ipv4, "root", 0644),

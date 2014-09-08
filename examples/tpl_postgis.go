@@ -7,18 +7,18 @@ type PostGis struct {
 	PostgresInstallDir string `urknall:"required=true"`
 }
 
-func (g *PostGis) url() string {
+func (pgis *PostGis) url() string {
 	return "http://download.osgeo.org/postgis/source/postgis-{{ .Version }}.tar.gz"
 }
 
-func (g *PostGis) Render(r urknall.Package) {
-	r.AddCommands("packages",
+func (pgis *PostGis) Render(pkg urknall.Package) {
+	pkg.AddCommands("packages",
 		InstallPackages("imagemagick", "libgeos-dev", "libproj-dev", "libgdal-dev"),
 	)
-	r.AddCommands("download",
-		DownloadAndExtract(g.url(), "/opt/src/"),
+	pkg.AddCommands("download",
+		DownloadAndExtract(pgis.url(), "/opt/src/"),
 	)
-	r.AddCommands("build",
+	pkg.AddCommands("build",
 		And(
 			"cd /opt/src/postgis-{{ .Version }}",
 			"./configure --with-pgconfig={{ .PostgresInstallDir }}/bin/pg_config --prefix={{ .InstallDir }}",
@@ -28,9 +28,9 @@ func (g *PostGis) Render(r urknall.Package) {
 	)
 }
 
-func (tpl *PostGis) InstallDir() string {
-	if tpl.Version == "" {
+func (pgis *PostGis) InstallDir() string {
+	if pgis.Version == "" {
 		panic("Version must be set")
 	}
-	return "/opt/postgis-" + tpl.Version
+	return "/opt/postgis-" + pgis.Version
 }

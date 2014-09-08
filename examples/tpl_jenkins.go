@@ -10,11 +10,11 @@ type Jenkins struct {
 	ListenPort string `urknall:"default=8080"`
 }
 
-func (pkg *Jenkins) Render(r urknall.Package) {
+func (jenkins *Jenkins) Render(pkg urknall.Package) {
 	urlRoot := "http://mirrors.jenkins-ci.org"
-	url := urlRoot + "/war/" + pkg.Version + "/jenkins.war"
+	url := urlRoot + "/war/" + jenkins.Version + "/jenkins.war"
 
-	r.AddCommands("base",
+	pkg.AddCommands("base",
 		InstallPackages("openjdk-6-jdk", "bzr", "git"),
 		Download(url, "/opt/jenkins.war", "root", 0644),
 		Mkdir("/data/jenkins", "root", 0755),
@@ -24,10 +24,10 @@ func (pkg *Jenkins) Render(r urknall.Package) {
 			jenkinsUpstart,
 			"root", 0644))
 
-	for _, plugin := range pkg.Plugins {
+	for _, plugin := range jenkins.Plugins {
 		pSrc := urlRoot + "/plugins/" + plugin + "/latest/" + plugin + ".hpi"
 		pDest := "/data/jenkins/plugins/" + plugin + ".hpi"
-		r.AddCommands("plugin-"+plugin, Download(pSrc, pDest, "root", 0644))
+		pkg.AddCommands("plugin-"+plugin, Download(pSrc, pDest, "root", 0644))
 	}
 }
 

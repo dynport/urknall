@@ -6,8 +6,8 @@ type Hostname struct {
 	Hostname string `urknall:"required=true"`
 }
 
-func (h *Hostname) Render(r urknall.Package) {
-	r.AddCommands("base",
+func (h *Hostname) Render(pkg urknall.Package) {
+	pkg.AddCommands("base",
 		Shell("hostname localhost"), // Set hostname to make sudo happy.
 		&FileCommand{Path: "/etc/hostname", Content: h.Hostname},
 		&FileCommand{Path: "/etc/hosts", Content: "127.0.0.1 {{ .Hostname }} localhost"},
@@ -29,23 +29,23 @@ type System struct {
 
 const TimezoneUTC = "Etc/UTC"
 
-func (tpl *System) Render(p urknall.Package) {
+func (tpl *System) Render(pkg urknall.Package) {
 	if tpl.Timezone != "" {
-		p.AddCommands("timezone",
+		pkg.AddCommands("timezone",
 			WriteFile("/etc/timezone", tpl.Timezone, "root", 0644),
 			Shell("dpkg-reconfigure --frontend noninteractive tzdata"),
 		)
 	}
 
 	if tpl.SysctlDefaults {
-		p.AddCommands("sysctl",
+		pkg.AddCommands("sysctl",
 			WriteFile("/etc/sysctl.conf", sysctlTpl, "root", 0644),
 			Shell("sysctl -p"),
 		)
 	}
 
 	if tpl.LimitsDefaults {
-		p.AddCommands("limits",
+		pkg.AddCommands("limits",
 			WriteFile("/etc/security/limits.conf", limitsTpl, "root", 0644),
 			Shell("ulimit -a"),
 		)

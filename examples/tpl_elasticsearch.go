@@ -14,30 +14,30 @@ type ElasticSearch struct {
 	NodeName       string
 }
 
-func (p *ElasticSearch) Render(r urknall.Package) {
-	r.AddCommands("java7",
+func (es *ElasticSearch) Render(pkg urknall.Package) {
+	pkg.AddCommands("java7",
 		InstallPackages("openjdk-7-jdk"),
 		Shell("update-alternatives --set java /usr/lib/jvm/java-7-openjdk-amd64/jre/bin/java"),
 	)
-	r.AddCommands("download", DownloadAndExtract("{{ .Url }}", "/opt/"))
-	r.AddCommands("user", AddUser("elasticsearch", true))
-	r.AddCommands("mkdir", Mkdir(p.DataPath, "elasticsearch", 0755))
-	r.AddCommands("config",
-		WriteFile("{{ .InstallDir }}/config/elasticsearch.yml", config, "root", 0644),
-		WriteFile("{{ .InstallDir }}/config/logging.yml", configLogger, "root", 0644),
+	pkg.AddCommands("download", DownloadAndExtract("{{ .Url }}", "/opt/"))
+	pkg.AddCommands("user", AddUser("elasticsearch", true))
+	pkg.AddCommands("mkdir", Mkdir(es.DataPath, "elasticsearch", 0755))
+	pkg.AddCommands("config",
+		WriteFile("{{ .InstallDir }}/config/elasticsearch.yml", elasticSearchConfig, "root", 0644),
+		WriteFile("{{ .InstallDir }}/config/logging.yml", elasticSearchConfigLogger, "root", 0644),
 		WriteFile("/etc/init/elasticsearch.conf", elasticSearchUpstart, "root", 0644),
 	)
 }
 
-func (p *ElasticSearch) Url() string {
+func (es *ElasticSearch) Url() string {
 	return "https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-{{ .Version }}.tar.gz"
 }
 
-func (p *ElasticSearch) InstallDir() string {
-	if p.Version == "" {
+func (es *ElasticSearch) InstallDir() string {
+	if es.Version == "" {
 		panic("Version must be set")
 	}
-	return "/opt/elasticsearch-" + p.Version
+	return "/opt/elasticsearch-" + es.Version
 }
 
 const elasticSearchUpstart = `
@@ -50,7 +50,7 @@ end script
 exec {{ .InstallDir }}/bin/elasticsearch -f
 `
 
-const configLogger = `
+const elasticSearchConfigLogger = `
 rootLogger: DEBUG, syslog
 logger:
   # log action execution errors for easier debugging
@@ -78,7 +78,7 @@ appender:
 {{ end }}
 `
 
-const config = `
+const elasticSearchConfig = `
 path.data: {{ .DataPath }}
 path.logs: {{ .DataPath }}/logs
 {{ with .NodeName }}node.name: {{ . }}{{ end }}

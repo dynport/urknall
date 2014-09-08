@@ -10,18 +10,18 @@ type Redis struct {
 	Autostart bool
 }
 
-func (p *Redis) InstallDir() string {
-	if p.Version == "" {
+func (redis *Redis) InstallDir() string {
+	if redis.Version == "" {
 		panic("Version must be set")
 	}
-	return "/opt/redis-" + p.Version
+	return "/opt/redis-" + redis.Version
 }
 
-func (p *Redis) Render(r urknall.Package) {
-	r.AddCommands("base",
+func (redis *Redis) Render(pkg urknall.Package) {
+	pkg.AddCommands("base",
 		InstallPackages("build-essential"),
 		Mkdir("/opt/src/", "root", 0755),
-		DownloadAndExtract(p.url(), "/opt/src/"),
+		DownloadAndExtract(redis.url(), "/opt/src/"),
 		And(
 			"cd /opt/src/redis-{{ .Version }}",
 			"make",
@@ -29,15 +29,15 @@ func (p *Redis) Render(r urknall.Package) {
 		),
 		Mkdir("/data/redis", "root", 0755),
 	)
-	r.AddTemplate("config", &RedisConfig{})
-	r.AddTemplate("upstart", &RedisUpstart{RedisDir: p.InstallDir(), Autostart: p.Autostart})
+	pkg.AddTemplate("config", &RedisConfig{})
+	pkg.AddTemplate("upstart", &RedisUpstart{RedisDir: redis.InstallDir(), Autostart: redis.Autostart})
 }
 
-func (p *Redis) WriteConfig(config string) cmd.Command {
+func (redis *Redis) WriteConfig(config string) cmd.Command {
 	return WriteFile("/etc/redis.conf", config, "root", 0644)
 }
 
-func (p *Redis) url() string {
+func (redis *Redis) url() string {
 	return "http://download.redis.io/releases/redis-{{ .Version }}.tar.gz"
 }
 
@@ -47,9 +47,9 @@ type RedisConfig struct {
 	SyslogIdent string `urknall:"default=redis"`
 }
 
-func (c *RedisConfig) Render(r urknall.Package) {
-	r.AddCommands("base",
-		WriteFile(c.Path, redisCfg, "root", 0644),
+func (redis *RedisConfig) Render(pkg urknall.Package) {
+	pkg.AddCommands("base",
+		WriteFile(redis.Path, redisCfg, "root", 0644),
 	)
 }
 

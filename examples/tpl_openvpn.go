@@ -19,24 +19,24 @@ type OpenVPN struct {
 
 const openVpnPackagePath = "/opt/package_openvpn_key"
 
-func (p *OpenVPN) PublicIp() string {
-	if p.Ec2 {
+func (ovpn *OpenVPN) PublicIp() string {
+	if ovpn.Ec2 {
 		return `$(ec2metadata --public-ipv4)`
-	} else if p.CustomPublicIp != "" {
-		return p.CustomPublicIp
+	} else if ovpn.CustomPublicIp != "" {
+		return ovpn.CustomPublicIp
 	} else {
 		panic("Either CustomPublicIp must be set or Ec2 enabled")
 	}
 }
 
-func (p *OpenVPN) Render(r urknall.Package) {
-	if len(p.Country) != 2 {
+func (ovpn *OpenVPN) Render(pkg urknall.Package) {
+	if len(ovpn.Country) != 2 {
 		panic("Country must be exactly 2 characters long")
 	}
-	if len(p.Province) != 2 {
+	if len(ovpn.Province) != 2 {
 		panic("Province must be exactly 2 characters long")
 	}
-	r.AddCommands("base",
+	pkg.AddCommands("base",
 		InstallPackages("openvpn", "iptables", "zip"),
 		Shell("cp -R /usr/share/doc/openvpn/examples/easy-rsa/2.0 /etc/openvpn/easy-rsa/"),
 		WriteFile("/etc/openvpn/easy-rsa/vars", openVpnVars, "root", 0644),
@@ -150,8 +150,8 @@ export PKCS11_MODULE_PATH=changeme
 export PKCS11_PIN=1234
 `
 
-func (u *OpenVpnUser) Package(r urknall.Package) {
-	r.AddCommands("base",
+func (u *OpenVpnUser) Package(pkg urknall.Package) {
+	pkg.AddCommands("base",
 		&ShellCommand{Command: addVpnUser},
 		&ShellCommand{Command: openVpnPackagePath + " " + u.Login},
 	)
@@ -176,14 +176,14 @@ type OpenVpnMasquerade struct {
 	Interface string `urknall:"required=true"`
 }
 
-func (*OpenVpnMasquerade) Render(r urknall.Package) {
-	r.AddCommands("base",
-		WriteFile("/etc/network/if-pre-up.d/iptables", ipUp, "root", 0744),
+func (*OpenVpnMasquerade) Render(pkg urknall.Package) {
+	pkg.AddCommands("base",
+		WriteFile("/etc/network/if-pre-up.d/iptables", openVPNIpUp, "root", 0744),
 		Shell("IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables"),
 	)
 }
 
-const ipUp = `#!/bin/bash -e
+const openVPNIpUp = `#!/bin/bash -e
 
 if [[ "$IFACE" == "{{ .Interface }}" ]]; then
 	echo 1 > /proc/sys/net/ipv4/ip_forward
