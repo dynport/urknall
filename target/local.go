@@ -10,6 +10,7 @@ import (
 	"github.com/dynport/urknall/cmd"
 )
 
+// Create a target for local provisioning.
 func NewLocalTarget() *localTarget {
 	return &localTarget{}
 }
@@ -46,7 +47,6 @@ func (c *localTarget) Command(cmd string) (cmd.ExecCommand, error) {
 }
 
 func (c *localTarget) Reset() (e error) {
-	// TODO(gf) maybe required for setting the proper group?
 	return nil
 }
 

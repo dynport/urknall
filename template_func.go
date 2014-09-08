@@ -4,7 +4,6 @@ package urknall
 // no separate struct is required.
 type TemplateFunc func(Package)
 
-// This is just required to make the short cut work.
 func (f TemplateFunc) Render(p Package) {
 	f(p)
 }

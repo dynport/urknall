@@ -19,8 +19,8 @@ type Task interface {
 }
 
 // Create a task. This is available to provide maximum flexibility, but
-// shouldn't be required in most cases. The resulting task can be registered to
-// an package using the AddTask method.
+// shouldn't be required very often. The resulting task can be registered to an
+// package using the AddTask method.
 func NewTask() Task {
 	return &task{}
 }

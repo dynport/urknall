@@ -2,7 +2,7 @@ package urknall
 
 import "log"
 
-func ExampleBuild_Run() {
+func ExampleBuild() {
 	template := &ExampleTemplate{}
 	target, e := NewLocalTarget()
 

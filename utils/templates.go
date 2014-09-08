@@ -7,7 +7,7 @@ import (
 	"text/template"
 )
 
-// Delegates action to RenderTemplate. Panics in case of an error returned.
+// Delegates action to RenderTemplate. Panics in case of an error.
 func MustRenderTemplate(tmplString string, i interface{}) (rendered string) {
 	for j := 0; j < 8; j++ {
 		renderedCommand, e := RenderTemplate(tmplString, i)
@@ -22,7 +22,8 @@ func MustRenderTemplate(tmplString string, i interface{}) (rendered string) {
 	panic("found rendering loop. max 8 levels are allowed")
 }
 
-// Render the template from the given string using text/template and the information from the interface provided.
+// Render the template from the given string using text/template and the
+// information from the interface provided.
 func RenderTemplate(tmplString string, i interface{}) (rendered string, e error) {
 	tpl := template.New("")
 	tpl, e = tpl.Parse(tmplString)

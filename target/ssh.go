@@ -13,6 +13,7 @@ import (
 	"github.com/dynport/urknall/cmd"
 )
 
+// Create a target for provisioning via SSH.
 func NewSshTarget(addr string) (target *sshTarget, e error) {
 	target = &sshTarget{port: 22, user: "root"}
 

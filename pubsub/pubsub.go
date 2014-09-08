@@ -78,11 +78,13 @@ func (message *Message) IsStderr() bool {
 	return message.Stream == "stderr"
 }
 
+// Publish the message with the given error.
 func (message Message) PublishError(e error) {
 	message.Error = e
 	message.Publish("error")
 }
 
+// Publish the message with the given error and create a stacktrace.
 func (message *Message) PublishPanic(e error) {
 	var buf []byte
 	for read, size := 1024, 1024; read == size; read = runtime.Stack(buf, false) {
@@ -94,6 +96,7 @@ func (message *Message) PublishPanic(e error) {
 	message.Publish("panic")
 }
 
+// Publish the message with the given key postfix.
 func (message Message) Publish(key string) {
 	if message.Key == "" {
 		panic("message key must be set")
