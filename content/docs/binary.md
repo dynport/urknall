@@ -5,20 +5,12 @@ title: Binary
 # Urknall Binary
 {:.no_toc}
 
-Urknall comes in two flavors: binary and library. This is, as there are two
-separate problems that need to be solved. On the one hand there must be the
-underlying mechanisms to handle the targets, like managing the connection and
-executing commands and recording and transfering the output (this is what the
-[binary](../binary/) does). On the other hand there must be the tasks that
-should be executed. While this is mostly the users' domain making basic stuff
-available helps a lot with bootstrapping projects. This is the binary's purpose
-and the next subsection is going to explain its evolution. Afterwards the
-different use cases are discussed.
-
-Please note that the urknall binary queries the [Github
-API](http://github.com){:target='blank'}, that has a rate limit. If you
-encouter this, try [creating an API token](https://github.com/blog/1509-personal-api-tokens){:target='blank'}.
-The token should reside in the environment as `GITHUB_TOKEN`.
+While the urknall [library](../library/) provides the handling of targets,
+tasks and caching, the urknall binary helps managing projects that use the
+library. This pattern is the result of an evolution that happened over the
+course of almost a year. The steps of this evolution and the reasoning behind
+them are described in the next subsections. Afterwards different use cases are
+discussed.
 
 * TOC
 {:toc}
@@ -26,24 +18,19 @@ The token should reside in the environment as `GITHUB_TOKEN`.
 
 ## Urknall's Evolution
 
-The concepts used matured over the course of about a year when we tested
-different approaches and changed direction a few times, until we settled with
-something pragmatic and usable. The basic concepts of how the provisioning is
-executed have been pretty stable, while being renamed a lot. What we discussed
-a lot was the mechanism to handle commands and templates. The problem is that
-changing those affects everyone using them, i.e. changing a basic command like
-the `FileCommand` (used to write files to the target), that would affect all
-usages, as changes break the caching.
-
-We don't want to provide _the_ solution to provisioning certain aspects, but
-give you an example. Take it, try it and most important: modify it!
+The concepts used matured over the course of about a year when different
+approaches were tested and direction changed a few times, until development
+settled with something pragmatic and usable. The basic concepts of how the
+provisioning is executed have been pretty stable, while being renamed a lot.
+Discussion mainly focussed on how to handle commands and templates.
 
 
 ### Fully Integrated Library
 
-First everything was bundled with the library, i.e. the implementations of some
-basic commands and templates were part of the library itself. This meant users
-would be using them like the following:
+First the naive approach was used, with bundling everything with the library,
+i.e. the implementations of some basic commands and templates were part of the
+library itself. This meant users would use them like described in the
+following:
 
 	#!golang
 	import (
@@ -60,26 +47,29 @@ would be using them like the following:
 	  pkg.AddCommands("hello", &commands.Shell("echo hello world"))
 	}
 
-There are two problem with the approach. If we changed a template or even worse
-a command everyone updating urknall would have his caches broken as the
-underlying commands changed. This is not acceptable as the changes might break
-stuff pretty bad (like urknall trying to reinstall your production database).
-And users can't change the implementations easily, i.e. they have to move the
-code manually to their own project.
+With this approach one major problems arises: Changes to templates or (even
+worse) commands inside the library would break caches of users after updates.
+As commands must not be idempotent this could have fatal consequences and is
+not acceptable. As it is not easily possible to fix go library versions when
+using them, this could result in different team members using different
+versions of a template or command. This is like asking for disaster.
 
-This put a lot of burden on the implementations delivered with urknall, as
-implementation couldn't be changed easily. Therefore these artefacts had to be
-delivered another way.
+Another issue is that the provided templates are outside the scope of users,
+i.e. they can change the templates directly, but have to move the according
+code to their project manually. As urknall should not deliver the solutions to
+all problems, but at most some initial help, another approach was required,
+that allowed users to directly integrate those artefacts into their code base.
 
 
 ### Integrated With A Binary
 
-In a second iteration we added an urknall binary that had the artefacts as
-static assets. Users would add these assets to their project as needed. This
-had the additional benefit that modification was easy, as the code was already
-there. Even updating with later versions was easily possible, i.e. after an
-update of the urknall binary new versions could easily be deployed and verified
-against the project's version deployed previously.
+In a second iteration an urknall binary was added that had the artefacts as
+static assets shipped with it. Users would add these assets to their project as
+needed. Even updating with later versions was easily possible, under the
+assumption the project uses version control, which could be taken for granted
+for anything serious. After an update of the urknall binary new versions of
+templates could easily be added and changes could be verified against the
+project's version using the version control system.
 
 The downside with this approach is that the binary gets bigger as the number of
 assets increases and users must update the urknall binary (and library) to
@@ -93,7 +83,18 @@ requires a network connection, it has the benefit, that changes to the
 templates require no update of the urknall binary itself.
 
 
-## Project Scaffolding
+## Usage
+
+Please note that the urknall binary queries the [Github
+API](http://github.com){:target='blank'}, that has a rate limit. If you
+encouter this, try [creating an API token](https://github.com/blog/1509-personal-api-tokens){:target='blank'}.
+The token should reside in the environment as `GITHUB_TOKEN`.
+
+TODO: modify the `init` and `templates add` commands to add files into a
+subpackage of the user's project so that godoc can work properly
+
+
+### Project Scaffolding
 
 The urknall binary can be used to create a simple basic urknall provisioning
 tool. This is to help with the basic steps of creating a new project. Besides a
@@ -103,28 +104,17 @@ added.
 
 	#!shell
 	$ urknall init example
-	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_add_user.go?ref=master"
-	saving file "cmd_add_user.go" to "/private/tmp/example/cmd_add_user.go"
-	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_as_user.go?ref=master"
-	saving file "cmd_as_user.go" to "/private/tmp/example/cmd_as_user.go"
-	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_bool.go?ref=master"
-	saving file "cmd_bool.go" to "/private/tmp/example/cmd_bool.go"
-	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_download.go?ref=master"
-	saving file "cmd_download.go" to "/private/tmp/example/cmd_download.go"
-	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_extract_file.go?ref=master"
-	saving file "cmd_extract_file.go" to "/private/tmp/example/cmd_extract_file.go"
-	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_file.go?ref=master"
-	saving file "cmd_file.go" to "/private/tmp/example/cmd_file.go"
-	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_fileutils.go?ref=master"
-	saving file "cmd_fileutils.go" to "/private/tmp/example/cmd_fileutils.go"
-	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_shell.go?ref=master"
-	saving file "cmd_shell.go" to "/private/tmp/example/cmd_shell.go"
-	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_ubuntu.go?ref=master"
-	saving file "cmd_ubuntu.go" to "/private/tmp/example/cmd_ubuntu.go"
-	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/cmd_wait.go?ref=master"
-	saving file "cmd_wait.go" to "/private/tmp/example/cmd_wait.go"
-	loading content from "https://api.github.com/repos/dynport/urknall/contents/examples/main.go?ref=master"
-	saving file "main.go" to "/private/tmp/example/main.go"
+	created "cmd_add_user.go"
+	created "cmd_as_user.go"
+	created "cmd_bool.go"
+	created "cmd_download.go"
+	created "cmd_extract_file.go"
+	created "cmd_file.go"
+	created "cmd_fileutils.go"
+	created "cmd_shell.go"
+	created "cmd_ubuntu.go"
+	created "cmd_wait.go"
+	created "main.go"
 
 The files installed contain the following commands:
 
@@ -142,10 +132,8 @@ The files installed contain the following commands:
   download content from a given URI and save or extract respectively it to a
   given location.
 
-There are many more commands. See `godoc` for more information.
 
-
-## Template Management
+### Template Management
 
 We have some basic templates in stock we use a lot. Those can be added to a
 project with the urknall binary.

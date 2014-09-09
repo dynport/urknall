@@ -14,25 +14,6 @@ explains the basic ideas behind the concepts.
 {:toc}
 
 
-## Logging
-
-Urknall's logging must be configured prior to usage. Internally a
-publisher-subscribe mechanism is used, that has more complex features, but the
-default configuration should be sufficient in most cases. The `main.go` file
-created by the [urknall binary](../binary/#init) does so in the first line of
-the run function:
-
-	#!golang
-	func run() error {
-	  defer urknall.OpenLogger(os.Stdout).Close()
-	  // [...]
-	}
-
-This configures the logging to write all output to the process's standard
-output channel and close the logger on program termination (this is done using
-the `defer` statement).
-
-
 ## Commands
 
 What urknall actually does is executing commands on a target. Commands in the
@@ -130,27 +111,31 @@ making sure all required values are set properly.
 TODO: well that could be described better I guess
 
 
+## Packages
+
+Packages are an strictly internal data-structure. A package is a container for
+tasks that must be executed on the target. The interface is just exposed to the
+user when rendering [templates](#templates) and provides three functions:
+
+* Using the `AddTemplate` method the given template will be rendered into the
+  current template, i.e. all tasks generated inside the "child" template are
+  added to the "parent". This is required to build template hierarchies.
+* The `AddTask` method will add the given manually created task.
+* With `AddCommands` a task is generated internally using the list of commands
+  given.
+
+Each of these commands is given a string that is used as identifier for the
+underlying task. In case of template hierarchies the different layers' names
+are concatenated using dots.
+
+
 ## Tasks
 
-Tasks are ordered collections of commands. Usually there is no need to handle
-them manually, except for situation's where conditionals are required inside a
-cached entity. The following subsection will describe this scenario. In the
-following caching will be described as tasks are the layer where it is applied.
-
-
-### Manual Task Generation
-
-Urknall provides the `NewTask` function that will generate a blank task that
-commands can be added to manually.
-
-TODO: missing example that properly explains the need for this. cache breaking for bundle install?
-
-
-### Caching
-
-One of the core features of urknall is the caching layer that will decide
-whether or not a command must be executed. This is essential if provisioning is
-run more than once, which is useful in many situations:
+Tasks are ordered collections of commands. They are the unit caching is applied
+to. Caching is one of the core features of urknall, that decides whether a
+command must be executed or not, i.e. whether the command and its predecessor
+have already been executed. This is essential if provisioning is run more than
+once, which is useful in many situations:
 
 * While developing templates the turnaround time is pretty short, as only
   changed or added parts need to be executed.
@@ -179,38 +164,18 @@ commands must be executed.
 TODO: add information on how to best partition the cache.
 
 
-## Packages
-
-Packages are an strictly internal data-structure. It is a container for all the
-tasks that must be executed on the target. The interface is just exposed to the
-user when rendering templates. There are three possibilities for adding tasks:
-
-* Using the `AddTemplate` method the given template will be rendered into the
-  current template, i.e. all tasks generated inside the "child" template are
-  added to the "parent". This is required to build template hierarchies.
-* The `AddTask` method will add the given manually created task.
-* With `AddCommands` a task is generated internally using the list of commands
-  given.
-
-Each of these commands is given a string that is used as identifier for the
-underlying task. In case of template hierarchies the different layers' names
-are concatenated using dots.
-
-
 ## Templates
 
 Templates are used to define the list of tasks that should be performed during
-provisioning. Conceptually they are structs that implement the `Template`
-interface, i.e. have a `Render` method that will extend a given `Package`. For
-convenience there is a `TemplateFunc` type that allows to add templates without
-configuration, i.e. a simple Render function.
+provisioning. These tasks are added to a package provided on the `Render`
+method call of the `Template`
+[interface](http://godoc.org/github.com/dynport/urknall#Template){:target='_blank'},
 
 When building a template hierarchy, from the root template given to the `Build`
 function towards some more generic templates it might be necessary to have a
 lot of configuration options on the root, that are handed through to the leafs.
 This way there is a single interface for setting and changing configuration
 which helps with handling more complex scenarios.
-
 
 When creating the `main.go` file using the [urknall binary](../binary/#init) a
 simple template without configuration is generated.
@@ -268,6 +233,27 @@ validation takes the annotations into account, i.e. it verifies that:
 
 This helps to prevent missing configuration items prior to executing commands,
 that would fail otherwise.
+
+
+## Logging
+
+Urknall's logging must be configured prior to usage. Internally a
+publisher-subscribe mechanism is used, that has more complex features, but the
+default configuration should be sufficient in most cases. The `main.go` file
+created by the [urknall binary](../binary/#init) does so in the first line of
+the run function:
+
+	#!golang
+	func run() error {
+	  defer urknall.OpenLogger(os.Stdout).Close()
+	  // [...]
+	}
+
+This configures the logging to write all output to the process's standard
+output channel and close the logger on program termination (this is done using
+the `defer` statement).
+
+TODO: add more content on how to add a custom logger.
 
 
 ## Targets
