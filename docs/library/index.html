@@ -59,7 +59,6 @@ a target. For a detailed information on the API of urknall have look into the
 explains the basic ideas behind the concepts.</p>
 
 <ul id="markdown-toc">
-  <li><a href="#logging">Logging</a></li>
   <li>
 <a href="#commands">Commands</a>    <ul>
       <li><a href="#the-commands-interface">The <code>Commands</code> Interface</a></li>
@@ -68,19 +67,15 @@ explains the basic ideas behind the concepts.</p>
       <li><a href="#the-validator-interface">The <code>Validator</code> Interface</a></li>
     </ul>
   </li>
-  <li>
-<a href="#tasks">Tasks</a>    <ul>
-      <li><a href="#manual-task-generation">Manual Task Generation</a></li>
-      <li><a href="#caching">Caching</a></li>
-    </ul>
-  </li>
   <li><a href="#packages">Packages</a></li>
+  <li><a href="#tasks">Tasks</a></li>
   <li>
 <a href="#templates">Templates</a>    <ul>
       <li><a href="#anonymous-render-function">Anonymous Render Function</a></li>
       <li><a href="#annotations">Annotations</a></li>
     </ul>
   </li>
+  <li><a href="#logging">Logging</a></li>
   <li>
 <a href="#targets">Targets</a>    <ul>
       <li><a href="#remot-target">Remot Target</a></li>
@@ -89,25 +84,6 @@ explains the basic ideas behind the concepts.</p>
     </ul>
   </li>
 </ul>
-
-<h2 id="logging">Logging</h2>
-
-<p>Urknall’s logging must be configured prior to usage. Internally a
-publisher-subscribe mechanism is used, that has more complex features, but the
-default configuration should be sufficient in most cases. The <code>main.go</code> file
-created by the <a href="../binary/#init">urknall binary</a> does so in the first line of
-the run function:</p>
-
-<pre><code class="language-golang highlight"><span class="k">func</span><span class="x"> </span><span class="n">run</span><span class="p">()</span><span class="x"> </span><span class="kt">error</span><span class="x"> </span><span class="p">{</span><span class="x">
-  </span><span class="k">defer</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">OpenLogger</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">Stdout</span><span class="p">)</span><span class="o">.</span><span class="n">Close</span><span class="p">()</span><span class="x">
-  </span><span class="c">// [...]</span><span class="x">
-</span><span class="p">}</span></code></pre>
-
-<p>This configures the logging to write all output to the process’s standard
-output channel and close the logger on program termination (this is done using
-the <code>defer</code> statement).</p>
-
-<p>TODO: add more content on how to add a custom logger.</p>
 
 <h2 id="commands">Commands</h2>
 
@@ -196,25 +172,32 @@ making sure all required values are set properly.</p>
 
 <p>TODO: well that could be described better I guess</p>
 
+<h2 id="packages">Packages</h2>
+
+<p>Packages are an strictly internal data-structure. A package is a container for
+tasks that must be executed on the target. The interface is just exposed to the
+user when rendering <a href="#templates">templates</a> and provides three functions:</p>
+
+<ul>
+  <li>Using the <code>AddTemplate</code> method the given template will be rendered into the
+current template, i.e. all tasks generated inside the “child” template are
+added to the “parent”. This is required to build template hierarchies.</li>
+  <li>The <code>AddTask</code> method will add the given manually created task.</li>
+  <li>With <code>AddCommands</code> a task is generated internally using the list of commands
+given.</li>
+</ul>
+
+<p>Each of these commands is given a string that is used as identifier for the
+underlying task. In case of template hierarchies the different layers’ names
+are concatenated using dots.</p>
+
 <h2 id="tasks">Tasks</h2>
 
-<p>Tasks are ordered collections of commands. Usually there is no need to handle
-them manually, except for situation’s where conditionals are required inside a
-cached entity. The following subsection will describe this scenario. In the
-following caching will be described as tasks are the layer where it is applied.</p>
-
-<h3 id="manual-task-generation">Manual Task Generation</h3>
-
-<p>Urknall provides the <code>NewTask</code> function that will generate a blank task that
-commands can be added to manually.</p>
-
-<p>TODO: missing example that properly explains the need for this. cache breaking for bundle install?</p>
-
-<h3 id="caching">Caching</h3>
-
-<p>One of the core features of urknall is the caching layer that will decide
-whether or not a command must be executed. This is essential if provisioning is
-run more than once, which is useful in many situations:</p>
+<p>Tasks are ordered collections of commands. They are the unit caching is applied
+to. Caching is one of the core features of urknall, that decides whether a
+command must be executed or not, i.e. whether the command and its predecessor
+have already been executed. This is essential if provisioning is run more than
+once, which is useful in many situations:</p>
 
 <ul>
   <li>While developing templates the turnaround time is pretty short, as only
@@ -244,32 +227,12 @@ commands must be executed.</p>
 
 <p>TODO: add information on how to best partition the cache.</p>
 
-<h2 id="packages">Packages</h2>
-
-<p>Packages are an strictly internal data-structure. It is a container for all the
-tasks that must be executed on the target. The interface is just exposed to the
-user when rendering templates. There are three possibilities for adding tasks:</p>
-
-<ul>
-  <li>Using the <code>AddTemplate</code> method the given template will be rendered into the
-current template, i.e. all tasks generated inside the “child” template are
-added to the “parent”. This is required to build template hierarchies.</li>
-  <li>The <code>AddTask</code> method will add the given manually created task.</li>
-  <li>With <code>AddCommands</code> a task is generated internally using the list of commands
-given.</li>
-</ul>
-
-<p>Each of these commands is given a string that is used as identifier for the
-underlying task. In case of template hierarchies the different layers’ names
-are concatenated using dots.</p>
-
 <h2 id="templates">Templates</h2>
 
 <p>Templates are used to define the list of tasks that should be performed during
-provisioning. Conceptually they are structs that implement the <code>Template</code>
-interface, i.e. have a <code>Render</code> method that will extend a given <code>Package</code>. For
-convenience there is a <code>TemplateFunc</code> type that allows to add templates without
-configuration, i.e. a simple Render function.</p>
+provisioning. These tasks are added to a package provided on the <code>Render</code>
+method call of the <code>Template</code>
+<a href="http://godoc.org/github.com/dynport/urknall#Template" target="_blank">interface</a>,</p>
 
 <p>When building a template hierarchy, from the root template given to the <code>Build</code>
 function towards some more generic templates it might be necessary to have a
@@ -331,6 +294,25 @@ given.</li>
 
 <p>This helps to prevent missing configuration items prior to executing commands,
 that would fail otherwise.</p>
+
+<h2 id="logging">Logging</h2>
+
+<p>Urknall’s logging must be configured prior to usage. Internally a
+publisher-subscribe mechanism is used, that has more complex features, but the
+default configuration should be sufficient in most cases. The <code>main.go</code> file
+created by the <a href="../binary/#init">urknall binary</a> does so in the first line of
+the run function:</p>
+
+<pre><code class="language-golang highlight"><span class="k">func</span><span class="x"> </span><span class="n">run</span><span class="p">()</span><span class="x"> </span><span class="kt">error</span><span class="x"> </span><span class="p">{</span><span class="x">
+  </span><span class="k">defer</span><span class="x"> </span><span class="n">urknall</span><span class="o">.</span><span class="n">OpenLogger</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">Stdout</span><span class="p">)</span><span class="o">.</span><span class="n">Close</span><span class="p">()</span><span class="x">
+  </span><span class="c">// [...]</span><span class="x">
+</span><span class="p">}</span></code></pre>
+
+<p>This configures the logging to write all output to the process’s standard
+output channel and close the logger on program termination (this is done using
+the <code>defer</code> statement).</p>
+
+<p>TODO: add more content on how to add a custom logger.</p>
 
 <h2 id="targets">Targets</h2>
 
