@@ -15,6 +15,11 @@ available helps a lot with bootstrapping projects. This is the binary's purpose
 and the next subsection is going to explain its evolution. Afterwards the
 different use cases are discussed.
 
+Please note that the urknall binary queries the [Github
+API](http://github.com){:target='blank'}, that has a rate limit. If you
+encouter this, try [creating an API token](https://github.com/blog/1509-personal-api-tokens){:target='blank'}.
+The token should reside in the environment as `GITHUB_TOKEN`.
+
 * TOC
 {:toc}
 
@@ -157,7 +162,7 @@ the following templates were available:
 
 	#!shell
 	$ urknall templates list
-	available packages:
+	available templates:
 	* docker
 	* elasticsearch
 	* firewall
