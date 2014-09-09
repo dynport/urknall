@@ -6,7 +6,7 @@ IGN_PKGS    := github.com/dynport/urknall/examples
 ALL_PKGS    := $(shell go list ./...)
 PACKAGES    := $(filter-out $(IGN_PKGS),$(ALL_PKGS))
 
-build: deps
+build:
 	go get github.com/dynport/urknall/urknall
 
 deps:
