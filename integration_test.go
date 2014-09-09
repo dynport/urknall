@@ -80,7 +80,7 @@ func TestIntegration(t *testing.T) {
 		var ok bool
 
 		if p, ok = raw.(*packageImpl); !ok {
-			t.Fatal("expected package impl, fgot %T", p)
+			t.Fatalf("expected package impl, fgot %T", p)
 		}
 
 		for _, task := range p.tasks {
