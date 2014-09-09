@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Urknall Documentation - Binary</title>
-<link rel="stylesheet" href="../../stylesheet.css">
+<link href="../../css/stylesheet.css" media="screen" rel="stylesheet" type="text/css">
 <link href="../../css/pygments.css" media="screen" rel="stylesheet" type="text/css">
 
 <!-- Bootstrap -->
@@ -62,6 +62,11 @@ should be executed. While this is mostly the users’ domain making basic stuff
 available helps a lot with bootstrapping projects. This is the binary’s purpose
 and the next subsection is going to explain its evolution. Afterwards the
 different use cases are discussed.</p>
+
+<p>Please note that the urknall binary queries the <a href="http://github.com" target="blank">Github
+API</a>, that has a rate limit. If you
+encouter this, try <a href="https://github.com/blog/1509-personal-api-tokens" target="blank">creating an API token</a>.
+The token should reside in the environment as <code>GITHUB_TOKEN</code>.</p>
 
 <ul id="markdown-toc">
   <li>
@@ -215,7 +220,7 @@ so a network connection is required! At the time when this guide was written
 the following templates were available:</p>
 
 <pre><code class="language-shell highlight"><span class="gp">$ </span>urknall templates list
-available packages:
+available templates:
 <span class="k">*</span> docker
 <span class="k">*</span> elasticsearch
 <span class="k">*</span> firewall
