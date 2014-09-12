@@ -21,10 +21,10 @@ Additionally a machine is needed to provision to (see
 [VirtualBox](https://www.virtualbox.org){:target='blank'}  on how to create a virtual machine),
 that should meet the following requirements:
 
-* The machine should have Ubuntu Trust 14.04 installed.
+* The machine should have Ubuntu 14.04 (Trusty) installed.
 * The machine must be accessible via SSH.
 * If the user on the machine is not `root`, he must be allowed to run commands
-  using `sudo`, [without being asked for a password](../library/#sudo_without_password).
+  using `sudo`, [without being asked for a password](../library/#sudo-without-password).
 
 
 ## Creating The Basic Project
@@ -36,7 +36,7 @@ urknall [binary](../binary/)'s `init` command:
 	$ urknall init example
 
 Besides the a basic set of [commands](../binary/#project-scaffolding), the
-`main.go` file is creatted, that ahs code that configures and drives the
+`main.go` file is created, that has code that configures and drives the
 urknall [library](../library) with a simple [template](../library/#templates).
 The generated code can be compiled to a binary, used to do the actual
 provisioning.
