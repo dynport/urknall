@@ -76,7 +76,7 @@ func (runner *remoteTaskRunner) run() error {
 
 	// Get errors that might have occured while handling the back-channel for the logs.
 	select {
-	case e := <-errors:
+	case e = <-errors:
 		if e != nil {
 			log.Printf("ERROR: %s", e.Error())
 		}
@@ -113,7 +113,11 @@ func (runner *remoteTaskRunner) createChecksumFile(prefix string, err error) (e 
 		return e
 	}
 
-	return c.Run()
+	if e = c.Run(); e != nil {
+		return e
+	}
+
+	return err // return original error for convenience
 }
 
 func logError(e error) {
