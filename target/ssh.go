@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"code.google.com/p/go.crypto/ssh"
-	"code.google.com/p/go.crypto/ssh/agent"
 	"github.com/dynport/urknall/cmd"
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 )
 
 // Create a target for provisioning via SSH.
