@@ -46,7 +46,7 @@ func (ovpn *OpenVPN) Render(pkg urknall.Package) {
 			`./clean-all"`,
 			`./pkitool --initca"`,
 			`./pkitool --server {{ .Name }}"`,
-			`./build-dh"`,
+			`./build-dh`,
 			`bash -c "cd /etc/openvpn/easy-rsa/keys && cp -v {{ .Name }}.{crt,key} ca.crt dh1024.pem /etc/openvpn/"`,
 		),
 		WriteFile("/etc/openvpn/server.conf", openvpnServerConfig, "root", 0644),
