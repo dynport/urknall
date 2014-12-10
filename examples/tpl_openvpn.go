@@ -41,13 +41,18 @@ func (ovpn *OpenVPN) Render(pkg urknall.Package) {
 		Shell("cp -R /usr/share/doc/openvpn/examples/easy-rsa/2.0 /etc/openvpn/easy-rsa/"),
 		WriteFile("/etc/openvpn/easy-rsa/vars", openVpnVars, "root", 0644),
 		Shell("ln -nfs /etc/openvpn/easy-rsa/openssl-1.0.0.cnf /etc/openvpn/easy-rsa/openssl.cnf"),
-		And(
-			`bash -c "cd /etc/openvpn/easy-rsa && source ./vars`,
-			`./clean-all"`,
-			`./pkitool --initca"`,
-			`./pkitool --server {{ .Name }}"`,
-			`./build-dh`,
-			`bash -c "cd /etc/openvpn/easy-rsa/keys && cp -v {{ .Name }}.{crt,key} ca.crt dh1024.pem /etc/openvpn/"`,
+		And(`bash -c "
+			  set -e
+			  cd /etc/openvpn/easy-rsa
+			  source ./vars
+			  ./clean-all
+			  ./pkitool --initca
+			  ./pkitool --server {{ .Name }}
+			  ./build-dh
+			  cd /etc/openvpn/easy-rsa/keys
+			  cp -v {{ .Name }}.{crt,key} ca.crt dh1024.pem /etc/openvpn/
+		  "
+		 `,
 		),
 		WriteFile("/etc/openvpn/server.conf", openvpnServerConfig, "root", 0644),
 		WriteFile(openVpnPackagePath, openVpnPackageKey, "root", 0755),
