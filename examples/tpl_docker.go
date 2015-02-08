@@ -9,7 +9,7 @@ type Docker struct {
 }
 
 func (docker *Docker) Render(pkg urknall.Package) {
-	pkg.AddCommands("packages", InstallPackages("aufs-tools", "cgroup-lite", "xz-utils", "git"))
+	pkg.AddCommands("packages", InstallPackages("aufs-tools", "cgroup-lite", "xz-utils", "git", "linux-image-extra-$(uname -r)"))
 	pkg.AddCommands("install",
 		Mkdir("{{ .InstallDir }}/bin", "root", 0755),
 		Download("http://get.docker.io/builds/Linux/x86_64/docker-{{ .Version }}", "{{ .InstallDir }}/bin/docker", "root", 0755),
