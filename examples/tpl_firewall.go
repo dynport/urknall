@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/dynport/urknall"
+	"github.com/dynport/urknall/cmd"
 )
 
 type Firewall struct {
@@ -17,7 +18,7 @@ type Firewall struct {
 }
 
 func (fw *Firewall) Render(pkg urknall.Package) {
-	var ipsetsCmd urknall.Command
+	var ipsetsCmd cmd.Command
 	if len(fw.IPSets) > 0 {
 		ipsetsCmd = WriteFile("/etc/iptables/ipsets", fwIpset, "root", 0644)
 	} else {
