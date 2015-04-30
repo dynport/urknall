@@ -3,7 +3,6 @@ package urknall
 import (
 	"fmt"
 	"testing"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func shouldBeError(actual interface{}, expected ...interface{}) string {
@@ -36,570 +35,589 @@ func (p *genericPkg) Render(Package) {
 }
 
 func TestBoolValidationRequired(t *testing.T) {
-	Convey("Given a package with a bool field that is required", t, func() {
-		type pkg struct {
-			Field bool `urknall:"required=true"`
-			genericPkg
-		}
+	type pkg struct {
+		Field bool `urknall:"required=true"`
+		genericPkg
+	}
 
-		Convey("When an instance is created without value set", func() {
-			pi := &pkg{}
-			Convey("Then validation must return an error", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] type "bool" doesn't support "required" tag`)
-			})
-		})
-	})
+	pi := &pkg{}
+	err := validateTemplate(pi)
+	if err == nil {
+		t.Errorf("expected error, got none")
+	} else if err.Error() != `[package:pkg][field:Field] type "bool" doesn't support "required" tag` {
+		t.Errorf("got wrong error: %s", err)
+	}
 }
 
 func TestByteFields(t *testing.T) {
-	Convey("Given a package with a []byte field with a default value", t, func() {
+	func() {
 		type pkg struct {
 			genericPkg
 			Field []byte `urknall:"default='a test'"`
 		}
 		pi := &pkg{}
-		So(validateTemplate(pi), ShouldBeNil)
-		So(string(pi.Field), ShouldEqual, "a test")
-	})
+		err := validateTemplate(pi)
+		if err != nil {
+			t.Errorf("didn't expect an error, got %q", err)
+		}
+		if string(pi.Field) != "a test" {
+			t.Errorf("expected field to be %q, got %q", "a test", pi.Field)
+		}
+	}()
 
-	Convey("Given a package with a []byte field with a required tag", t, func() {
+	func() {
 		type pkg struct {
 			genericPkg
 			Field []byte `urknall:"required=true"`
 		}
 		pi := &pkg{}
-		So(validateTemplate(pi), ShouldNotBeNil)
+		if err := validateTemplate(pi); err == nil {
+			t.Errorf("expected error, got none")
+		}
 		pi.Field = []byte("hello world")
-		So(validateTemplate(pi), ShouldBeNil)
-	})
+		err := validateTemplate(pi)
+		if err != nil {
+			t.Errorf("didn't expect an error, got %q", err)
+		}
+	}()
 }
 
 func TestBoolValidationDefault(t *testing.T) {
-	Convey("Given a package with a bool field with a default value", t, func() {
-		type pkg struct {
-			genericPkg
-			Field bool `urknall:"default=false"`
+	type pkg struct {
+		genericPkg
+		Field bool `urknall:"default=false"`
+	}
+
+	func() {
+		pi := &pkg{}
+		err := validateTemplate(pi)
+		if err != nil {
+			t.Errorf("didn't expect an error, got %q", err)
 		}
+		if pi.Field != false {
+			t.Errorf("expected field to be %t, got %t", false, pi.Field)
+		}
+	}()
 
-		Convey("When an instance is created with value not set", func() {
-			pi := &pkg{}
-			Convey("Then validation must succeed", func() {
-				So(validateTemplate(pi), ShouldBeNil)
-			})
-			Convey("Then value must be set to default", func() {
-				So(pi.Field, ShouldEqual, false)
-			})
-		})
+	func() {
+		pi := &pkg{Field: false}
+		err := validateTemplate(pi)
+		if err != nil {
+			t.Errorf("didn't expect an error, got %q", err)
+		}
+		if pi.Field != false {
+			t.Errorf("expected field to be %t, got %t", false, pi.Field)
+		}
+	}()
 
-		Convey("When an instance is created with value set to false", func() {
-			pi := &pkg{Field: false}
-			Convey("Then validation must succeed", func() {
-				So(validateTemplate(pi), ShouldBeNil)
-			})
-			Convey("Then value must be set to false", func() {
-				So(pi.Field, ShouldEqual, false)
-			})
-		})
-
-		Convey("When an instance is created with value set to true", func() {
-			pi := &pkg{Field: true}
-			Convey("Then validation must succeed", func() {
-				So(validateTemplate(pi), ShouldBeNil)
-			})
-			Convey("Then value must be set to true", func() {
-				So(pi.Field, ShouldEqual, true)
-			})
-		})
-	})
+	func() {
+		pi := &pkg{Field: true}
+		err := validateTemplate(pi)
+		if err != nil {
+			t.Errorf("didn't expect an error, got %q", err)
+		}
+		if pi.Field != true {
+			t.Errorf("expected field to be %t, got %t", true, pi.Field)
+		}
+	}()
 }
 
 func TestBoolValidationSize(t *testing.T) {
-	Convey("Given a package with a size tag", t, func() {
-		type pkg struct {
-			genericPkg
-			Field bool `urknall:"size=3"`
-		}
-		Convey("When an instance is created", func() {
-			pi := &pkg{Field: true}
-			Convey("Then validation must fail", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] type "bool" doesn't support "size" tag`)
-			})
-		})
-	})
+	type pkg struct {
+		genericPkg
+		Field bool `urknall:"size=3"`
+	}
+	pi := &pkg{Field: true}
+	err := validateTemplate(pi)
+
+	if err == nil {
+		t.Errorf("expected error, got none")
+	} else if err.Error() != `[package:pkg][field:Field] type "bool" doesn't support "size" tag` {
+		t.Errorf("got wrong error: %s", err)
+	}
 }
 
 func TestBoolValidationMin(t *testing.T) {
-	Convey("Given a package with a min tag", t, func() {
-		type pkg struct {
-			genericPkg
-			Field bool `urknall:"min=3"`
-		}
-		Convey("When an instance is created", func() {
-			pi := &pkg{Field: true}
-			Convey("Then validation must fail", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] type "bool" doesn't support "min" tag`)
-			})
-		})
-	})
+	type pkg struct {
+		genericPkg
+		Field bool `urknall:"min=3"`
+	}
+	pi := &pkg{Field: true}
+	err := validateTemplate(pi)
+
+	if err == nil {
+		t.Errorf("expected error, got none")
+	} else if err.Error() != `[package:pkg][field:Field] type "bool" doesn't support "min" tag` {
+		t.Errorf("got wrong error: %s", err)
+	}
 }
 
 func TestBoolValidationMax(t *testing.T) {
-	Convey("Given a package with a max tag", t, func() {
-		type pkg struct {
-			genericPkg
-			Field bool `urknall:"max=3"`
-		}
-		Convey("When an instance is created", func() {
-			pi := &pkg{Field: true}
-			Convey("Then validation must fail", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] type "bool" doesn't support "max" tag`)
-			})
-		})
-	})
+	type pkg struct {
+		genericPkg
+		Field bool `urknall:"max=3"`
+	}
+	pi := &pkg{Field: true}
+	err := validateTemplate(pi)
+
+	if err == nil {
+		t.Errorf("expected error, got none")
+	} else if err.Error() != `[package:pkg][field:Field] type "bool" doesn't support "max" tag` {
+		t.Errorf("got wrong error: %s", err)
+	}
 }
 
 func TestIntValidationRequired(t *testing.T) {
-	Convey("Given a package with a int field that is required", t, func() {
-		type pkg struct {
-			genericPkg
-			Field int `urknall:"required=true"`
-		}
+	type pkg struct {
+		genericPkg
+		Field int `urknall:"required=true"`
+	}
 
-		Convey("When an instance is created", func() {
-			pi := &pkg{}
-			Convey("Then validation must return an error", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] type "int" doesn't support "required" tag`)
-			})
-		})
-	})
+	pi := &pkg{}
+	err := validateTemplate(pi)
+
+	if err == nil {
+		t.Errorf("expected error, got none")
+	} else if err.Error() != `[package:pkg][field:Field] type "int" doesn't support "required" tag` {
+		t.Errorf("got wrong error: %s", err)
+	}
 }
 
 func TestIntValidationDefault(t *testing.T) {
-	Convey("Given a package with a int field that has an erroneous default tag", t, func() {
+	func() {
 		type pkg struct {
 			genericPkg
 			Field int `urknall:"default=five"`
 		}
 
 		pi := &pkg{Field: 1}
-		Convey("Then validation must fail", func() {
-			So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] failed to parse value (not an int) of tag "default": "five"`)
-		})
-	})
+		err := validateTemplate(pi)
 
-	Convey("Given a package with a int field that has a default value", t, func() {
+		if err == nil {
+			t.Errorf("expected error, got none")
+		} else if err.Error() != `[package:pkg][field:Field] failed to parse value (not an int) of tag "default": "five"` {
+			t.Errorf("got wrong error: %s", err)
+		}
+	}()
+
+	func() {
 		type pkg struct {
 			genericPkg
 			Field int `urknall:"default=5"`
 		}
 
-		Convey("When an instance is created without specifying a value", func() {
+		func() {
 			pi := &pkg{}
-			Convey("Then validation must set the value", func() {
-				validateTemplate(pi)
-				So(pi.Field, ShouldEqual, 5)
-			})
-		})
+			validateTemplate(pi)
+			if pi.Field != 5 {
+				t.Errorf("expected field to be %d, got %d", 5, pi.Field)
+			}
+		}()
 
-		Convey("When an instance is created with an empty value specified", func() {
+		func() {
 			pi := &pkg{Field: 0}
-			Convey("Then validation must set the value", func() {
-				validateTemplate(pi)
-				So(pi.Field, ShouldEqual, 5)
-			})
-		})
+			validateTemplate(pi)
+			if pi.Field != 5 {
+				t.Errorf("expected field to be %d, got %d", 5, pi.Field)
+			}
+		}()
 
-		Convey("When an instance is created with a value specified", func() {
+		func() {
 			pi := &pkg{Field: 42}
-			Convey("Then validation must not touch the set value", func() {
-				validateTemplate(pi)
-				So(pi.Field, ShouldEqual, 42)
-			})
-		})
-	})
+			validateTemplate(pi)
+			if pi.Field != 42 {
+				t.Errorf("expected field to be %d, got %d", 42, pi.Field)
+			}
+		}()
+	}()
 }
 
 func TestIntValidationMin(t *testing.T) {
-	Convey("Given a package with a int field that has a min value", t, func() {
-		type pkg struct {
-			genericPkg
-			Field int `urknall:"min=5"`
-		}
+	type pkg struct {
+		genericPkg
+		Field int `urknall:"min=5"`
+	}
 
-		Convey("When an instance is created without specifying a value", func() {
-			pi := &pkg{}
-			Convey("Then validation must succeed", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] value "0" smaller than the specified minimum "5"`)
-			})
-		})
+	pi := &pkg{}
+	err := validateTemplate(pi)
 
-		Convey("When an instance is created with a value smaller than min value", func() {
-			pi := &pkg{Field: 4}
-			Convey("Then validation must fail", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] value "4" smaller than the specified minimum "5"`)
-			})
-		})
+	if err == nil {
+		t.Errorf("expected error, got none")
+	} else if err.Error() != `[package:pkg][field:Field] value "0" smaller than the specified minimum "5"` {
+		t.Errorf("got wrong error: %s", err)
+	}
 
-		Convey("When an instance is created with a value equal to the min value", func() {
-			pi := &pkg{Field: 5}
-			Convey("Then validation must succeed", func() {
-				So(validateTemplate(pi), ShouldBeNil)
-			})
-		})
+	pi.Field = 4
+	err = validateTemplate(pi)
+	if err == nil {
+		t.Errorf("expected error, got none")
+	} else if err.Error() != `[package:pkg][field:Field] value "4" smaller than the specified minimum "5"` {
+		t.Errorf("got wrong error: %s", err)
+	}
 
-		Convey("When an instance is created with a value greater than the min value", func() {
-			pi := &pkg{Field: 6}
-			Convey("Then validation must succeed", func() {
-				So(validateTemplate(pi), ShouldBeNil)
-			})
-		})
-	})
+	pi.Field = 5
+	err = validateTemplate(pi)
+	if err != nil {
+		t.Errorf("didn't expect an error, got %q", err)
+	}
+	if pi.Field != 5 {
+		t.Errorf("expected field to be %d, got %d", 5, pi.Field)
+	}
+
+	pi.Field = 6
+	err = validateTemplate(pi)
+	if err != nil {
+		t.Errorf("didn't expect an error, got %q", err)
+	}
+	if pi.Field != 6 {
+		t.Errorf("expected field to be %d, got %d", 6, pi.Field)
+	}
 }
 
 func TestIntValidationMax(t *testing.T) {
-	Convey("Given a package with a int field that has a max value", t, func() {
-		type pkg struct {
-			genericPkg
-			Field int `urknall:"max=5"`
-		}
+	type pkg struct {
+		genericPkg
+		Field int `urknall:"max=5"`
+	}
 
-		Convey("When an instance is created without specifying a value", func() {
-			pi := &pkg{}
-			Convey("Then validation must succeed", func() {
-				So(validateTemplate(pi), ShouldBeNil)
-			})
-		})
+	pi := &pkg{}
+	err := validateTemplate(pi)
+	if err != nil {
+		t.Errorf("didn't expect an error, got %q", err)
+	}
 
-		Convey("When an instance is created with a value smaller than max value", func() {
-			pi := &pkg{Field: 4}
-			Convey("Then validation must succeed", func() {
-				So(validateTemplate(pi), ShouldBeNil)
-			})
-		})
+	pi.Field = 4
+	err = validateTemplate(pi)
+	if err != nil {
+		t.Errorf("didn't expect an error, got %q", err)
+	}
+	if pi.Field != 4 {
+		t.Errorf("expected field to be %d, got %d", 4, pi.Field)
+	}
+	err = validateTemplate(pi)
 
-		Convey("When an instance is created with a value equal to the max value", func() {
-			pi := &pkg{Field: 5}
-			Convey("Then validation must succeed", func() {
-				So(validateTemplate(pi), ShouldBeNil)
-			})
-		})
+	pi.Field = 5
+	err = validateTemplate(pi)
+	if err != nil {
+		t.Errorf("didn't expect an error, got %q", err)
+	}
+	if pi.Field != 5 {
+		t.Errorf("expected field to be %d, got %d", 5, pi.Field)
+	}
 
-		Convey("When an instance is created with a value greater than the max value", func() {
-			pi := &pkg{Field: 6}
-			Convey("Then validation must fail", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] value "6" greater than the specified maximum "5"`)
-			})
-		})
-	})
+	pi.Field = 6
+	err = validateTemplate(pi)
+	if err == nil {
+		t.Errorf("expected error, got none")
+	} else if err.Error() != `[package:pkg][field:Field] value "6" greater than the specified maximum "5"` {
+		t.Errorf("got wrong error: %s", err)
+	}
+
 }
 
 func TestIntValidationSize(t *testing.T) {
-	Convey("Given a package with a int field that has a size value", t, func() {
-		type pkg struct {
-			genericPkg
-			Field int `urknall:"size=5"`
-		}
+	type pkg struct {
+		genericPkg
+		Field int `urknall:"size=5"`
+	}
 
-		pi := &pkg{}
-		Convey("Then validation must return an error", func() {
-			So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] type "int" doesn't support "size" tag`)
-		})
-	})
+	pi := &pkg{}
+	err := validateTemplate(pi)
+	if err == nil {
+		t.Errorf("expected error, got none")
+	} else if err.Error() != `[package:pkg][field:Field] type "int" doesn't support "size" tag` {
+		t.Errorf("got wrong error: %s", err)
+	}
 }
 
 func TestStringValidationRequired(t *testing.T) {
-	Convey("Given a package with a string field that has an invalid required annotation", t, func() {
+	func() {
 		type pkg struct {
 			genericPkg
 			Field string `urknall:"required=tru"`
 		}
-		Convey("When an instance is created without specifying a value", func() {
-			pi := &pkg{}
-			Convey("Then validation must return an error", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] failed to parse value (neither "true" nor "false") of tag "required": "tru"`)
-			})
-		})
-	})
+		pi := &pkg{}
+		err := validateTemplate(pi)
+		if err == nil {
+			t.Errorf("expected error, got none")
+		} else if err.Error() != `[package:pkg][field:Field] failed to parse value (neither "true" nor "false") of tag "required": "tru"` {
+			t.Errorf("got wrong error: %s", err)
+		}
+	}()
 
-	Convey("Given a package with a string field that is required", t, func() {
+	func() {
 		type pkg struct {
 			genericPkg
 			Field string `urknall:"required=true"`
 		}
-		Convey("When an instance is created without specifying a value", func() {
-			pi := &pkg{}
-			Convey("Then validation must return an error", func() {
-				So(validateTemplate(pi), shouldBeError, "[package:pkg][field:Field] required field not set")
-			})
-		})
+		pi := &pkg{}
+		err := validateTemplate(pi)
+		if err == nil {
+			t.Errorf("expected error, got none")
+		} else if err.Error() != "[package:pkg][field:Field] required field not set" {
+			t.Errorf("got wrong error: %s", err)
+		}
 
-		Convey("When an instance is created with an empty value specified", func() {
-			pi := &pkg{Field: ""}
-			Convey("Then validation must return an error", func() {
-				So(validateTemplate(pi), shouldBeError, "[package:pkg][field:Field] required field not set")
-			})
-		})
+		pi = &pkg{Field: ""}
+		err = validateTemplate(pi)
+		if err == nil {
+			t.Errorf("expected error, got none")
+		} else if err.Error() != "[package:pkg][field:Field] required field not set" {
+			t.Errorf("got wrong error: %s", err)
+		}
 
-		Convey("When an instance is created with a value specified", func() {
-			pi := &pkg{Field: "something"}
-			Convey("Then validation must succeed", func() {
-				So(validateTemplate(pi), ShouldBeNil)
-			})
-		})
-	})
+		pi = &pkg{Field: "something"}
+		err = validateTemplate(pi)
+		if err != nil {
+			t.Errorf("didn't expect an error, got %q", err)
+		}
+	}()
 }
 
 func TestStringValidationDefault(t *testing.T) {
-	Convey("Given a package with a string field that has a default value", t, func() {
-		type pkg struct {
-			genericPkg
-			Field string `urknall:"default='the 'default' value'"`
-		}
-		Convey("When an instance is created without specifying a value", func() {
-			pi := &pkg{}
-			Convey("Then validation must set the default value", func() {
-				validateTemplate(pi)
-				So(pi.Field, ShouldEqual, "the 'default' value")
-			})
-		})
+	type pkg struct {
+		genericPkg
+		Field string `urknall:"default='the 'default' value'"`
+	}
 
-		Convey("When an instance is created with an empty value specified", func() {
-			pi := &pkg{Field: ""}
-			Convey("Then validation must set the default value", func() {
-				validateTemplate(pi)
-				So(pi.Field, ShouldEqual, "the 'default' value")
-			})
-		})
+	pi := &pkg{}
+	err := validateTemplate(pi)
+	if err != nil {
+		t.Errorf("didn't expect an error, got %q", err)
+	} else if pi.Field != "the 'default' value" {
+		t.Errorf("did expect field to be %q, got %q", "the 'default' value", pi.Field)
+	}
 
-		Convey("When an instance is created with a value specified", func() {
-			pi := &pkg{Field: "some other value"}
-			Convey("Then validation must not touch the set value", func() {
-				validateTemplate(pi)
-				So(pi.Field, ShouldEqual, "some other value")
-			})
-		})
-	})
+	pi = &pkg{Field: ""}
+	err = validateTemplate(pi)
+	if err != nil {
+		t.Errorf("didn't expect an error, got %q", err)
+	} else if pi.Field != "the 'default' value" {
+		t.Errorf("did expect field to be %q, got %q", "the 'default' value", pi.Field)
+	}
+
+	pi = &pkg{Field: "some other value"}
+	err = validateTemplate(pi)
+	if err != nil {
+		t.Errorf("didn't expect an error, got %q", err)
+	} else if pi.Field != "some other value" {
+		t.Errorf("did expect field to be %q, got %q", "some other value", pi.Field)
+	}
 }
 
 func TestStringValidationMinMax(t *testing.T) {
-	Convey("Given a package with a string field that has minimum and maximum length specified", t, func() {
-		type pkg struct {
-			genericPkg
-			Field string `urknall:"min=3 max=4"`
-		}
-		Convey("When an instance is created without specifying a value", func() {
-			pi := &pkg{}
-			Convey("Then validation must succeed", func() {
-				So(validateTemplate(pi), ShouldBeNil)
-			})
-		})
+	type pkg struct {
+		genericPkg
+		Field string `urknall:"min=3 max=4"`
+	}
+	pi := &pkg{}
+	err := validateTemplate(pi)
+	if err != nil {
+		t.Errorf("didn't expect an error, got %q", err)
+	}
 
-		Convey("When an instance is created with a value smaller than the minimum length", func() {
-			pi := &pkg{Field: "ab"}
-			Convey("Then validation must fail with an according error", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] length of value "ab" smaller than the specified minimum length "3"`)
-			})
-		})
+	pi = &pkg{Field: "ab"}
+	err = validateTemplate(pi)
+	if err == nil {
+		t.Errorf("expected error, got none")
+	} else if err.Error() != `[package:pkg][field:Field] length of value "ab" smaller than the specified minimum length "3"` {
+		t.Errorf("got wrong error: %s", err)
+	}
 
-		Convey("When an instance is created with a value equal to the minimum length", func() {
-			pi := &pkg{Field: "abc"}
-			Convey("Then validation must succeed", func() {
-				So(validateTemplate(pi), ShouldBeNil)
-			})
-		})
+	pi = &pkg{Field: "abc"}
+	err = validateTemplate(pi)
+	if err != nil {
+		t.Errorf("didn't expect an error, got %q", err)
+	}
 
-		Convey("When an instance is created with a value equal to the maximum length", func() {
-			pi := &pkg{Field: "abcd"}
-			Convey("Then validation must succeed", func() {
-				So(validateTemplate(pi), ShouldBeNil)
-			})
-		})
+	pi = &pkg{Field: "abcd"}
+	err = validateTemplate(pi)
+	if err != nil {
+		t.Errorf("didn't expect an error, got %q", err)
+	}
 
-		Convey("When an instance is created with a value longer than the maximum length", func() {
-			pi := &pkg{Field: "abcde"}
-			Convey("Then validation must fail with an according error", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] length of value "abcde" greater than the specified maximum length "4"`)
-			})
-		})
-	})
+	pi = &pkg{Field: "abcde"}
+	err = validateTemplate(pi)
+	if err == nil {
+		t.Errorf("expected error, got none")
+	} else if err.Error() != `[package:pkg][field:Field] length of value "abcde" greater than the specified maximum length "4"` {
+		t.Errorf("got wrong error: %s", err)
+	}
 }
 
 func TestStringValidationSize(t *testing.T) {
-	Convey("Given a package with a string field that has a size set", t, func() {
-		type pkg struct {
-			genericPkg
-			Field string `urknall:"size=3"`
-		}
-		Convey("When an instance is created without specifying a value", func() {
-			pi := &pkg{}
-			Convey("Then validation must succeed", func() {
-				So(validateTemplate(pi), ShouldBeNil)
-			})
-		})
+	type pkg struct {
+		genericPkg
+		Field string `urknall:"size=3"`
+	}
 
-		Convey("When an instance is created with a value smaller than the size", func() {
-			pi := &pkg{Field: "ab"}
-			Convey("Then validation must fail with an according error", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] length of value "ab" doesn't match the specified size "3"`)
-			})
-		})
+	pi := &pkg{}
+	err := validateTemplate(pi)
+	if err != nil {
+		t.Errorf("didn't expect an error, got %q", err)
+	}
 
-		Convey("When an instance is created with a value equal to the size", func() {
-			pi := &pkg{Field: "abc"}
-			Convey("Then validation must succeed", func() {
-				So(validateTemplate(pi), ShouldBeNil)
-			})
-		})
+	pi = &pkg{Field: "ab"}
+	err = validateTemplate(pi)
+	if err == nil {
+		t.Errorf("expected error, got none")
+	} else if err.Error() != `[package:pkg][field:Field] length of value "ab" doesn't match the specified size "3"` {
+		t.Errorf("got wrong error: %s", err)
+	}
 
-		Convey("When an instance is created with a value greater than the size", func() {
-			pi := &pkg{Field: "abcd"}
-			Convey("Then validation must fail with an according error", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] length of value "abcd" doesn't match the specified size "3"`)
-			})
-		})
-	})
+	pi = &pkg{Field: "abc"}
+	err = validateTemplate(pi)
+	if err != nil {
+		t.Errorf("didn't expect an error, got %q", err)
+	}
+
+	pi = &pkg{Field: "abcd"}
+	err = validateTemplate(pi)
+	if err == nil {
+		t.Errorf("expected error, got none")
+	} else if err.Error() != `[package:pkg][field:Field] length of value "abcd" doesn't match the specified size "3"` {
+		t.Errorf("got wrong error: %s", err)
+	}
 }
 
 func TestValidationRequiredInvalid(t *testing.T) {
-	Convey("Given a package with a string field that has the required flag set to a wrong value", t, func() {
-		type pkg struct {
-			genericPkg
-			Field string `urknall:"required=aberja"`
-		}
-		Convey("When an instance is created", func() {
-			pi := &pkg{}
-			Convey("Then validation must fail with an according error", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] failed to parse value (neither "true" nor "false") of tag "required": "aberja"`)
-			})
-		})
-	})
+	type pkg struct {
+		genericPkg
+		Field string `urknall:"required=aberja"`
+	}
+	pi := &pkg{}
+	err := validateTemplate(pi)
+	if err == nil {
+		t.Errorf("expected error, got none")
+	} else if err.Error() != `[package:pkg][field:Field] failed to parse value (neither "true" nor "false") of tag "required": "aberja"` {
+		t.Errorf("got wrong error: %s", err)
+	}
 }
+
 func TestValidationMinInvalid(t *testing.T) {
-	Convey("Given a package with a string field that has minimum length specified with an invalid value", t, func() {
-		type pkg struct {
-			genericPkg
-			Field string `urknall:"min=..3"`
-		}
-		Convey("When an instance is created", func() {
-			pi := &pkg{}
-			Convey("Then validation must fail with an according error", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] failed to parse value (not an int) of tag "min": "..3"`)
-			})
-		})
-	})
+	type pkg struct {
+		genericPkg
+		Field string `urknall:"min=..3"`
+	}
+	pi := &pkg{}
+	err := validateTemplate(pi)
+	if err == nil {
+		t.Errorf("expected error, got none")
+	} else if err.Error() != `[package:pkg][field:Field] failed to parse value (not an int) of tag "min": "..3"` {
+		t.Errorf("got wrong error: %s", err)
+	}
 }
 
 func TestValidationMaxInvalid(t *testing.T) {
-	Convey("Given a package with a string field that has maximum length specified with an invalid value", t, func() {
-		type pkg struct {
-			genericPkg
-			Field string `urknall:"max=4a"`
-		}
-		Convey("When an instance is created", func() {
-			pi := &pkg{}
-			Convey("Then validation must fail with an according error", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] failed to parse value (not an int) of tag "max": "4a"`)
-			})
-		})
-	})
+	type pkg struct {
+		genericPkg
+		Field string `urknall:"max=4a"`
+	}
+	pi := &pkg{}
+	err := validateTemplate(pi)
+	if err == nil {
+		t.Errorf("expected error, got none")
+	} else if err.Error() != `[package:pkg][field:Field] failed to parse value (not an int) of tag "max": "4a"` {
+		t.Errorf("got wrong error: %s", err)
+	}
 }
 
 func TestValidationSizeInvalid(t *testing.T) {
-	Convey("Given a package with a string field that has size specified with an invalid value", t, func() {
-		type pkg struct {
-			genericPkg
-			Field string `urknall:"size=4a"`
-		}
-		Convey("When an instance is created", func() {
-			pi := &pkg{}
-			Convey("Then validation must fail with an according error", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] failed to parse value (not an int) of tag "size": "4a"`)
-			})
-		})
-	})
+	type pkg struct {
+		genericPkg
+		Field string `urknall:"size=4a"`
+	}
+	pi := &pkg{}
+	err := validateTemplate(pi)
+	if err == nil {
+		t.Errorf("expected error, got none")
+	} else if err.Error() != `[package:pkg][field:Field] failed to parse value (not an int) of tag "size": "4a"` {
+		t.Errorf("got wrong error: %s", err)
+	}
 }
 
 func TestMultiTags(t *testing.T) {
-	Convey("Given a package with multiple tags set on a field", t, func() {
-		type pkg struct {
-			genericPkg
-			Field string `urknall:"default='foo' min=3 max=4"`
-		}
+	type pkg struct {
+		genericPkg
+		Field string `urknall:"default='foo' min=3 max=4"`
+	}
 
-		Convey("When an instance is create without a value set", func() {
-			pi := &pkg{}
-			e := validateTemplate(pi)
-			Convey("Then validation must succeed", func() {
-				So(e, ShouldBeNil)
-			})
-			Convey("Then the instances value must be set properly", func() {
-				So(pi.Field, ShouldEqual, "foo")
-			})
-		})
+	pi := &pkg{}
+	err := validateTemplate(pi)
+	if err != nil {
+		t.Errorf("didn't expect an error, got %q", err)
+	}
+	if pi.Field != "foo" {
+		t.Errorf("expect field to be set to %q, got %q", "foo", pi.Field)
+	}
 
-		Convey("When an instance is create without a erroneous valiue set", func() {
-			pi := &pkg{Field: "ab"}
-			Convey("Then validation must fail", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] length of value "ab" smaller than the specified minimum length "3"`)
-			})
-		})
-	})
+	pi = &pkg{Field: "ab"}
+	err = validateTemplate(pi)
+	if err == nil {
+		t.Errorf("expected error, got none")
+	} else if err.Error() != `[package:pkg][field:Field] length of value "ab" smaller than the specified minimum length "3"` {
+		t.Errorf("got wrong error: %s", err)
+	}
 }
 
 func TestTagParsing(t *testing.T) {
-	Convey("Given a package with a missing single quote", t, func() {
+	func() {
 		type pkg struct {
 			genericPkg
 			Field string `urknall:"required='abc"`
 		}
 
-		Convey("Then parsing should fail", func() {
-			pi := &pkg{Field: "asd"}
-			Convey("Then validation must fail", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] failed to parse tag due to erroneous quotes`)
-			})
-		})
-	})
+		pi := &pkg{Field: "asd"}
+		err := validateTemplate(pi)
+		if err == nil {
+			t.Errorf("expected error, got none")
+		} else if err.Error() != `[package:pkg][field:Field] failed to parse tag due to erroneous quotes` {
+			t.Errorf("got wrong error: %s", err)
+		}
+	}()
 
-	Convey("Given a package with a to many single quotes", t, func() {
+	func() {
 		type pkg struct {
 			genericPkg
 			Field string `urknall:"required='ab'c'"`
 		}
 
-		Convey("Then parsing should fail", func() {
-			pi := &pkg{Field: "asd"}
-			Convey("Then validation must fail", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] failed to parse tag due to erroneous quotes`)
-			})
-		})
-	})
+		pi := &pkg{Field: "asd"}
+		err := validateTemplate(pi)
+		if err == nil {
+			t.Errorf("expected error, got none")
+		} else if err.Error() != `[package:pkg][field:Field] failed to parse tag due to erroneous quotes` {
+			t.Errorf("got wrong error: %s", err)
+		}
+	}()
 
-	Convey("Given a package with a key without value", t, func() {
+	func() {
 		type pkg struct {
 			genericPkg
 			Field string `urknall:"default"`
 		}
 
-		Convey("Then parsing should fail", func() {
-			pi := &pkg{Field: "asd"}
-			Convey("Then validation must fail", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] failed to parse annotation (value missing): "default"`)
-			})
-		})
-	})
+		pi := &pkg{Field: "asd"}
+		err := validateTemplate(pi)
+		if err == nil {
+			t.Errorf("expected error, got none")
+		} else if err.Error() != `[package:pkg][field:Field] failed to parse annotation (value missing): "default"` {
+			t.Errorf("got wrong error: %s", err)
+		}
+	}()
 
-	Convey("Given a package with an invalid key", t, func() {
+	func() {
 		type pkg struct {
 			genericPkg
 			Field string `urknall:"defaul='asdf'"`
 		}
 
-		Convey("Then parsing should fail", func() {
-			pi := &pkg{Field: "asd"}
-			Convey("Then validation must fail", func() {
-				So(validateTemplate(pi), shouldBeError, `[package:pkg][field:Field] tag "defaul" unknown`)
-			})
-		})
-	})
+		pi := &pkg{Field: "asd"}
+		err := validateTemplate(pi)
+		if err == nil {
+			t.Errorf("expected error, got none")
+		} else if err.Error() != `[package:pkg][field:Field] tag "defaul" unknown` {
+			t.Errorf("got wrong error: %s", err)
+		}
+	}()
 }

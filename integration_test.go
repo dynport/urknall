@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/dynport/urknall/utils"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 type BuildHost struct {
@@ -66,36 +65,45 @@ func rcover(t *testing.T) {
 }
 
 func TestIntegration(t *testing.T) {
-	Convey("Integration test", t, func() {
-		bh := &BuildHost{}
-		p, e := renderTemplate(bh)
-		So(e, ShouldBeNil)
-		So(p, ShouldNotBeNil)
+	bh := &BuildHost{}
+	p, e := renderTemplate(bh)
+	if e != nil {
+		t.Errorf("didn't expect an error")
+	}
+	if p == nil {
+		t.Errorf("didn't expect the template to be nil")
+	}
 
-		names := []string{}
+	names := []string{}
 
-		tasks := map[string]Task{}
+	tasks := map[string]Task{}
 
-		for _, task := range p.tasks {
-			tasks[task.name] = task
-			names = append(names, task.name)
+	for _, task := range p.tasks {
+		tasks[task.name] = task
+		names = append(names, task.name)
+	}
+	sort.Strings(names)
+
+	if len(names) != 5 {
+		t.Errorf("expected 5 names, got %d", len(names))
+	}
+
+	tt := []string{"staging.es.install", "staging.es.ruby.config", "staging.es.ruby.install", "staging.ruby-2.1.2.config", "staging.ruby-2.1.2.install"}
+	for i := range tt {
+		if names[i] != tt[i] {
+			t.Errorf("expected names[%d] = %q, got %q", i, tt[i], names[i])
 		}
+	}
 
-		t.Logf("%#v", names)
-
-		So(len(names), ShouldEqual, 5)
-
-		sort.Strings(names)
-		So(names[0], ShouldEqual, "staging.es.install")
-		So(names[1], ShouldEqual, "staging.es.ruby.config")
-		So(names[2], ShouldEqual, "staging.es.ruby.install")
-		So(names[3], ShouldEqual, "staging.ruby-2.1.2.config")
-		So(names[4], ShouldEqual, "staging.ruby-2.1.2.install")
-
-		task := tasks["staging.ruby-2.1.2.config"]
-		commands, e := task.Commands()
-		So(e, ShouldBeNil)
-		So(len(commands), ShouldEqual, 1)
-		So(commands[0].Shell(), ShouldEqual, "echo 2.1.2")
-	})
+	task := tasks["staging.ruby-2.1.2.config"]
+	commands, e := task.Commands()
+	if e != nil {
+		t.Errorf("didn't expect an error, got %s", e)
+	}
+	if len(commands) != 1 {
+		t.Errorf("expected to find 1 command, got %d", len(commands))
+	}
+	if commands[0].Shell() != "echo 2.1.2" {
+		t.Errorf("expected first command to be %q, got %q", "echo 2.1.2", commands[0].Shell())
+	}
 }

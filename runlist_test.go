@@ -2,8 +2,6 @@ package urknall
 
 import (
 	"testing"
-
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 type customCommand struct {
@@ -26,47 +24,39 @@ func (sp *somePackage) Render(Package) {
 }
 
 func TestAddCommand(t *testing.T) {
-	Convey("Given a task for a certain package", t, func() {
-		rl := &task{taskBuilder: &somePackage{SField: "something", IField: 1}}
+	rl := &task{taskBuilder: &somePackage{SField: "something", IField: 1}}
 
-		Convey("When a string is added", func() {
-			rl.Add(`string with "{{ .SField }}" and "{{ .IField }}"`)
-			Convey("Then the string is turned to a command and appended to the list of commands", func() {
-				c := rl.commands[len(rl.commands)-1].command
-				sc, ok := c.(*stringCommand)
+	rl.Add(`string with "{{ .SField }}" and "{{ .IField }}"`)
 
-				Convey("And the command is a string command", func() {
-					So(ok, ShouldBeTrue)
-				})
-				Convey("And the command template itself was expanded", func() {
-					So(sc.cmd, ShouldEqual, `string with "something" and "1"`)
-				})
-			})
-		})
+	c := rl.commands[len(rl.commands)-1].command
+	if sc, ok := c.(*stringCommand); !ok {
+		t.Errorf("expect ok, wasn't")
+	} else if sc.cmd != `string with "something" and "1"` {
+		t.Errorf("expect %q, got %q", `string with "something" and "1"`, sc.cmd)
+	}
+}
 
-		Convey("Given a string command", func() {
-			baseCommand := stringCommand{cmd: `string with "{{ .SField }}" and "{{ .IField }}"`}
+func TestAddStringCommand(t *testing.T) {
+	rl := &task{taskBuilder: &somePackage{SField: "something", IField: 1}}
 
-			Convey("When it is added to the task by value", func() {
-				f := func() { rl.Add(baseCommand) }
+	baseCommand := stringCommand{cmd: `string with "{{ .SField }}" and "{{ .IField }}"`}
 
-				Convey("Then Add will panic", func() {
-					So(f, ShouldPanic)
-				})
-			})
+	func() {
+		defer func() {
+			r := recover()
+			if r == nil {
+				t.Errorf("expected a panic, got none!")
+			}
+		}()
+		rl.Add(baseCommand)
 
-			Convey("When it is added by reference", func() {
-				rl.Add(&baseCommand)
-				c := rl.commands[len(rl.commands)-1].command
-				sc, ok := c.(*stringCommand)
+	}()
 
-				Convey("Then the command is a string command", func() {
-					So(ok, ShouldBeTrue)
-				})
-				Convey("And the command template itself was expanded", func() {
-					So(sc.cmd, ShouldEqual, `string with "something" and "1"`)
-				})
-			})
-		})
-	})
+	rl.Add(&baseCommand)
+	c := rl.commands[len(rl.commands)-1].command
+	if sc, ok := c.(*stringCommand); !ok {
+		t.Errorf("expect ok, wasn't")
+	} else if sc.cmd != `string with "something" and "1"` {
+		t.Errorf("expect %q, got %q", `string with "something" and "1"`, sc.cmd)
+	}
 }
