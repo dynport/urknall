@@ -60,7 +60,7 @@ func (c *localCommand) StderrPipe() (io.Reader, error) {
 	return c.command.StderrPipe()
 }
 
-func (c *localCommand) StdinPipe() (io.Writer, error) {
+func (c *localCommand) StdinPipe() (io.WriteCloser, error) {
 	return c.command.StdinPipe()
 }
 

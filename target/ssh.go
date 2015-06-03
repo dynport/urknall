@@ -112,7 +112,7 @@ func (c *sshCommand) Close() error {
 	return c.session.Close()
 }
 
-func (c *sshCommand) StdinPipe() (io.Writer, error) {
+func (c *sshCommand) StdinPipe() (io.WriteCloser, error) {
 	return c.session.StdinPipe()
 }
 

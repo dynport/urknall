@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/dynport/urknall/cmd"
+	"github.com/dynport/urknall/target"
 )
 
 // TODO: rename to remoteCommandRunner
@@ -75,11 +76,8 @@ func (runner *remoteTaskRunner) run() error {
 	}
 
 	// Get errors that might have occured while handling the back-channel for the logs.
-	select {
-	case e = <-errors:
-		if e != nil {
-			log.Printf("ERROR: %s", e.Error())
-		}
+	for e = range errors {
+		log.Printf("ERROR: %s", e.Error())
 	}
 	return e
 }
@@ -124,7 +122,7 @@ func logError(e error) {
 	log.Printf("ERROR: %s", e.Error())
 }
 
-func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, wg *sync.WaitGroup, r io.Reader) {
+func (runner *remoteTaskRunner) forwardStream(logs chan<- string, stream string, wg *sync.WaitGroup, r io.Reader) {
 	defer wg.Done()
 
 	m := message("task.io", runner.build.hostname(), runner.taskName)
@@ -143,47 +141,48 @@ func (runner *remoteTaskRunner) forwardStream(logs chan string, stream string, w
 	}
 }
 
-func (runner *remoteTaskRunner) newLogWriter(path string, errors chan error) chan string {
+func (runner *remoteTaskRunner) newLogWriter(path string, errors chan<- error) chan<- string {
 	logs := make(chan string)
-	go func() {
+	go runner.writeLogs(path, errors, logs)
+	return logs
+}
+
+func (runner *remoteTaskRunner) writeLogs(path string, errors chan<- error, logs <-chan string) {
+	defer close(errors)
+
+	var cmd target.ExecCommand
+
+	err := func() error {
 		// so ugly, but: sudo not required and "sh -c" adds some escaping issues with the variables. This is why Command is called directly.
-		c, e := runner.build.Command("cat - > " + path)
-		if e != nil {
-			errors <- e
-			return
+		var err error
+		if cmd, err = runner.build.Command("cat - > " + path); err != nil {
+			return err
 		}
 
 		// Get pipe to stdin of the execute command.
-		in, e := c.StdinPipe()
-		if e != nil {
-			errors <- e
-			return
+		in, err := cmd.StdinPipe()
+		if err != nil {
+			return err
 		}
+		defer in.Close()
 
 		// Run command, writing everything coming from stdin to a file.
-
-		e = c.Start()
-		if e != nil {
-			errors <- e
-			return
+		if err := cmd.Start(); err != nil {
+			in.Close()
+			return err
 		}
 
 		// Send all messages from logs to the stdin of the new session.
 		for log := range logs {
-			if _, e = io.WriteString(in, log+"\n"); e != nil {
-				errors <- e
+			if _, err = io.WriteString(in, log+"\n"); err != nil {
+				errors <- err
 			}
 		}
-
-		if in, ok := in.(io.WriteCloser); ok {
-			if e = in.Close(); e != nil {
-				errors <- e
-			}
-		}
-
-		// Close the stdin pipe of the above command (terminating that).
-		// Wait for above command to return.
-		errors <- c.Wait()
+		return err
 	}()
-	return logs
+	if err != nil {
+		errors <- err
+	} else if err := cmd.Wait(); err != nil {
+		errors <- err
+	}
 }

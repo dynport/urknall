@@ -5,7 +5,7 @@ import "io"
 type ExecCommand interface {
 	StdoutPipe() (io.Reader, error)
 	StderrPipe() (io.Reader, error)
-	StdinPipe() (io.Writer, error)
+	StdinPipe() (io.WriteCloser, error)
 	SetStdout(io.Writer)
 	SetStderr(io.Writer)
 	SetStdin(io.Reader)
