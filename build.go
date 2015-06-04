@@ -170,7 +170,7 @@ func (build *Build) prepareTask(tsk *task, ct checksumTree) (e error) {
 
 		switch {
 		case len(checksumList) <= i || checksum != checksumList[i]:
-			break
+			return nil
 		default:
 			cmd.cached = true
 		}
