@@ -1,14 +1,11 @@
 package urknall
 
-import (
-	"github.com/dynport/urknall/cmd"
-	"github.com/dynport/urknall/target"
-)
+import "github.com/dynport/urknall/target"
 
 // The target interface is used to describe something a package can be built
 // on.
 type Target interface {
-	Command(cmd string) (cmd.ExecCommand, error)
+	Command(cmd string) (target.ExecCommand, error)
 	User() string
 	String() string
 	Reset() error

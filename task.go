@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"runtime/debug"
+	"time"
 
 	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/pubsub"
@@ -26,21 +27,27 @@ func NewTask() Task {
 }
 
 type task struct {
-	commands []cmd.Command
+	commands []*commandWrapper
 
 	name        string   // Name of the compilable.
 	taskBuilder Template // only used for rendering templates TODO(gf): rename
 
 	compiled  bool
 	validated bool
+
+	started time.Time // time used to for caching timestamp
 }
 
-func (t *task) Commands() ([]cmd.Command, error) {
-	e := t.Compile()
-	if e != nil {
+func (t *task) Commands() (cmds []cmd.Command, e error) {
+	if e = t.Compile(); e != nil {
 		return nil, e
 	}
-	return t.commands, nil
+
+	for _, c := range t.commands {
+		cmds = append(cmds, c.command)
+	}
+
+	return cmds, nil
 }
 
 func (task *task) Add(cmds ...interface{}) Task {
@@ -73,7 +80,6 @@ func (task *task) validate() error {
 	return nil
 }
 
-// Add the given command to the runlist.
 func (task *task) addCommand(c cmd.Command) {
 	if task.taskBuilder != nil {
 		e := task.validate()
@@ -89,14 +95,14 @@ func (task *task) addCommand(c cmd.Command) {
 			}
 		}
 	}
-	task.commands = append(task.commands, c)
+	task.commands = append(task.commands, &commandWrapper{command: c})
 }
 
 func (task *task) Compile() (e error) {
 	if task.compiled {
 		return nil
 	}
-	m := &pubsub.Message{RunlistName: task.name, Key: pubsub.MessageRunlistsPrecompile}
+	m := message(pubsub.MessageTasksPrecompile, "", task.name)
 	m.Publish("started")
 	defer func() {
 		if r := recover(); r != nil {
@@ -120,14 +126,4 @@ func (task *task) Compile() (e error) {
 	m.Publish("finished")
 	task.compiled = true
 	return nil
-}
-
-type anonymousTask struct {
-	cmds []interface{}
-}
-
-func (anon *anonymousTask) BuildTask(pkg Task) {
-	for i := range anon.cmds {
-		pkg.Add(anon.cmds[i])
-	}
 }

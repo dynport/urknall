@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dynport/urknall/pubsub"
+	"github.com/dynport/urknall/cmd"
 	"github.com/dynport/urknall/utils"
 )
 
@@ -15,36 +15,14 @@ type packageImpl struct {
 	cacheKeyPrefix string
 }
 
-func (pkg *packageImpl) Build(build *Build) error {
-	e := build.prepare()
-	if e != nil {
-		return e
-	}
-	ct, e := build.buildChecksumTree()
-	if e != nil {
-		return fmt.Errorf("error building checksum tree: %s", e.Error())
-	}
-
-	for _, task := range pkg.tasks {
-		m := &pubsub.Message{Key: pubsub.MessageRunlistsProvision, Hostname: build.hostname()}
-		m.Publish("started")
-		if e = build.buildTask(task, ct); e != nil {
-			m.PublishError(e)
-			return e
-		}
-		m.Publish("finished")
-	}
-	return nil
-}
-
-func (pkg *packageImpl) AddCommands(name string, cmds ...Command) {
+func (pkg *packageImpl) AddCommands(name string, cmds ...cmd.Command) {
 	if pkg.cacheKeyPrefix != "" {
 		name = pkg.cacheKeyPrefix + "." + name
 	}
 	name = utils.MustRenderTemplate(name, pkg.reference)
 	t := &task{name: name}
 	for _, c := range cmds {
-		if r, ok := c.(renderer); ok {
+		if r, ok := c.(cmd.Renderer); ok {
 			r.Render(pkg.reference)
 		}
 		t.Add(c)
@@ -92,25 +70,6 @@ func (pkg *packageImpl) addTask(task *task) {
 	pkg.validateTaskName(task.name)
 	pkg.taskNames[task.name] = struct{}{}
 	pkg.tasks = append(pkg.tasks, task)
-}
-
-func (pkg *packageImpl) precompile() (e error) {
-	for _, task := range pkg.tasks {
-		c, e := task.Commands()
-		if e != nil {
-			return e
-		}
-		if len(c) > 0 {
-			return fmt.Errorf("pkg %q seems to be packaged already", task.name)
-		}
-
-		e = task.Compile()
-		if e != nil {
-			return e
-		}
-	}
-
-	return nil
 }
 
 func (pkg *packageImpl) validateTaskName(name string) {

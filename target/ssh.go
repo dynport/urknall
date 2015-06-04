@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dynport/urknall/cmd"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 )
@@ -62,7 +61,7 @@ func (target *sshTarget) String() string {
 	return fmt.Sprintf("%s@%s:%d", target.user, target.address, target.port)
 }
 
-func (target *sshTarget) Command(cmd string) (cmd.ExecCommand, error) {
+func (target *sshTarget) Command(cmd string) (ExecCommand, error) {
 	if target.client == nil {
 		var e error
 		target.client, e = target.buildClient()
@@ -113,7 +112,7 @@ func (c *sshCommand) Close() error {
 	return c.session.Close()
 }
 
-func (c *sshCommand) StdinPipe() (io.Writer, error) {
+func (c *sshCommand) StdinPipe() (io.WriteCloser, error) {
 	return c.session.StdinPipe()
 }
 

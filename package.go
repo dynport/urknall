@@ -1,8 +1,9 @@
 package urknall
 
+import "github.com/dynport/urknall/cmd"
+
 // A template is used to modularize the urknall setting. Templates are rendered
-// into a package and during rendering tasks can be added. See the Package
-// description for information on how to manage tasks.
+// into a package and during rendering tasks can be added.
 type Template interface {
 	Render(pkg Package)
 }
@@ -18,9 +19,7 @@ type Template interface {
 // used as identifiers for the caching mechanism. They must be unique over all
 // tasks. For nested templates the identifiers are concatenated using ".".
 type Package interface {
-	AddTemplate(string, Template)   // Add another template, nested below the current one.
-	AddCommands(string, ...Command) // Add a new task from the given commands.
-	AddTask(string, Task)           // Add the given tasks to the package with the given name.
-
-	Build(*Build) error
+	AddTemplate(string, Template)       // Add another template, nested below the current one.
+	AddCommands(string, ...cmd.Command) // Add a new task from the given commands.
+	AddTask(string, Task)               // Add the given tasks to the package with the given name.
 }

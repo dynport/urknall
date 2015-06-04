@@ -1,6 +1,10 @@
 package urknall
 
-import "log"
+import (
+	"log"
+
+	"github.com/dynport/urknall/cmd"
+)
 
 func ExampleBuild() {
 	template := &ExampleTemplate{}
@@ -17,12 +21,12 @@ func ExampleBuild() {
 }
 
 // An example template function. This is helpful to render templates that don't
-// need parameters like in the following ExampleTemplate.
+// need configuration like the following ExampleTemplate.
 func AnExampleTemplateFunc(pkg Package) {
 	pkg.AddCommands("example", Shell("echo template func"))
 }
 
-// A simple template with some parameters.
+// A simple template with configuration.
 type ExampleTemplate struct {
 	Parameter string `urknall:"default=example"`
 	Boolean   bool   `urknall:"required=true"`
@@ -43,15 +47,11 @@ type ShellCmd struct {
 	cmd string
 }
 
-func (c *ShellCmd) Logging() string {
-	return c.cmd
-}
-
 func (c *ShellCmd) Shell() string {
 	return c.cmd
 }
 
 // Helper function to easily create a ShellCmd.
-func Shell(cmd string) Command {
+func Shell(cmd string) cmd.Command {
 	return &ShellCmd{cmd: cmd}
 }

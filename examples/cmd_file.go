@@ -3,9 +3,12 @@ package main
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -106,5 +109,94 @@ func (fc *FileCommand) Logging() string {
 		cLen = 50
 	}
 	//sList = append(sList, fmt.Sprintf(" << %s", strings.Replace(string(fc.Content[0:cLen]), "\n", "⁋", -1)))
+	return strings.Join(sList, "")
+}
+
+type FileSendCommand struct {
+	Source      string
+	Target      string
+	Owner       string
+	Permissions os.FileMode
+}
+
+func SendFile(source, target, owner string, perm os.FileMode) *FileSendCommand {
+	return &FileSendCommand{
+		Source:      source,
+		Target:      target,
+		Owner:       owner,
+		Permissions: perm,
+	}
+}
+
+func (fsc *FileSendCommand) Render(i interface{}) {
+	fsc.Source = utils.MustRenderTemplate(fsc.Source, i)
+	fsc.Target = utils.MustRenderTemplate(fsc.Target, i)
+}
+
+func (fsc *FileSendCommand) Validate() error {
+	if fsc.Source == "" {
+		return fmt.Errorf("no source path given")
+	}
+
+	if _, e := os.Stat(fsc.Source); e != nil {
+		return e
+	}
+
+	if fsc.Target == "" {
+		return fmt.Errorf("no target path given for file %q", fsc.Source)
+	}
+
+	return nil
+}
+
+func (fsc *FileSendCommand) sourceHash() string {
+	fh, e := os.Open(fsc.Source)
+	if e != nil {
+		panic(e)
+	}
+	defer fh.Close()
+
+	hash := sha1.New()
+	if _, e = io.Copy(hash, fh); e != nil {
+		panic(e)
+	}
+
+	return hex.EncodeToString(hash.Sum(nil))
+}
+
+func (fsc *FileSendCommand) Shell() string {
+	sList := []string{
+		fmt.Sprintf("echo %q", fsc.sourceHash()), // nope use content hash
+		fmt.Sprintf("cat - > %s", fsc.Target),
+	}
+
+	if fsc.Owner != "root" {
+		sList = append(sList, fmt.Sprintf("chown %s %s", fsc.Owner, fsc.Target))
+	}
+	sList = append(sList, fmt.Sprintf("chmod %s %s", fsc.Permissions, fsc.Target))
+	return strings.Join(sList, " && ")
+}
+
+func (fsc *FileSendCommand) Input() io.ReadCloser {
+	fh, e := os.Open(fsc.Source)
+	if e != nil {
+		panic(e)
+	}
+	return fh
+}
+
+func (fsc *FileSendCommand) Logging() string {
+	sList := []string{"[FILE   ]"}
+
+	if fsc.Owner != "" && fsc.Owner != "root" {
+		sList = append(sList, fmt.Sprintf("[CHOWN:%s]", fsc.Owner))
+	}
+
+	if fsc.Permissions != 0 {
+		sList = append(sList, fmt.Sprintf("[CHMOD:%.4o]", fsc.Permissions))
+	}
+
+	sList = append(sList, fmt.Sprintf(" Writing local file %s to %s", fsc.Source, fsc.Target))
+
 	return strings.Join(sList, "")
 }
