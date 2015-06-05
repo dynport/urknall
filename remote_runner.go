@@ -135,6 +135,9 @@ func (runner *remoteTaskRunner) forwardStream(logs chan<- string, stream string,
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		m.Line = scanner.Text()
+		if m.Line == "" {
+			m.Line = " " // empty string would be printed differently therefore add some whitespace
+		}
 		m.TotalRuntime = time.Since(runner.commandStarted)
 		m.Publish(stream)
 		logs <- time.Now().UTC().Format(time.RFC3339Nano) + "\t" + stream + "\t" + scanner.Text()
