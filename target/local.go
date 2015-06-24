@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 // Create a target for local provisioning.
@@ -23,19 +25,30 @@ func (c *localTarget) String() string {
 
 func (c *localTarget) User() string {
 	if c.cachedUser == "" {
-		out := &bytes.Buffer{}
-		err := &bytes.Buffer{}
-		cmd := exec.Command("whoami")
-		cmd.Stdout = out
-		cmd.Stderr = err
-		e := cmd.Run()
-		if e != nil {
-			fmt.Printf("error reading login name: err=%q out=%q e=%q", err.String(), out.String(), e)
-			os.Exit(1)
+		var err error
+		c.cachedUser, err = whoami()
+		if err != nil {
+			log.Fatal(err.Error())
 		}
-		c.cachedUser = out.String()
 	}
 	return c.cachedUser
+}
+
+func whoami() (string, error) {
+	u := os.Getenv("$USER")
+	if u != "" {
+		return u, nil
+	}
+	out := &bytes.Buffer{}
+	err := &bytes.Buffer{}
+	cmd := exec.Command("whoami")
+	cmd.Stdout = out
+	cmd.Stderr = err
+	e := cmd.Run()
+	if e != nil {
+		return "", fmt.Errorf("error reading login name: err=%q out=%q e=%q", err.String(), out.String(), e)
+	}
+	return strings.TrimSpace(out.String()), nil
 }
 
 func (c *localTarget) Command(cmd string) (ExecCommand, error) {
