@@ -27,7 +27,7 @@ func UpdateSelectedRepoPackages(repoConfigPath string) *ShellCommand {
 // Install the given packages using apt-get. At least one package must be given (pkgs can be left empty).
 func InstallPackages(pkg string, pkgs ...string) *ShellCommand {
 	return &ShellCommand{
-		Command: fmt.Sprintf("DEBIAN_FRONTEND=noninteractive apt-get install -y %s %s", pkg, strings.Join(pkgs, " ")),
+		Command: fmt.Sprintf("DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends %s %s", pkg, strings.Join(pkgs, " ")),
 	}
 }
 
