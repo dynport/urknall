@@ -1,6 +1,10 @@
 package main
 
-import "github.com/dynport/urknall"
+import (
+	"fmt"
+
+	"github.com/dynport/urknall"
+)
 
 type Hostname struct {
 	Hostname string `urknall:"required=true"`
@@ -25,6 +29,8 @@ type System struct {
 	SysctlDefaults bool
 	ShmMax         string
 	ShmAll         string
+
+	SwapInMB int
 }
 
 const TimezoneUTC = "Etc/UTC"
@@ -32,7 +38,7 @@ const TimezoneUTC = "Etc/UTC"
 func (tpl *System) Render(pkg urknall.Package) {
 	if tpl.Timezone != "" {
 		pkg.AddCommands("timezone",
-			WriteFile("/etc/timezone", tpl.Timezone, "root", 0644),
+			WriteFile("/etc/timezone", tpl.Timezone, "root", 0644), // see TimezoneUTC
 			Shell("dpkg-reconfigure --frontend noninteractive tzdata"),
 		)
 	}
@@ -48,6 +54,16 @@ func (tpl *System) Render(pkg urknall.Package) {
 		pkg.AddCommands("limits",
 			WriteFile("/etc/security/limits.conf", limitsTpl, "root", 0644),
 			Shell("ulimit -a"),
+		)
+	}
+
+	if tpl.SwapInMB > 0 {
+		pkg.AddCommands("swap",
+			Shell(fmt.Sprintf("swapoff -a && rm -f /swapfile && fallocate -l %dM /swapfile", tpl.SwapInMB)),
+			Shell("chmod 0600 /swapfile"),
+			Shell("mkswap /swapfile"),
+			Shell("grep '/swapfile' /etc/fstab > /dev/null || echo '/swapfile none swap defaults 0 0' >> /etc/fstab"),
+			Shell("swapon -a"),
 		)
 	}
 }
