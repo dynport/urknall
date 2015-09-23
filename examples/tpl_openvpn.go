@@ -3,60 +3,44 @@ package main
 import "github.com/dynport/urknall"
 
 type OpenVPN struct {
-	Country        string `urknall:"required=true"`
-	Province       string `urknall:"required=true"`
-	City           string `urknall:"required=true"`
-	Org            string `urknall:"required=true"`
-	Email          string `urknall:"required=true"`
-	Name           string `urknall:"required=true"`
-	Netmask        string `urknall:"required=true"`
-	Address        string `urknall:"default=10.19.0.0"`
-	CustomPublicIp string
-	Ec2            bool
+	Country  string `urknall:"required=true"`
+	Province string `urknall:"required=true"`
+	City     string `urknall:"required=true"`
+	Org      string `urknall:"required=true"`
+	Email    string `urknall:"required=true"`
+	Name     string `urknall:"required=true"`
+	Netmask  string `urknall:"required=true"`
+	Address  string `urknall:"default=10.19.0.0"`
 
 	Routes []string
 }
 
 const openVpnPackagePath = "/opt/package_openvpn_key"
 
-func (ovpn *OpenVPN) PublicIp() string {
-	if ovpn.Ec2 {
-		return `$(ec2metadata --public-ipv4)`
-	} else if ovpn.CustomPublicIp != "" {
-		return ovpn.CustomPublicIp
-	} else {
-		panic("Either CustomPublicIp must be set or Ec2 enabled")
-	}
-}
-
-func (ovpn *OpenVPN) Render(pkg urknall.Package) {
-	if len(ovpn.Country) != 2 {
+func (p *OpenVPN) Render(r urknall.Package) {
+	if len(p.Country) != 2 {
 		panic("Country must be exactly 2 characters long")
 	}
-	if len(ovpn.Province) != 2 {
+	if len(p.Province) != 2 {
 		panic("Province must be exactly 2 characters long")
 	}
-	pkg.AddCommands("base",
-		InstallPackages("openvpn", "iptables", "zip"),
-		Shell("cp -R /usr/share/doc/openvpn/examples/easy-rsa/2.0 /etc/openvpn/easy-rsa/"),
+	r.AddCommands("packages", InstallPackages("openvpn", "iptables", "zip", "easy-rsa"))
+	r.AddCommands("easy-rsa", Shell("cp -R /usr/share/easy-rsa/ /etc/openvpn/easy-rsa/"))
+	r.AddCommands("config",
 		WriteFile("/etc/openvpn/easy-rsa/vars", openVpnVars, "root", 0644),
 		Shell("ln -nfs /etc/openvpn/easy-rsa/openssl-1.0.0.cnf /etc/openvpn/easy-rsa/openssl.cnf"),
-		And(`bash -c "
-			  set -e
-			  cd /etc/openvpn/easy-rsa
-			  source ./vars
-			  ./clean-all
-			  ./pkitool --initca
-			  ./pkitool --server {{ .Name }}
-			  ./build-dh
-			  cd /etc/openvpn/easy-rsa/keys
-			  cp -v {{ .Name }}.{crt,key} ca.crt dh1024.pem /etc/openvpn/
-		  "
-		 `,
-		),
+	)
+
+	r.AddCommands("ca",
+		Shell(`bash -c "cd /etc/openvpn/easy-rsa && source ./vars && ./clean-all && ./pkitool --initca && ./pkitool --server {{ .Name }} && ./build-dh"`),
+		Shell(`bash -c "cd /etc/openvpn/easy-rsa/keys && cp -v {{ .Name }}.{crt,key} ca.crt dh1024.pem /etc/openvpn/"`),
+	)
+	r.AddCommands("server-config",
 		WriteFile("/etc/openvpn/server.conf", openvpnServerConfig, "root", 0644),
-		WriteFile(openVpnPackagePath, openVpnPackageKey, "root", 0755),
 		Shell("{ /etc/init.d/openvpn status && /etc/init.d/openvpn restart; } || /etc/init.d/openvpn start"),
+	)
+	r.AddCommands("scripts",
+		WriteFile(openVpnPackagePath, openVpnPackageKey, "root", 0755),
 	)
 }
 
@@ -88,7 +72,12 @@ LOGIN=$1
 KEYS_DIR=/etc/openvpn/easy-rsa/keys
 LOGIN_DIR=$KEYS_DIR/$LOGIN.tblk
 CONFIG_PATH=$LOGIN_DIR/$LOGIN.conf
-PUBLIC_IP={{ .PublicIp }}
+PUBLIC_IP=$(curl -s jsonip.com | grep -o 'ip":".*"' | cut -d '"' -f 3)
+
+if [[ "$PUBLIC_IP" == "" ]]; then
+	echo "PUBLIC_IP must not be blank"
+	exit
+fi
 CRT_PATH=$KEYS_DIR/$LOGIN.crt
 KEY_PATH=$KEYS_DIR/$LOGIN.key
 
@@ -155,40 +144,18 @@ export PKCS11_MODULE_PATH=changeme
 export PKCS11_PIN=1234
 `
 
-func (u *OpenVpnUser) Package(pkg urknall.Package) {
-	pkg.AddCommands("base",
-		&ShellCommand{Command: addVpnUser},
-		&ShellCommand{Command: openVpnPackagePath + " " + u.Login},
-	)
-}
-
-type OpenVpnUser struct {
-	Login string `urknall:"required=true"`
-	Name  string `urknall:"required=true"`
-	Email string `urknall:"required=true"`
-}
-
-const addVpnUser = `bash -xe <<EOF
-cd /etc/openvpn/easy-rsa
-source ./vars
-export KEY_EMAIL="{{ .Email }}"
-export KEY_NAME="{{ .Name }}"
-/etc/openvpn/easy-rsa/pkitool {{ .Login }}
-EOF
-`
-
 type OpenVpnMasquerade struct {
 	Interface string `urknall:"required=true"`
 }
 
-func (*OpenVpnMasquerade) Render(pkg urknall.Package) {
-	pkg.AddCommands("base",
-		WriteFile("/etc/network/if-pre-up.d/iptables", openVPNIpUp, "root", 0744),
+func (*OpenVpnMasquerade) Render(r urknall.Package) {
+	r.AddCommands("base",
+		WriteFile("/etc/network/if-pre-up.d/iptables", ipUp, "root", 0744),
 		Shell("IFACE={{ .Interface }} /etc/network/if-pre-up.d/iptables"),
 	)
 }
 
-const openVPNIpUp = `#!/bin/bash -e
+const ipUp = `#!/bin/bash -e
 
 if [[ "$IFACE" == "{{ .Interface }}" ]]; then
 	echo 1 > /proc/sys/net/ipv4/ip_forward
