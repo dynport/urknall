@@ -19,7 +19,6 @@ type remoteTaskRunner struct {
 	command cmd.Command
 
 	taskName    string
-	taskStarted time.Time
 
 	commandStarted time.Time
 }
@@ -71,11 +70,7 @@ func (runner *remoteTaskRunner) run() error {
 	wg.Wait()
 	close(logs)
 
-	if e = runner.createChecksumFile(prefix, e); e != nil {
-		return e
-	}
-
-	// Get errors that might have occured while handling the back-channel for the logs.
+	// Get errors that might have occurred while handling the back-channel for the logs.
 	for e = range errors {
 		log.Printf("ERROR: %s", e.Error())
 	}
@@ -95,27 +90,6 @@ func (runner *remoteTaskRunner) writeScriptFile(prefix string) (e error) {
 	}
 
 	return c.Run()
-}
-
-func (runner *remoteTaskRunner) createChecksumFile(prefix string, err error) (e error) {
-	sourceFile := prefix + ".sh"
-	targetFile := prefix + ".done"
-	if err != nil {
-		logError(err)
-		targetFile = prefix + ".failed"
-	}
-	rawCmd := fmt.Sprintf("{ [ -f %[1]s ] || mv %[2]s %[1]s; } && echo %[1]s >> %[3]s/%[4]s.run",
-		targetFile, sourceFile, runner.dir, runner.taskStarted.Format("20060102_150405"))
-	c, e := runner.build.prepareInternalCommand(rawCmd)
-	if e != nil {
-		return e
-	}
-
-	if e = c.Run(); e != nil {
-		return e
-	}
-
-	return err // return original error for convenience
 }
 
 func logError(e error) {

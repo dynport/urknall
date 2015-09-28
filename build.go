@@ -185,37 +185,65 @@ func (build *Build) buildTask(tsk *task) (e error) {
 	tsk.started = time.Now()
 
 	for _, cmd := range tsk.commands {
+		checksum := cmd.Checksum()
+
 		m := message(pubsub.MessageTasksProvisionTask, build.hostname(), tsk.name)
-		m.TaskChecksum = cmd.Checksum()
+		m.TaskChecksum = checksum
 		m.Message = cmd.LogMsg()
 
-		if cmd.cached { // Task is cached.
+		var cmdErr error
+
+		switch {
+		case cmd.cached:
 			m.ExecStatus = pubsub.StatusCached
-			m.Publish("finished")
-			continue
-		}
+		default:
+			m.ExecStatus = pubsub.StatusExecStart
+			m.Publish("started")
 
-		m.ExecStatus = pubsub.StatusExecStart
-		m.Publish("started")
-		r := &remoteTaskRunner{
-			build:       build,
-			command:     cmd.command,
-			dir:         checksumDir,
-			taskName:    tsk.name,
-			taskStarted: tsk.started,
-		}
-		e := r.run()
+			r := &remoteTaskRunner{
+				build:       build,
+				command:     cmd.command,
+				dir:         checksumDir,
+				taskName:    tsk.name,
+			}
+			cmdErr = r.run()
 
-		m.Error = e
-		m.ExecStatus = pubsub.StatusExecFinished
+			m.Error = cmdErr
+			m.ExecStatus = pubsub.StatusExecFinished
+		}
 		m.Publish("finished")
 
-		if e != nil {
-			return e
+		err := build.addCmdToTaskLog(tsk, checksumDir, checksum, cmdErr)
+		switch {
+		case cmdErr != nil:
+			return cmdErr
+		case err != nil:
+			return err
 		}
 	}
 
 	return nil
+}
+
+// addCmdToTaskLog will manage the log of run commands in a file. This file gets append the path to a file
+// for each command, that contains the executed script. The filename contains either ".done" or ".failed" as
+// suffix, depending on the err given (nil or not).
+func (build *Build) addCmdToTaskLog(tsk *task, checksumDir, checksum string, err error) (e error) {
+	prefix := checksumDir + "/" + checksum
+	sourceFile := prefix + ".sh"
+	targetFile := prefix + ".done"
+	if err != nil {
+		logError(err)
+		targetFile = prefix + ".failed"
+	}
+	rawCmd := fmt.Sprintf("{ [ -f %[1]s ] || mv %[2]s %[1]s; } && echo %[1]s >> %[3]s/%[4]s.run",
+		targetFile, sourceFile, checksumDir, tsk.started.Format("20060102_150405"))
+	c, e := build.prepareInternalCommand(rawCmd)
+	if e != nil {
+		return e
+	}
+
+	return c.Run()
 }
 
 type checksumTree map[string][]string
