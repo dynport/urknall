@@ -38,5 +38,11 @@ func PinPackage(name string) *ShellCommand {
 
 // StartOrRestart starts or restarts a service configured with upstart
 func StartOrRestart(service string) *ShellCommand {
-	return Shell(fmt.Sprintf("if status %s | grep running; then restart %s ; else start %s; fi", service, service, service))
+	return Shell(fmt.Sprintf("if status %s | grep running; then { stop %s && start %s; }; else start %s; fi", service, service, service, service))
+}
+
+// EnsureRunning will start the service if not yet running. This should be used whenever a restart
+// might break stuff (think ElasticSearch cluster instances in an ES update).
+func EnsureRunning(service string) *ShellCommand {
+	return Shell(fmt.Sprintf("status %s | grep running || start %s", service, service))
 }
