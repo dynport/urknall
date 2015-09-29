@@ -78,3 +78,29 @@ func TestPackageImplMultipleArgs(t *testing.T) {
 		t.Errorf("expected %q, got %q", "echo cmd", c[0].Shell())
 	}
 }
+
+type testPackage struct {
+	Array []string  `urknall:"required=true"`
+}
+
+func (tp *testPackage) Render(pkg Package) {
+	for i := range tp.Array {
+		pkg.AddCommands(tp.Array[i], Shell("echo " + tp.Array[i]))
+	}
+}
+
+func TestTemplateWithStringSliceRequired(t *testing.T) {
+	pkg := &packageImpl{}
+	names := []string{"foo", "bar", "baz"}
+	pkg.AddTemplate("test", &testPackage{Array: names})
+	if len(pkg.tasks) != 3 {
+		t.Fatalf("expected %d tasks, got %d", 3, len(pkg.tasks))
+	}
+
+	for i := range names {
+		if pkg.tasks[i].name != "test."+names[i] {
+			t.Errorf("task %d: expected task name %q, got %q", i, "test."+names[i], pkg.tasks[i].name)
+		}
+	}
+}
+

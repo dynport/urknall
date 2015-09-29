@@ -55,6 +55,11 @@ func validateField(field reflect.StructField, value reflect.Value) error {
 			value.SetBytes([]byte(opts.defaultValue.(string)))
 		}
 		return nil
+	case "[]string":
+		if opts.required && value.Len() == 0 {
+			return fmt.Errorf("[field:%s] required field not set", field.Name)
+		}
+		return nil
 	case "string":
 		if opts.required && value.String() == "" {
 			return fmt.Errorf("[field:%s] required field not set", field.Name)
@@ -109,7 +114,7 @@ func parseFieldValidationString(field reflect.StructField) (opts *validationOpti
 		switch key {
 		case "required":
 			switch field.Type.String() {
-			case "string", "[]uint8":
+			case "string", "[]string", "[]uint8":
 				if value != "true" && value != "false" {
 					return nil, fmt.Errorf(parse_BOOL_ERROR, key, value)
 				}
