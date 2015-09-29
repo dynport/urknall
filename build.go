@@ -200,7 +200,7 @@ func (build *Build) buildTask(tsk *task) (e error) {
 			m.ExecStatus = pubsub.StatusExecStart
 			m.Publish("started")
 
-			r := &remoteTaskRunner{
+			r := &commandRunner{
 				build:       build,
 				command:     cmd.command,
 				dir:         checksumDir,

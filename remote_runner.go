@@ -12,8 +12,8 @@ import (
 	"github.com/dynport/urknall/target"
 )
 
-// TODO: rename to remoteCommandRunner
-type remoteTaskRunner struct {
+// commandRunner is used to execute commands in a build.
+type commandRunner struct {
 	build   *Build
 	dir     string
 	command cmd.Command
@@ -23,7 +23,7 @@ type remoteTaskRunner struct {
 	commandStarted time.Time
 }
 
-func (runner *remoteTaskRunner) run() error {
+func (runner *commandRunner) run() error {
 	runner.commandStarted = time.Now()
 
 	checksum, e := commandChecksum(runner.command)
@@ -37,7 +37,7 @@ func (runner *remoteTaskRunner) run() error {
 	}
 
 	errors := make(chan error)
-	logs := runner.newLogWriter(prefix+".log", errors)
+	logs := runner.newLogWriter(prefix + ".log", errors)
 
 	c, e := runner.build.prepareCommand("sh " + prefix + ".sh")
 	if e != nil {
@@ -77,7 +77,7 @@ func (runner *remoteTaskRunner) run() error {
 	return e
 }
 
-func (runner *remoteTaskRunner) writeScriptFile(prefix string) (e error) {
+func (runner *commandRunner) writeScriptFile(prefix string) (e error) {
 	targetFile := prefix + ".sh"
 	env := ""
 	for _, e := range runner.build.Env {
@@ -96,7 +96,7 @@ func logError(e error) {
 	log.Printf("ERROR: %s", e.Error())
 }
 
-func (runner *remoteTaskRunner) forwardStream(logs chan<- string, stream string, wg *sync.WaitGroup, r io.Reader) {
+func (runner *commandRunner) forwardStream(logs chan <- string, stream string, wg *sync.WaitGroup, r io.Reader) {
 	defer wg.Done()
 
 	m := message("task.io", runner.build.hostname(), runner.taskName)
@@ -118,48 +118,52 @@ func (runner *remoteTaskRunner) forwardStream(logs chan<- string, stream string,
 	}
 }
 
-func (runner *remoteTaskRunner) newLogWriter(path string, errors chan<- error) chan<- string {
+func (runner *commandRunner) newLogWriter(path string, errors chan <- error) chan <- string {
 	logs := make(chan string)
-	go runner.writeLogs(path, errors, logs)
-	return logs
-}
 
-func (runner *remoteTaskRunner) writeLogs(path string, errors chan<- error, logs <-chan string) {
-	defer close(errors)
+	go func() {
+		defer close(errors)
 
-	var cmd target.ExecCommand
-
-	err := func() error {
-		// so ugly, but: sudo not required and "sh -c" adds some escaping issues with the variables. This is why Command is called directly.
-		var err error
-		if cmd, err = runner.build.Command("cat - > " + path); err != nil {
-			return err
-		}
-
-		// Get pipe to stdin of the execute command.
-		in, err := cmd.StdinPipe()
-		if err != nil {
-			return err
-		}
-		defer in.Close()
-
-		// Run command, writing everything coming from stdin to a file.
-		if err := cmd.Start(); err != nil {
-			in.Close()
-			return err
-		}
-
-		// Send all messages from logs to the stdin of the new session.
-		for log := range logs {
-			if _, err = io.WriteString(in, log+"\n"); err != nil {
+		cmd, err := runner.writeLogs(path, errors, logs)
+		switch {
+		case err != nil:
+			errors <- err
+		default:
+			if err := cmd.Wait(); err != nil {
 				errors <- err
 			}
 		}
-		return err
 	}()
+
+	return logs
+}
+
+func (runner *commandRunner) writeLogs(path string, errors chan <- error, logs <-chan string) (target.ExecCommand, error) {
+	// so ugly, but: sudo not required and "sh -c" adds some escaping issues with the variables. This is why Command is called directly.
+	cmd, err := runner.build.Command("cat - > " + path)
 	if err != nil {
-		errors <- err
-	} else if err := cmd.Wait(); err != nil {
-		errors <- err
+		return nil, err
 	}
+
+	// Get pipe to stdin of the execute command.
+	in, err := cmd.StdinPipe()
+	if err != nil {
+		return nil, err
+	}
+	defer in.Close()
+
+	// Run command, writing everything coming from stdin to a file.
+	if err := cmd.Start(); err != nil {
+		in.Close()
+		return nil, err
+	}
+
+	// Send all messages from logs to the stdin of the new session.
+	for log := range logs {
+		if _, err = io.WriteString(in, log + "\n"); err != nil {
+			errors <- err
+		}
+	}
+	return cmd, err
+
 }
