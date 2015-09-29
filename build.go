@@ -32,15 +32,15 @@ type Build struct {
 }
 
 // This will render the build's template into a package and run all its tasks.
-func (build *Build) Run() error {
-	pkg, e := build.prepareBuild()
+func (b *Build) Run() error {
+	pkg, e := b.prepareBuild()
 	if e != nil {
 		return e
 	}
-	m := message(pubsub.MessageTasksProvision, build.hostname(), "")
+	m := message(pubsub.MessageTasksProvision, b.hostname(), "")
 	m.Publish("started")
 	for _, task := range pkg.tasks {
-		if e = build.buildTask(task); e != nil {
+		if e = b.buildTask(task); e != nil {
 			m.PublishError(e)
 			return e
 		}
