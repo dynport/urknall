@@ -58,7 +58,7 @@ func (target *sshTarget) User() string {
 }
 
 func (target *sshTarget) String() string {
-	return fmt.Sprintf("%s@%s:%d", target.user, target.address, target.port)
+	return target.address
 }
 
 func (target *sshTarget) Command(cmd string) (ExecCommand, error) {
