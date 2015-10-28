@@ -12,6 +12,15 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 )
 
+func NewSshTargetWithPrivateKey(addr string, key []byte) (target *sshTarget, err error) {
+	t, err := NewSshTarget(addr)
+	if err != nil {
+		return nil, err
+	}
+	t.key = key
+	return t, nil
+}
+
 // Create a target for provisioning via SSH.
 func NewSshTarget(addr string) (target *sshTarget, e error) {
 	target = &sshTarget{port: 22, user: "root"}
@@ -49,6 +58,8 @@ type sshTarget struct {
 	user    string
 	port    int
 	address string
+
+	key []byte
 
 	client *ssh.Client
 }
@@ -89,13 +100,31 @@ func (target *sshTarget) buildClient() (*ssh.Client, error) {
 	config := &ssh.ClientConfig{
 		User: target.user,
 	}
+
+	signers := []ssh.Signer{}
 	if target.Password != "" {
 		config.Auth = append(config.Auth, ssh.Password(target.Password))
 	} else if sshSocket := os.Getenv("SSH_AUTH_SOCK"); sshSocket != "" {
 		if agentConn, e := net.Dial("unix", sshSocket); e == nil {
-			config.Auth = append(config.Auth, ssh.PublicKeysCallback(agent.NewClient(agentConn).Signers))
+			s, err := agent.NewClient(agentConn).Signers()
+			if err != nil {
+				return nil, err
+			}
+			signers = append(signers, s...)
 		}
 	}
+	if len(target.key) > 0 {
+		key, err := ssh.ParsePrivateKey(target.key)
+		if err != nil {
+			return nil, err
+		}
+		signers = append(signers, key)
+	}
+
+	if len(signers) > 0 {
+		config.Auth = append(config.Auth, ssh.PublicKeys(signers...))
+	}
+
 	con, e := ssh.Dial("tcp", fmt.Sprintf("%s:%d", target.address, target.port), config)
 	if e != nil {
 		return nil, e

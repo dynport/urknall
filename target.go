@@ -19,6 +19,11 @@ func NewSshTarget(address string) (Target, error) {
 	return target.NewSshTarget(address)
 }
 
+// Create a SSH target with a private access key
+func NewSshTargetWithPrivateKey(address string, key []byte) (Target, error) {
+	return target.NewSshTargetWithPrivateKey(address, key)
+}
+
 // Special SSH target that uses the given password for accessing the machine.
 // This is required mostly for testing and shouldn't be used in production
 // settings.
