@@ -520,7 +520,7 @@ func readItemsFromTar(t *tar.Reader) (m map[string]*taskState, err error) {
 				}
 			case strings.HasSuffix(n, ".done"):
 				m[name].content[doneFileToChecksum(n)] = strings.TrimSuffix(strings.TrimPrefix(string(b), "#!/bin/sh\nset -e\nset -x\n\n\n"), "\n")
-			case strings.HasSuffix(n, ".log"):
+			case strings.HasSuffix(n, ".log") || strings.HasSuffix(n, ".failed"):
 				// ignore for now
 			default:
 				return nil, fmt.Errorf("%s dir=%t has unsupported suffix", n, h.FileInfo().IsDir())
