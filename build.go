@@ -80,7 +80,7 @@ func (b *Build) Run() error {
 				if len(t.name) > b.maxLength {
 					b.maxLength = len(t.name)
 				}
-				actions.Update(t.name+" "+c.LogMsg(), pl, b.commandAction(t.name, checksums, c))
+				actions.Create(t.name+" "+c.LogMsg(), pl, b.commandAction(t.name, checksums, c))
 			}
 		}
 	}
@@ -379,7 +379,14 @@ func (b *Build) commandAction(name string, checksums []string, c *commandWrapper
 			return err
 		}
 		wg.Add(2)
-		prefix := fmt.Sprintf("%s [%*s]", b.Target.String(), b.maxLength, name)
+		l := b.maxLength
+		if l > maxKeyLogLength {
+			l = maxKeyLogLength
+		}
+		if len(name) > l {
+			name = midTrunc(name, maxKeyLogLength)
+		}
+		prefix := fmt.Sprintf("%s [%-*s]", b.Target.String(), l, name)
 		go consumeStream(prefix, gocli.Red, e, wg)
 		go consumeStream(prefix, func(in string) string { return in }, o, wg)
 		fmt.Println(prefix + " " + c.LogMsg())
