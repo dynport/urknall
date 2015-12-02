@@ -27,3 +27,21 @@ func TestUtils(t *testing.T) {
 		t.Errorf("expected %q, got %q", "default checksum", checksum)
 	}
 }
+
+func TestMidTruncate(t *testing.T) {
+	tests := []struct {
+		In  string
+		Len int
+		Out string
+	}{
+		{"test", 4, "test"},
+		{"abcdef", 5, "a...f"},
+		{"abcdefg", 6, "ab...g"},
+	}
+
+	for _, tst := range tests {
+		if v, ex := midTrunc(tst.In, tst.Len), tst.Out; ex != v {
+			t.Errorf("expected midTrunc of %q with len %d to be %q, was %q", tst.In, tst.Len, ex, v)
+		}
+	}
+}
