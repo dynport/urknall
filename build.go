@@ -24,8 +24,12 @@ import (
 )
 
 // A shortcut creating and running a build from the given target and template.
-func Run(target Target, tpl Template) (e error) {
-	return (&Build{Target: target, Template: tpl}).Run()
+func Run(target Target, tpl Template, opts ...func(*Build)) (e error) {
+	b := &Build{Target: target, Template: tpl}
+	for _, o := range opts {
+		o(b)
+	}
+	return b.Run()
 }
 
 // A shortcut creating and runnign a build from the given target and template
@@ -38,10 +42,12 @@ func DryRun(target Target, tpl Template) (e error) {
 
 // A build is the glue between a target and template.
 type Build struct {
-	Target             // Where to run the build.
-	Template           // What to actually build.
-	Env       []string // Environment variables in the form `KEY=VALUE`.
-	maxLength int      // length of the longest key to be executed
+	Target            // Where to run the build.
+	Template          // What to actually build.
+	Env      []string // Environment variables in the form `KEY=VALUE`.
+	Confirm  func(actions ...*confirm.Action) error
+
+	maxLength int // length of the longest key to be executed
 }
 
 // This will render the build's template into a package and run all its tasks.
@@ -84,8 +90,17 @@ func (b *Build) Run() error {
 			}
 		}
 	}
-	if err := confirm.ConfirmHTML(actions...); err != nil {
-		return err
+
+	if b.Confirm != nil {
+		if err := b.Confirm(actions...); err != nil {
+			return err
+		}
+	} else {
+		for _, a := range actions {
+			if err := a.Call(); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
