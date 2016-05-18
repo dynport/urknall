@@ -7,10 +7,10 @@ import (
 )
 
 type templatesAdd struct {
-	base
-	tplBase
-
-	Names []string `cli:"arg required"`
+	Repo     string   `cli:"opt -r --repo default=dynport/urknall desc='repository used to retrieve files from'"`
+	RepoPath string   `cli:"opt -p --path default=examples desc='path in repository used to retrieve files from'"`
+	BaseDir  string   `cli:"opt --base-dir"`
+	Names    []string `cli:"arg required"`
 }
 
 func (a *templatesAdd) Run() error {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"path/filepath"
@@ -8,7 +9,8 @@ import (
 )
 
 type initProject struct {
-	base
+	Repo     string `cli:"opt -r --repo default=dynport/urknall desc='repository used to retrieve files from'"`
+	RepoPath string `cli:"opt -p --path default=examples desc='path in repository used to retrieve files from'"`
 
 	BaseDir string `cli:"arg required"`
 }
@@ -29,9 +31,9 @@ func (init *initProject) Run() error {
 		return e
 	}
 
-	contents, e := upstreamFiles(init.Repo, init.RepoPath)
-	if e != nil {
-		return e
+	contents, err := upstreamFiles(init.Repo, init.RepoPath)
+	if err != nil {
+		return fmt.Errorf("loading upstream files: %s", err)
 	}
 
 	for _, c := range contents {

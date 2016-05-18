@@ -3,7 +3,8 @@ package main
 import "fmt"
 
 type templatesList struct {
-	base
+	Repo     string `cli:"opt -r --repo default=dynport/urknall desc='repository used to retrieve files from'"`
+	RepoPath string `cli:"opt -p --path default=examples desc='path in repository used to retrieve files from'"`
 }
 
 func (list *templatesList) Run() error {

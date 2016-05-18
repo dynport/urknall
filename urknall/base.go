@@ -7,15 +7,6 @@ import (
 	"strings"
 )
 
-type base struct {
-	Repo     string `cli:"opt -r --repo default=dynport/urknall desc='repository used to retrieve files from'"`
-	RepoPath string `cli:"opt -p --path default=examples desc='path in repository used to retrieve files from'"`
-}
-
-type tplBase struct {
-	BaseDir string `cli:"opt --base-dir"`
-}
-
 type templates map[string]*content
 
 func (t templates) exists(name string) bool {
@@ -34,13 +25,14 @@ func (t templates) names() []string {
 
 func upstreamFiles(repo, path string) ([]*content, error) {
 	cl := githubClient()
-	rsp, e := cl.Get("https://api.github.com/repos/" + repo + "/contents/" + path)
-	if e != nil {
-		return nil, e
+	url := "https://api.github.com/repos/" + repo + "/contents/" + path
+	rsp, err := cl.Get(url)
+	if err != nil {
+		return nil, err
 	}
 	defer rsp.Body.Close()
 	if rsp.Status[0] != '2' {
-		return nil, fmt.Errorf("expected status 2xx, got %q", rsp.Status)
+		return nil, fmt.Errorf("loading url=%s. expected status 2xx, got %q", url, rsp.Status)
 	}
 	decoder := json.NewDecoder(rsp.Body)
 
