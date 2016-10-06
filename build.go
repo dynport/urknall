@@ -1,19 +1,35 @@
 package urknall
 
 import (
+	"archive/tar"
+	"bufio"
 	"bytes"
+	"compress/gzip"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"text/template"
 	"time"
 
+	"github.com/dynport/dgtk/confirm"
+	"github.com/dynport/gocli"
 	"github.com/dynport/urknall/pubsub"
 	"github.com/dynport/urknall/target"
 )
 
 // A shortcut creating and running a build from the given target and template.
-func Run(target Target, tpl Template) (e error) {
-	return (&Build{Target: target, Template: tpl}).Run()
+func Run(target Target, tpl Template, opts ...func(*Build)) (e error) {
+	b := &Build{Target: target, Template: tpl}
+	for _, o := range opts {
+		o(b)
+	}
+	return b.Run()
 }
 
 // A shortcut creating and runnign a build from the given target and template
@@ -29,23 +45,63 @@ type Build struct {
 	Target            // Where to run the build.
 	Template          // What to actually build.
 	Env      []string // Environment variables in the form `KEY=VALUE`.
+	Confirm  func(actions ...*confirm.Action) error
+
+	maxLength int // length of the longest key to be executed
 }
 
 // This will render the build's template into a package and run all its tasks.
 func (b *Build) Run() error {
-	pkg, e := b.prepareBuild()
-	if e != nil {
-		return e
+	i, err := renderTemplate(b.Template)
+	if err != nil {
+		return err
 	}
-	m := message(pubsub.MessageTasksProvision, b.hostname(), "")
-	m.Publish("started")
-	for _, task := range pkg.tasks {
-		if e = b.buildTask(task); e != nil {
-			m.PublishError(e)
-			return e
+	m, err := readState(b.Target)
+	if err != nil {
+		return err
+	}
+	actions := confirm.Actions{}
+
+	for _, t := range i.tasks {
+		ex := []string{}
+		if s, ok := m[t.name]; ok {
+			ex = s.runSHAs
+		}
+
+		diff := []string{}
+		checksums := []string{}
+		broken := false
+		for i, c := range t.commands {
+			cs := c.Checksum()
+			checksums = append(checksums, "/var/lib/urknall/"+t.name+"/"+cs+".done")
+			if broken || len(ex) <= i || ex[i] != cs {
+				diff = append(diff, cs)
+				broken = true
+
+				var pl []byte
+				_, cmd, ok, err := extractWriteFile(c.command.Shell())
+				if err == nil && ok {
+					pl = []byte(cmd)
+				}
+				if len(t.name) > b.maxLength {
+					b.maxLength = len(t.name)
+				}
+				actions.Create(t.name+" "+c.LogMsg(), pl, b.commandAction(t.name, checksums, c))
+			}
 		}
 	}
-	m.Publish("finished")
+
+	if b.Confirm != nil {
+		if err := b.Confirm(actions...); err != nil {
+			return err
+		}
+	} else {
+		for _, a := range actions {
+			if err := a.Call(); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -89,13 +145,7 @@ func (build *Build) prepareBuild() (*packageImpl, error) {
 		return nil, fmt.Errorf("error building checksum tree: %s", e.Error())
 	}
 
-	for _, task := range pkg.tasks {
-		if e = build.prepareTask(task, ct); e != nil {
-			return nil, e
-		}
-	}
-
-	return pkg, nil
+	return pkg, build.prepareTasks(ct, pkg.tasks...)
 }
 
 func (build *Build) prepareTarget() error {
@@ -129,6 +179,15 @@ func (build *Build) prepareTarget() error {
 			return fmt.Errorf("failed to initiate user %q for provisioning: %s, out=%q err=%q", build.User(), e, out.String(), err.String())
 		}
 		return build.Reset()
+	}
+	return nil
+}
+
+func (build *Build) prepareTasks(ct checksumTree, tasks ...*task) error {
+	for _, task := range tasks {
+		if err := build.prepareTask(task, ct); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -201,10 +260,10 @@ func (build *Build) buildTask(tsk *task) (e error) {
 			m.Publish("started")
 
 			r := &commandRunner{
-				build:       build,
-				command:     cmd.command,
-				dir:         checksumDir,
-				taskName:    tsk.name,
+				build:    build,
+				command:  cmd.command,
+				dir:      checksumDir,
+				taskName: tsk.name,
 			}
 			cmdErr = r.run()
 
@@ -212,7 +271,6 @@ func (build *Build) buildTask(tsk *task) (e error) {
 			m.ExecStatus = pubsub.StatusExecFinished
 		}
 		m.Publish("finished")
-
 		err := build.addCmdToTaskLog(tsk, checksumDir, checksum, cmdErr)
 		switch {
 		case cmdErr != nil:
@@ -304,4 +362,280 @@ func (build *Build) hostname() string {
 		return s.String()
 	}
 	return "MISSING"
+}
+
+func (b *Build) commandAction(name string, checksums []string, c *commandWrapper) func() error {
+	return func() error {
+		s := struct {
+			Command, Checksum, Name string
+			ChecksumFiles           string
+		}{
+			Command:       c.command.Shell(),
+			Checksum:      c.Checksum(),
+			Name:          name,
+			ChecksumFiles: strings.Join(checksums, "\n"),
+		}
+		cm, err := render(cmdTpl, s)
+		if err != nil {
+			return err
+		}
+		wg := &sync.WaitGroup{}
+		defer wg.Wait()
+		ec, err := b.Target.Command(cm)
+		if err != nil {
+			return err
+		}
+		o, err := ec.StdoutPipe()
+		if err != nil {
+			return err
+		}
+		e, err := ec.StderrPipe()
+		if err != nil {
+			return err
+		}
+		wg.Add(2)
+		l := b.maxLength
+		if l > maxKeyLogLength {
+			l = maxKeyLogLength
+		}
+		if len(name) > l {
+			name = midTrunc(name, maxKeyLogLength)
+		}
+		prefix := fmt.Sprintf("%s [%-*s]", b.Target.String(), l, name)
+		go consumeStream(prefix, gocli.Red, e, wg)
+		go consumeStream(prefix, func(in string) string { return in }, o, wg)
+		fmt.Println(prefix + " " + c.LogMsg())
+		if err := ec.Start(); err != nil {
+			return err
+		}
+		return ec.Wait()
+	}
+}
+
+func consumeStream(prefix string, form func(string) string, in io.Reader, wg *sync.WaitGroup) error {
+	defer wg.Done()
+	scanner := bufio.NewScanner(in)
+
+	for scanner.Scan() {
+		fields := strings.Split(scanner.Text(), "\t")
+		if len(fields) > 2 {
+			fmt.Printf("%s %s\n", prefix, form(strings.Join(fields[2:], "\t")))
+		} else {
+			fmt.Printf("%s %s\n", prefix, form(scanner.Text()))
+		}
+	}
+	return scanner.Err()
+
+}
+
+func render(t string, i interface{}) (string, error) {
+	tpl, err := template.New(t).Parse(t)
+	if err != nil {
+		return "", err
+	}
+	buf := &bytes.Buffer{}
+	err = tpl.Execute(buf, i)
+	return buf.String(), err
+}
+
+const cmdTpl = `set -e
+
+function iso8601 {
+    TZ=UTC date --iso-8601=ns | cut -d "+" -f 1
+}
+
+sudo_prefix=""
+if [[ $(id -u) != 0 ]]; then
+  sudo_prefix="sudo"
+fi
+
+build_date=$(TZ=utc date +"%Y%m%d_%H%M%S")
+dir=/var/lib/urknall/{{ .Name }}/build.$build_date
+
+$sudo_prefix mkdir -p $dir
+
+$sudo_prefix tee $dir/{{ .Checksum }}.sh > /dev/null <<"UKEOF"
+{{ .Command }}
+UKEOF
+
+done_path=$dir/{{ .Checksum }}.done
+run_path=$dir/$build_date.run
+log_path=$dir/{{ .Checksum }}.log
+uk_path=/var/lib/urknall/{{ .Name }}
+
+$sudo_prefix bash $dir/{{ .Checksum }}.sh 2> >(while read line; do echo "$(iso8601)	stderr	$line"; done | $sudo_prefix tee -a $log_path) > >(while read line; do echo "$(iso8601)	stdout	$line"; done | $sudo_prefix tee -a $log_path)
+
+$sudo_prefix mv $dir/{{ .Checksum }}.sh $dir/{{ .Checksum }}.done
+$sudo_prefix tee $run_path > /dev/null <<EOF
+{{ .ChecksumFiles }}
+EOF
+
+$sudo_prefix mkdir -p $uk_path
+$sudo_prefix cp $done_path $run_path $log_path $uk_path/
+`
+
+type taskState struct {
+	name    string
+	runSHAs []string
+	content map[string]string
+}
+
+func readState(target Target) (content map[string]*taskState, err error) {
+	cmd := `files=$(find /var/lib/urknall -maxdepth 1 -mindepth 1 -type d)
+
+		if [[ -z $files ]]; then
+		  exit
+		fi
+
+		tar cvz $(
+			for dir in $files; do
+				last_run=$(ls -t $dir/*.run | head -n1)
+				echo $last_run
+				cat $last_run
+			done
+		)
+	`
+	b, err := capture(target, cmd)
+	if err != nil {
+		return nil, err
+	}
+	if len(b) == 0 {
+		return map[string]*taskState{}, nil
+	}
+
+	gz, err := gzip.NewReader(bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+	defer gz.Close()
+	t := tar.NewReader(gz)
+
+	return readItemsFromTar(t)
+}
+
+func inspect(in interface{}) {
+	b, err := json.MarshalIndent(in, "", "  ")
+	if err == nil {
+		os.Stdout.Write(b)
+	}
+}
+
+func readItemsFromTar(t *tar.Reader) (m map[string]*taskState, err error) {
+	m = map[string]*taskState{}
+	for {
+		switch h, err := t.Next(); err {
+		case io.EOF:
+			return m, nil
+		case nil:
+			name := filepath.Base(filepath.Dir(h.Name))
+			b, err := ioutil.ReadAll(t)
+			if err != nil {
+				return nil, err
+			}
+			if _, ok := m[name]; !ok {
+				m[name] = &taskState{content: map[string]string{}}
+			}
+			switch n := h.Name; {
+			case strings.HasSuffix(n, ".run"):
+				for _, f := range strings.Split(strings.TrimSpace(string(b)), "\n") {
+					m[name].runSHAs = append(m[name].runSHAs, doneFileToChecksum(f))
+				}
+			case strings.HasSuffix(n, ".done"):
+				m[name].content[doneFileToChecksum(n)] = strings.TrimSuffix(strings.TrimPrefix(string(b), "#!/bin/sh\nset -e\nset -x\n\n\n"), "\n")
+			case strings.HasSuffix(n, ".log") || strings.HasSuffix(n, ".failed"):
+				// ignore for now
+			default:
+				return nil, fmt.Errorf("%s dir=%t has unsupported suffix", n, h.FileInfo().IsDir())
+			}
+		default:
+			return nil, err
+		}
+	}
+}
+
+func doneFileToChecksum(in string) string {
+	return strings.TrimSuffix(filepath.Base(in), ".done")
+}
+
+func loadExecutedTasks(target Target, name string) (m map[string][]string, err error) {
+	c, err := target.Command("ls -t /var/lib/urknall/" + name + "/*.run | head -n 1 | xargs cat")
+	if err != nil {
+		return nil, err
+	}
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	c.SetStderr(stdErr)
+	c.SetStdout(stdOut)
+	if err := c.Run(); err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func capture(target Target, cmd string) ([]byte, error) {
+	c, err := target.Command(cmd)
+	if err != nil {
+		return nil, err
+	}
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	c.SetStderr(stdErr)
+	c.SetStdout(stdOut)
+	if err := c.Run(); err != nil {
+		return nil, fmt.Errorf("error running cmd=%q err=%q stderr=%q", cmd, err.Error(), stdErr.String())
+	}
+	return stdOut.Bytes(), nil
+}
+
+const (
+	stateEcho = iota + 1
+	stateDecoded
+	stateMove
+	statePostMove
+)
+
+func extractWriteFile(in string) (path, content string, ok bool, err error) {
+	if !strings.Contains(in, "base64 -d | gunzip") {
+		return "", "", false, nil
+	}
+	state := 0
+	for _, f := range strings.Fields(in) {
+		switch {
+		case f == "echo":
+			state++
+		case state == stateEcho:
+			content, err = unzip(f)
+			if err != nil {
+				return "", "", false, err
+			}
+			state++
+		case f == "mv":
+			state++
+		case state == stateMove:
+			state++
+		case state == statePostMove:
+			if path != "" {
+				path += " "
+			}
+			path += f
+		}
+	}
+	return path, content, true, nil
+}
+
+func unzip(f string) (content string, err error) {
+	b, err := base64.StdEncoding.DecodeString(f)
+	if err != nil {
+		return "", err
+	}
+	gz, err := gzip.NewReader(bytes.NewReader(b))
+	if err != nil {
+		return "", err
+	}
+	defer gz.Close()
+	b, err = ioutil.ReadAll(gz)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }

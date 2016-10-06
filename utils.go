@@ -29,3 +29,16 @@ func commandChecksum(c cmd.Command) (string, error) {
 	}
 	return fmt.Sprintf("%x", s.Sum(nil)), nil
 }
+
+func midTrunc(in string, l int) string {
+	if len(in) <= l {
+		return in
+	}
+	chars := l - 3
+	beg := chars / 2
+	end := beg
+	if chars%2 == 1 {
+		beg++
+	}
+	return in[0:beg] + "..." + in[len(in)-end:]
+}

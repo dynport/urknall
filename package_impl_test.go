@@ -4,6 +4,25 @@ import (
 	"testing"
 )
 
+func TestPackageChecksum(t *testing.T) {
+	p := &packageImpl{}
+	p.AddCommands("test1", Shell("echo 1"), Shell("echo 2"))
+	p.AddCommands("test2", Shell("echo 2"), Shell("echo 2"), Shell("echo 3"))
+	if len(p.tasks) != 2 {
+		t.Errorf("tasks should be 2, was %d", len(p.tasks))
+	}
+	task := p.tasks[0]
+	if len(task.commands) != 2 {
+		t.Errorf("commands should be 2, was %d", len(task.commands))
+	}
+	if ex, v := p.tasks[0].commands[1].Checksum(), "9f8f29bb80830f069e821de502ec94200481550c208751d49bc7465815fff4f5"; ex != v {
+		t.Errorf("expected cs to be %q, was %q", ex, v)
+	}
+	if ex, v := p.tasks[1].commands[0].Checksum(), "9f8f29bb80830f069e821de502ec94200481550c208751d49bc7465815fff4f5"; ex != v {
+		t.Errorf("expected cs to be %q, was %q", ex, v)
+	}
+}
+
 func TestPackageImplSingleArg(t *testing.T) {
 	pkg := &packageImpl{}
 	pkg.AddCommands("test", &testCommand{"this is a test"})
@@ -80,12 +99,12 @@ func TestPackageImplMultipleArgs(t *testing.T) {
 }
 
 type testPackage struct {
-	Array []string  `urknall:"required=true"`
+	Array []string `urknall:"required=true"`
 }
 
 func (tp *testPackage) Render(pkg Package) {
 	for i := range tp.Array {
-		pkg.AddCommands(tp.Array[i], Shell("echo " + tp.Array[i]))
+		pkg.AddCommands(tp.Array[i], Shell("echo "+tp.Array[i]))
 	}
 }
 
@@ -103,4 +122,3 @@ func TestTemplateWithStringSliceRequired(t *testing.T) {
 		}
 	}
 }
-
