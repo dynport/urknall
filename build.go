@@ -587,7 +587,7 @@ func capture(target Target, cmd string) ([]byte, error) {
 	c.SetStderr(stdErr)
 	c.SetStdout(stdOut)
 	if err := c.Run(); err != nil {
-		return nil, fmt.Errorf("error running cmd=\n\nerr=\n%s\nstderr=%q", cmd, err.Error(), stdErr.String())
+		return nil, fmt.Errorf("error running cmd=%s\nerr=\n%s\nstderr=%q", cmd, err.Error(), stdErr.String())
 	}
 	return stdOut.Bytes(), nil
 }
