@@ -480,22 +480,27 @@ type taskState struct {
 	content map[string]string
 }
 
+const stateCmd = `
+bash <<"EOF"
+set -e
+files=$(find /var/lib/urknall -maxdepth 1 -mindepth 1 -type d)
+
+if [[ -z $files ]]; then
+  exit
+fi
+
+tar cvz $(
+	for dir in $files; do
+		last_run=$(ls -t $dir/*.run | head -n1)
+		echo $last_run
+		cat $last_run
+	done
+)
+EOF
+`
+
 func readState(target Target) (content map[string]*taskState, err error) {
-	cmd := `files=$(find /var/lib/urknall -maxdepth 1 -mindepth 1 -type d)
-
-		if [[ -z $files ]]; then
-		  exit
-		fi
-
-		tar cvz $(
-			for dir in $files; do
-				last_run=$(ls -t $dir/*.run | head -n1)
-				echo $last_run
-				cat $last_run
-			done
-		)
-	`
-	b, err := capture(target, cmd)
+	b, err := capture(target, stateCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -579,10 +584,10 @@ func capture(target Target, cmd string) ([]byte, error) {
 	}
 	stdOut := &bytes.Buffer{}
 	stdErr := &bytes.Buffer{}
-	c.SetStderr(stdErr)
+	c.SetStderr(io.MultiWriter(stdErr, os.Stderr))
 	c.SetStdout(stdOut)
 	if err := c.Run(); err != nil {
-		return nil, fmt.Errorf("error running cmd=%q err=%q stderr=%q", cmd, err.Error(), stdErr.String())
+		return nil, fmt.Errorf("error running cmd=\n\nerr=\n%s\nstderr=%q", cmd, err.Error(), stdErr.String())
 	}
 	return stdOut.Bytes(), nil
 }
