@@ -483,7 +483,12 @@ type taskState struct {
 const stateCmd = `
 bash <<"EOF"
 set -e
-mkdir -p /var/lib/urknall
+
+if [[ $(whoami) == "root" ]]; then
+  mkdir -p /var/lib/urknall
+else
+  sudo mkdir -p /var/lib/urknall
+fi
 files=$(find /var/lib/urknall -maxdepth 1 -mindepth 1 -type d)
 
 if [[ -z $files ]]; then
