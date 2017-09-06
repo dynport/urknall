@@ -98,7 +98,8 @@ func (target *sshTarget) Reset() (e error) {
 func (target *sshTarget) buildClient() (*ssh.Client, error) {
 	var e error
 	config := &ssh.ClientConfig{
-		User: target.user,
+		User:            target.user,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
 	signers := []ssh.Signer{}
